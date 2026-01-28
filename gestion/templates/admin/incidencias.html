@@ -1,0 +1,480 @@
+{% extends 'base_admin.html' %}
+
+{% block title_page %}
+Incidencias
+{% endblock %}
+
+{% block content %}
+<div class="incidencias-container">
+
+    <!-- Tabla de Comentarios de clientes -->
+    <div class="section-title">Comentarios de clientes...</div>
+    <table class="tabla-incidencias">
+        <thead>
+            <tr>
+                <th class="col-no">NO.</th>
+                <th>CLIENTE</th>
+                <th>COMENTARIO</th>
+                <th>FECHA</th>
+                <th>ESTADO</th>
+                <th class="col-accion">ACCION</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if dudas_quejas %}
+            {% for duda in dudas_quejas %}
+            <tr data-id="{{ duda.id }}" class="{% if duda.estado == 'resuelto' %}fila-resuelta{% endif %}">
+                <td class="col-no">{{ forloop.counter }}</td>
+                <td>{{ duda.cliente.get_full_name|default:duda.cliente.username }}</td>
+                <td>{{ duda.comentario|truncatewords:20 }}</td>
+                <td>{{ duda.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                <td>
+                    <span class="badge badge-{{ duda.estado }}">
+                        {{ duda.get_estado_display }}
+                    </span>
+                </td>
+
+                <td class="col-accion">
+                    <button class="btn-abrir" onclick="abrirModal('{{ duda.id }}',
+                        '{{ duda.cliente.get_full_name|default:duda.cliente.username }}',
+                        '{{ duda.comentario|escapejs }}',
+                        '{{ duda.respuesta|escapejs }}' || '',
+                        '{{ duda.estado }}',
+                        this)">Abrir</button>
+                </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 20px;">
+                    No hay comentarios de clientes pendientes.
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+
+    <!-- Tabla de Incidencias -->
+    <div class="section-title">Incidencias:</div>
+    <table class="tabla-incidencias">
+        <thead>
+            <tr>
+                <th class="col-no">NO.</th>
+                <th>TRABAJADOR</th>
+                <th>ASUNTO</th>
+                <th>PRIORIDAD</th>
+                <th>FECHA</th>
+                <th>ESTADO</th>
+                <th>EVIDENCIA</th>
+                <th class="col-accion">ACCION</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if incidencias %}
+            {% for incidencia in incidencias %}
+            <tr data-id="{{ incidencia.id }}" data-tipo="incidencia" class="{% if incidencia.estado == 'resuelto' %}fila-resuelta{% endif %}">
+                <td class="col-no">{{ forloop.counter }}</td>
+                <td>{{ incidencia.trabajador.get_full_name|default:incidencia.trabajador.username }}</td>
+                <td>{{ incidencia.asunto|truncatewords:10 }}</td>
+                <td>
+                    <span class="badge badge-prioridad-{{ incidencia.prioridad }}">
+                        {{ incidencia.get_prioridad_display }}
+                    </span>
+                </td>
+                <td>{{ incidencia.fecha_reporte|date:"d/m/Y H:i" }}</td>
+                <td>
+                    <span class="badge badge-{{ incidencia.estado }}">
+                        {{ incidencia.get_estado_display }}
+                    </span>
+                </td>
+                <td style="text-align: center;">
+                    {% if incidencia.evidencia %}
+                        <a href="{{ incidencia.evidencia.url }}" target="_blank" style="color: #008CC9; text-decoration: none; font-size: 18px;" title="Ver evidencia">
+                            📎
+                        </a>
+                    {% else %}
+                        <span style="color: #ccc;">—</span>
+                    {% endif %}
+                </td>
+                <td class="col-accion">
+                    <button class="btn-abrir" onclick='abrirModalIncidencia(
+                        "{{ incidencia.id }}",
+                        "{{ incidencia.trabajador.get_full_name|default:incidencia.trabajador.username }}",
+                        "{{ incidencia.asunto|escapejs }}",
+                        "{{ incidencia.descripcion|escapejs }}",
+                        "{{ incidencia.prioridad }}",
+                        "{{ incidencia.respuesta|escapejs }}",
+                        "{{ incidencia.estado }}",
+                        "{% if incidencia.evidencia %}{{ incidencia.evidencia.url }}{% endif %}",
+                        this)'>Abrir</button>
+                </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="8" style="text-align: center; padding: 20px;">
+                    No hay incidencias reportadas.
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span id="modalTitulo">Comentario de Cliente</span>
+                <span id="modalCliente" style="font-size: 14px; color: #666; margin-left: 10px;"></span>
+            </div>
+            <div class="modal-comentario" id="modalComentarioTexto">
+            </div>
+
+            <div id="respuestaAnterior"
+                style="display: none; margin-top: 15px; padding: 10px; background: #f0f0f0; border-radius: 5px;">
+                <strong>Respuesta anterior:</strong>
+                <p id="respuestaTexto"></p>
+            </div>
+
+            <label class="modal-responder-label">Responder comentario:</label>
+            <textarea class="modal-textarea" id="modalRespuesta" placeholder="Escribe tu respuesta..."></textarea>
+
+            <div class="modal-buttons">
+                <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+                <button class="btn-resolver" onclick="resolverDuda()">Resolver</button>
+            </div>
+
+            <input type="hidden" id="modalDudaId" value="">
+        </div>
+    </div>
+
+    <!-- Modal para Incidencias de Trabajadores -->
+    <div class="modal-overlay" id="modalIncidenciaOverlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>Incidencia de Trabajador</span>
+                <span id="modalIncidenciaTrabajador" style="font-size: 14px; color: #666; margin-left: 10px;"></span>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <strong>Asunto:</strong>
+                <p id="modalIncidenciaAsunto" style="margin: 5px 0;"></p>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <strong>Prioridad:</strong>
+                <span id="modalIncidenciaPrioridad" class="badge" style="margin-left: 5px;"></span>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <strong>Descripción:</strong>
+                <div class="modal-comentario" id="modalIncidenciaDescripcion"></div>
+            </div>
+
+            <div id="modalIncidenciaEvidenciaContainer" style="display: none; margin-bottom: 15px;">
+                <strong>Evidencia adjunta:</strong>
+                <div style="margin-top: 10px;">
+                    <a id="modalIncidenciaEvidenciaLink" href="" target="_blank" style="color: #008CC9; text-decoration: none;">
+                        📎 Ver archivo adjunto
+                    </a>
+                    <div id="modalIncidenciaImagenPreview" style="margin-top: 10px; display: none;">
+                        <img id="modalIncidenciaImagen" src="" style="max-width: 100%; max-height: 300px; border-radius: 8px; border: 1px solid #ddd;">
+                    </div>
+                </div>
+            </div>
+
+            <div id="incidenciaRespuestaAnterior"
+                style="display: none; margin-top: 15px; padding: 10px; background: #f0f0f0; border-radius: 5px;">
+                <strong>Respuesta anterior:</strong>
+                <p id="incidenciaRespuestaTexto"></p>
+            </div>
+
+            <label class="modal-responder-label">Responder incidencia:</label>
+            <textarea class="modal-textarea" id="modalIncidenciaRespuesta" placeholder="Escribe tu respuesta o solución..."></textarea>
+
+            <div class="modal-buttons">
+                <button class="btn-cancelar" onclick="cerrarModalIncidencia()">Cancelar</button>
+                <button class="btn-resolver" onclick="resolverIncidencia()">Resolver</button>
+            </div>
+
+            <input type="hidden" id="modalIncidenciaId" value="">
+        </div>
+    </div>
+
+    <script>
+        let dudaActualId = null;
+
+        function abrirModal(dudaId, cliente, comentario, respuesta, estado, btn) {
+            dudaActualId = dudaId;
+
+            document.getElementById('modalCliente').textContent = `- ${cliente}`;
+            document.getElementById('modalComentarioTexto').textContent = comentario;
+            document.getElementById('modalDudaId').value = dudaId;
+
+            if (respuesta && respuesta.trim()) {
+                document.getElementById('respuestaAnterior').style.display = 'block';
+                document.getElementById('respuestaTexto').textContent = respuesta;
+            } else {
+                document.getElementById('respuestaAnterior').style.display = 'none';
+            }
+
+            document.getElementById('modalRespuesta').value = '';
+
+            if (estado === 'resuelto') {
+                document.getElementById('modalRespuesta').disabled = true;
+                document.querySelector('.btn-resolver').disabled = true;
+                document.querySelector('.btn-resolver').textContent = 'Ya Resuelto';
+            } else {
+                document.getElementById('modalRespuesta').disabled = false;
+                document.querySelector('.btn-resolver').disabled = false;
+                document.querySelector('.btn-resolver').textContent = 'Resolver';
+            }
+
+            // Mostrar el modal
+            document.getElementById('modalOverlay').classList.add('active');
+        }
+
+        function cerrarModal() {
+            document.getElementById('modalOverlay').classList.remove('active');
+            document.getElementById('modalRespuesta').value = '';
+            dudaActualId = null;
+        }
+
+        function resolverDuda() {
+            const respuesta = document.getElementById('modalRespuesta').value;
+            const dudaId = document.getElementById('modalDudaId').value;
+
+            if (!respuesta.trim()) {
+                alert('Por favor escribe una respuesta antes de resolver.');
+                return;
+            }
+
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+                getCookie('csrftoken');
+
+            const formData = new FormData();
+            formData.append('tipo', 'duda');
+            formData.append('duda_id', dudaId);
+            formData.append('respuesta', respuesta);
+            formData.append('accion', 'resolver');
+            formData.append('csrfmiddlewaretoken', csrftoken);
+
+            const btn = document.querySelector('.btn-resolver');
+            btn.disabled = true;
+            btn.textContent = 'Resolviendo...';
+
+            fetch('{% url "admin_incidencias" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+
+
+                        const fila = document.querySelector(`tr[data-id="${dudaId}"]`);
+                        if (fila) {
+                            // Buscar el badge de estado
+                            const badge = fila.querySelector('.badge');
+                            if (badge) {
+                                // Cambiar clases y texto
+                                badge.classList.remove('badge-pendiente', 'badge-en_proceso');
+                                badge.classList.add('badge-resuelto');
+                                badge.textContent = 'Resuelto';
+                            }
+
+                            // Agregar clase de fila resuelta (opacidad)
+                            fila.classList.add('fila-resuelta');
+                        }
+
+                        // Cerrar modal
+                        cerrarModal();
+
+                    } else {
+                        alert('Error: ' + data.message);
+                        btn.disabled = false;
+                        btn.textContent = 'Resolver';
+                    }
+                })
+                .catch(error => {
+                    alert('Error al resolver la duda/queja. Por favor intenta de nuevo.');
+                    console.error('Error:', error);
+                    btn.disabled = false;
+                    btn.textContent = 'Resolver';
+                });
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        document.getElementById('modalOverlay').addEventListener('click', function (e) {
+            if (e.target === this) {
+                cerrarModal();
+            }
+        });
+
+        function abrirModalIncidencia(incidenciaId, trabajador, asunto, descripcion, prioridad, respuesta, estado, evidenciaUrl, btn) {
+        console.log('Evidencia URL recibida:', evidenciaUrl); // Debug
+        
+        document.getElementById('modalIncidenciaTrabajador').textContent = `- ${trabajador}`;
+        document.getElementById('modalIncidenciaAsunto').textContent = asunto;
+        document.getElementById('modalIncidenciaDescripcion').textContent = descripcion;
+        document.getElementById('modalIncidenciaId').value = incidenciaId;
+        
+        // Mostrar prioridad con color
+        const prioridadBadge = document.getElementById('modalIncidenciaPrioridad');
+        prioridadBadge.className = 'badge badge-prioridad-' + prioridad;
+        const prioridadTextos = {
+            'baja': 'Baja',
+            'media': 'Media',
+            'alta': 'Alta',
+            'urgente': 'Urgente'
+        };
+        prioridadBadge.textContent = prioridadTextos[prioridad] || prioridad;
+
+        // Mostrar evidencia si existe
+        const evidenciaContainer = document.getElementById('modalIncidenciaEvidenciaContainer');
+        const evidenciaLink = document.getElementById('modalIncidenciaEvidenciaLink');
+        const imagenPreview = document.getElementById('modalIncidenciaImagenPreview');
+        const imagen = document.getElementById('modalIncidenciaImagen');
+        
+        console.log('Evidencia URL trimmed:', evidenciaUrl ? evidenciaUrl.trim() : 'vacío'); // Debug
+        
+        if (evidenciaUrl && evidenciaUrl.trim() !== '') {
+            console.log('Mostrando evidencia...'); // Debug
+            evidenciaContainer.style.display = 'block';
+            evidenciaLink.href = evidenciaUrl;
+            
+            // Si es una imagen, mostrar preview
+            const extensionesImagen = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+            const esImagen = extensionesImagen.some(ext => evidenciaUrl.toLowerCase().endsWith(ext));
+            
+            console.log('Es imagen:', esImagen); // Debug
+            
+            if (esImagen) {
+                imagenPreview.style.display = 'block';
+                imagen.src = evidenciaUrl;
+            } else {
+                imagenPreview.style.display = 'none';
+            }
+        } else {
+            console.log('No hay evidencia, ocultando contenedor'); // Debug
+            evidenciaContainer.style.display = 'none';
+            imagenPreview.style.display = 'none';
+        }
+
+        if (respuesta && respuesta.trim()) {
+            document.getElementById('incidenciaRespuestaAnterior').style.display = 'block';
+            document.getElementById('incidenciaRespuestaTexto').textContent = respuesta;
+        } else {
+            document.getElementById('incidenciaRespuestaAnterior').style.display = 'none';
+        }
+
+        document.getElementById('modalIncidenciaRespuesta').value = '';
+
+        if (estado === 'resuelto') {
+            document.getElementById('modalIncidenciaRespuesta').disabled = true;
+            document.querySelector('#modalIncidenciaOverlay .btn-resolver').disabled = true;
+            document.querySelector('#modalIncidenciaOverlay .btn-resolver').textContent = 'Ya Resuelto';
+        } else {
+            document.getElementById('modalIncidenciaRespuesta').disabled = false;
+            document.querySelector('#modalIncidenciaOverlay .btn-resolver').disabled = false;
+            document.querySelector('#modalIncidenciaOverlay .btn-resolver').textContent = 'Resolver';
+        }
+
+        document.getElementById('modalIncidenciaOverlay').classList.add('active');
+    }
+
+    function cerrarModalIncidencia() {
+        document.getElementById('modalIncidenciaOverlay').classList.remove('active');
+        document.getElementById('modalIncidenciaRespuesta').value = '';
+    }
+
+    function resolverIncidencia() {
+        const respuesta = document.getElementById('modalIncidenciaRespuesta').value;
+        const incidenciaId = document.getElementById('modalIncidenciaId').value;
+
+        if (!respuesta.trim()) {
+            alert('Por favor escribe una respuesta antes de resolver.');
+            return;
+        }
+
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+            getCookie('csrftoken');
+
+        const formData = new FormData();
+        formData.append('incidencia_id', incidenciaId);
+        formData.append('respuesta', respuesta);
+        formData.append('accion', 'resolver');
+        formData.append('tipo', 'incidencia');
+        formData.append('csrfmiddlewaretoken', csrftoken);
+
+        const btn = document.querySelector('#modalIncidenciaOverlay .btn-resolver');
+        btn.disabled = true;
+        btn.textContent = 'Resolviendo...';
+
+        fetch('{% url "admin_incidencias" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+
+                    const fila = document.querySelector(`tr[data-id="${incidenciaId}"][data-tipo="incidencia"]`);
+                    if (fila) {
+                        const badge = fila.querySelector('.badge:not(.badge-prioridad-baja):not(.badge-prioridad-media):not(.badge-prioridad-alta):not(.badge-prioridad-urgente)');
+                        if (badge) {
+                            badge.classList.remove('badge-pendiente', 'badge-en_proceso');
+                            badge.classList.add('badge-resuelto');
+                            badge.textContent = 'Resuelto';
+                        }
+                        fila.classList.add('fila-resuelta');
+                    }
+
+                    cerrarModalIncidencia();
+
+                } else {
+                    alert('Error: ' + data.message);
+                    btn.disabled = false;
+                    btn.textContent = 'Resolver';
+                }
+            })
+            .catch(error => {
+                alert('Error al resolver la incidencia. Por favor intenta de nuevo.');
+                console.error('Error:', error);
+                btn.disabled = false;
+                btn.textContent = 'Resolver';
+            });
+    }
+
+    document.getElementById('modalIncidenciaOverlay').addEventListener('click', function (e) {
+        if (e.target === this) {
+            cerrarModalIncidencia();
+        }
+    });
+
+    </script>
+{% endblock %}

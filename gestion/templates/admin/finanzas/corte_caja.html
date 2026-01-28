@@ -1,0 +1,81 @@
+{% extends 'base_admin.html' %}
+
+{% block title_page %}
+Finanzas
+{% endblock %}
+
+{% block content %}
+<div class="corte-container">
+
+    <div class="corte-header">
+        <h2>CORTE DE CAJA - 30/02/2030</h2>
+    </div>
+
+    <div class="corte-grid">
+        <div class="corte-box">
+            <h3>VENTAS REGISTRADAS EN SISTEMA:</h3>
+            <div class="corte-row">
+                <span>Efectivo:</span>
+                <span>$5,350</span>
+            </div>
+            <div class="corte-row">
+                <span>Tarjeta:</span>
+                <span>$1,280</span>
+            </div>
+            <div class="corte-row">
+                <span>Transferencia:</span>
+                <span>$420</span>
+            </div>
+            <div class="corte-row total">
+                <span>TOTAL:</span>
+                <span>$7,050</span>
+            </div>
+        </div>
+
+        <div class="corte-box">
+            <h3>DINERO FISICO REPORTADO:</h3>
+            <div class="corte-row">
+                <span>Efectivo contado:</span>
+                <span>$5,185</span>
+            </div>
+            <div class="corte-row">
+                <span>Terminal (Tarjeta):</span>
+                <span>$1,280</span>
+            </div>
+            <div class="corte-row">
+                <span>Banco (Transfer):</span>
+                <span>$420</span>
+            </div>
+            <div class="corte-row total">
+                <span>TOTAL:</span>
+                <span>$6,885</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="diferencia-section">
+        <div class="diferencia-valor">
+            DIFERENCIA: -$165
+        </div>
+        <div class="diferencia-links">
+            <a href="#">[Ver detalles]</a>
+            <a href="#">[Justificar diferencia]</a>
+        </div>
+    </div>
+
+    <div class="info-section">
+        <div class="info-row">
+            <span>RESPONSABLE:</span> encargado_freddy
+        </div>
+        <div class="info-row">
+            <span>FECHA/HORA:</span> 30/02/2030 20:30
+        </div>
+    </div>
+
+    <div class="botones-footer">
+        <a href="{% url 'admin_finanzas' %}" class="btn-regresar">Regresar</a>
+        <button class="btn-accion">Imprimir</button>
+        <button class="btn-guardar">Guardar Corte</button>
+    </div>
+</div>
+{% endblock %}

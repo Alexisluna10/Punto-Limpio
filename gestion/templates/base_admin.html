@@ -1,0 +1,118 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Punto Limpio - Administrador</title>
+    <link rel="stylesheet" href="{% static 'gestion/css/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'gestion/css/administrador.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+
+    <nav class="top-bar">
+        <div class="bar-left">
+            <span class="menu-icon" id="menuToggle" onclick="toggleSidebar()">&#9776;</span>
+            <span class="user-tag">@{{ user.username }}</span>
+        </div>
+
+        <div class="bar-center">
+            {% block title_page %}Administrador{% endblock %}
+        </div>
+
+        <div class="bar-right">
+            Punto Limpio
+        </div>
+    </nav>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="admin-layout">
+        <aside class="admin-sidebar" id="adminSidebar">
+            <div>
+                <h2 class="sidebar-header">Panel de Administrador</h2>
+
+                <ul class="admin-menu-list">
+                    <li>
+                        <a href="{% url 'admin_dashboard' %}"
+                            class="{% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+                            <span class="menu-icon-item">&#128205;</span> Inicio
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'admin_finanzas' %}"
+                            class="{% if request.resolver_match.url_name == 'admin_finanzas' %}active{% endif %}">
+                            <span class="menu-icon-item">&#128176;</span> Finanzas
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'admin_usuarios' %}"
+                            class="{% if request.resolver_match.url_name == 'admin_usuarios' %}active{% endif %}">
+                            <span class="menu-icon-item">&#128101;</span> Usuarios
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'admin_precios' %}"
+                            class="{% if request.resolver_match.url_name == 'admin_precios' %}active{% endif %}">
+                            <span class="menu-icon-item">&#127991;</span> Precios
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'admin_inventarios' %}"
+                            class="{% if request.resolver_match.url_name == 'admin_inventarios' %}active{% endif %}">
+                            <span class="menu-icon-item">&#128230;</span> Inventarios
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'admin_historial' %}"
+                            class="{% if request.resolver_match.url_name == 'admin_historial' %}active{% endif %}">
+                            <span class="menu-icon-item">&#128196;</span> Historial
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'admin_incidencias' %}"
+                            class="{% if request.resolver_match.url_name == 'admin_incidencias' %}active{% endif %}">
+                            <span class="menu-icon-item">&#9888;</span> Incidencias
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'admin_configuracion' %}"
+                            class="{% if request.resolver_match.url_name == 'admin_configuracion' %}active{% endif %}">
+                            <span class="menu-icon-item">&#9881;</span> Configuración
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="sidebar-bottom">
+                <a href="{% url 'logout' %}" class="logout-btn">Cerrar Sesión</a>
+            </div>
+        </aside>
+
+        <main class="admin-main-content">
+            {% block content %}
+            {% endblock %}
+        </main>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('adminSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('open');
+        }
+
+        document.getElementById('sidebarOverlay').addEventListener('click', function () {
+            toggleSidebar();
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+
+</body>
+
+</html>
+
+</html>

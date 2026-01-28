@@ -1,0 +1,139 @@
+{% extends 'base_admin.html' %}
+{% load static %}
+
+{% block title %}Detalle de Servicio - Administrador{% endblock %}
+
+{% block content %}
+{% if pedido %}
+<div class="detail-container">
+    <div class="detail-title">
+        DETALLE DE SERVICIO - {{ pedido.folio }}
+    </div>
+
+    <div class="two-columns">
+        <div class="column">
+            <div class="section-title">INFORMACION DEL CLIENTE</div>
+            <div class="info-box">
+                <p><strong>Nombre:</strong> {{ pedido.cliente.first_name }} {{ pedido.cliente.last_name }}{% if not pedido.cliente.first_name %}{{ pedido.cliente.username }}{% endif %}</p>
+                <p><strong>Telefono:</strong> {{ pedido.cliente.telefono|default:"No registrado" }}</p>
+                <p><strong>Email:</strong> {{ pedido.cliente.email|default:"No registrado" }}</p>
+                <p><strong>Usuario:</strong> @{{ pedido.cliente.username }}</p>
+            </div>
+
+            <div class="section-title">DETALLES DEL SERVICIO</div>
+            <div class="info-box">
+                <p><strong>Tipo:</strong> {{ pedido.tipo_servicio }}</p>
+                <p><strong>Peso:</strong> {{ pedido.peso }} kg</p>
+                <p><strong>Cantidad de prendas:</strong> {{ pedido.cantidad_prendas }}</p>
+                {% if pedido.cobija_tipo %}
+                <p><strong>Cobija/Edredon:</strong> {{ pedido.cobija_tipo }}</p>
+                {% endif %}
+                {% if pedido.lavado_especial %}
+                <p><strong>Lavado especial:</strong> Si</p>
+                {% endif %}
+                {% if pedido.observaciones %}
+                <p><strong>Observaciones:</strong> {{ pedido.observaciones }}</p>
+                {% endif %}
+                <p><strong>Fecha recepcion:</strong> {{ pedido.fecha_recepcion|date:"d/m/Y H:i" }}</p>
+                <p><strong>Fecha entrega estimada:</strong> {% if pedido.fecha_entrega_estimada %}{{ pedido.fecha_entrega_estimada|date:"d/m/Y" }}{% else %}No especificada{% endif %}</p>
+                <p><strong>Fecha entrega real:</strong> {% if pedido.fecha_entrega_real %}{{ pedido.fecha_entrega_real|date:"d/m/Y H:i" }}{% else %}Pendiente{% endif %}</p>
+            </div>
+
+            <div class="section-title">INFORMACION FINANCIERA</div>
+            <div class="info-box">
+                <p><strong>Total:</strong> ${{ pedido.total }}</p>
+                <p><strong>Metodo de pago:</strong> {{ pedido.metodo_pago|title }}</p>
+                <p><strong>Estado de pago:</strong> 
+                    <span class="{% if pedido.estado_pago == 'pagado' %}estado-pagado{% else %}estado-pendiente{% endif %}">
+                        {{ pedido.get_estado_pago_display|upper }}
+                    </span>
+                </p>
+            </div>
+        </div>
+
+        <div class="column">
+            <div class="section-title">ESTADO DEL PEDIDO</div>
+            <div class="info-box">
+                <p><strong>Estado actual:</strong> 
+                    <span class="badge-estado badge-{{ pedido.estado }}">
+                        {{ pedido.get_estado_display|upper }}
+                    </span>
+                </p>
+                <p><strong>Origen:</strong> {{ pedido.get_origen_display }}</p>
+                {% if pedido.operador %}
+                <p><strong>Registrado por:</strong> {{ pedido.operador.username }}</p>
+                {% endif %}
+            </div>
+            
+            {% if pedido.detalles.all %}
+            <div class="section-title">DETALLE DE PRENDAS</div>
+            <div class="info-box">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <th style="text-align: left; padding: 5px;">Prenda</th>
+                            <th style="text-align: center; padding: 5px;">Cant.</th>
+                            <th style="text-align: right; padding: 5px;">Precio</th>
+                            <th style="text-align: right; padding: 5px;">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detalle in pedido.detalles.all %}
+                        <tr style="border-bottom: 1px solid #eee;">
+                            <td style="padding: 5px;">{{ detalle.prenda.nombre }}</td>
+                            <td style="text-align: center; padding: 5px;">{{ detalle.cantidad }}</td>
+                            <td style="text-align: right; padding: 5px;">${{ detalle.precio_unitario }}</td>
+                            <td style="text-align: right; padding: 5px;">${{ detalle.subtotal }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            <div class="section-title">HISTORIAL DE MOVIMIENTOS</div>
+            <div class="status-history">
+                {% for movimiento in pedido.movimientos.all %}
+                <p><strong>{{ movimiento.get_accion_display }}</strong> - {{ movimiento.fecha|date:"d/m/Y H:i" }} ({{ movimiento.operador.username }})</p>
+                {% empty %}
+                <p style="color: #666;">Sin movimientos registrados</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn btn-reimprimir" onclick="reimprimirTicket()">Reimprimir Ticket</button>
+        <a href="{% url 'historial_ventas' %}" class="btn btn-cerrar">Cerrar</a>
+    </div>
+</div>
+{% else %}
+<div class="detail-container">
+    <div class="detail-title">Pedido no encontrado</div>
+    <p style="text-align: center; padding: 20px;">El pedido solicitado no existe o ha sido eliminado.</p>
+    <div class="action-buttons">
+        <a href="{% url 'historial_ventas' %}" class="btn btn-cerrar">Volver al historial</a>
+    </div>
+</div>
+{% endif %}
+
+<style>
+    .badge-estado {
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-weight: bold;
+        font-size: 0.85em;
+    }
+    .badge-pendiente { background: #ffc107; color: #000; }
+    .badge-en_proceso { background: #17a2b8; color: #fff; }
+    .badge-listo { background: #28a745; color: #fff; }
+    .badge-entregado { background: #28a745; color: #fff; }
+    .badge-cancelado { background: #dc3545; color: #fff; }
+</style>
+
+<script>
+    function reimprimirTicket() {
+        window.print();
+    }
+</script>
+{% endblock %}

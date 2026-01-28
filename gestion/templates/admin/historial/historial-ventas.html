@@ -1,0 +1,96 @@
+{% extends 'base_admin.html' %}
+{% load static %}
+
+{% block title_page %}Historial{% endblock %}
+
+{% block content %}
+<!-- Tabs de navegacion -->
+<div class="nav-tabs-custom">
+    <a href="{% url 'historial_movimientos' %}" class="tab-btn">Movimientos</a>
+    <a href="{% url 'historial_ventas' %}" class="tab-btn active">Ventas</a>
+</div>
+
+<!-- Seccion de busqueda -->
+<div class="search-section">
+    <label>Buscar por folio, cliente o fecha...</label>
+    <div class="search-wrapper">
+        <input type="text" id="searchInput" placeholder="">
+        <button class="btn-search" onclick="buscarVentas()">
+            &#128269;
+        </button>
+    </div>
+</div>
+
+<!-- Tabla de ventas -->
+<table class="table-ventas">
+    <thead>
+        <tr>
+            <th>Folio</th>
+            <th>Cliente</th>
+            <th>Servicio</th>
+            <th>Total</th>
+            <th>Estado</th>
+            <th>Fecha</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody id="tablaVentas">
+        {% for venta in ventas %}
+        <tr>
+            <td>{{ venta.folio }}</td>
+            <td>{{ venta.cliente.first_name }} {{ venta.cliente.last_name }}{% if not venta.cliente.first_name %}{{ venta.cliente.username }}{% endif %}</td>
+            <td>{{ venta.tipo_servicio }}</td>
+            <td>${{ venta.total }}</td>
+            <td class="{% if venta.estado_pago == 'pagado' %}estado-pagado{% else %}estado-pendiente{% endif %}">
+                {% if venta.estado_pago == 'pagado' %}Pagado{% else %}Pendiente{% endif %}
+            </td>
+            <td>{{ venta.fecha_recepcion|date:"d/m" }}</td>
+            <td><a href="{% url 'detalle_venta' venta.id %}" class="btn-detalles">Detalles</a></td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="7" style="text-align: center; color: #666;">No hay ventas registradas</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="registros-info">
+    Mostrando <span id="registrosMostrados">{{ ventas|length }}</span> de <span id="registrosTotal">{{ total_ventas }}</span> registros
+</div>
+
+<button class="btn-exportar" onclick="exportarExcel()">
+    Exportar a Excel
+</button>
+
+<script>
+    function buscarVentas() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const rows = document.querySelectorAll('#tablaVentas tr');
+        let visibleCount = 0;
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            if (text.includes(searchTerm)) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        document.getElementById('registrosMostrados').textContent = visibleCount;
+    }
+
+    document.getElementById('searchInput').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            buscarVentas();
+        }
+    });
+    
+    function exportarExcel() {
+        alert('Funcionalidad de exportar a Excel proximamente');
+    }
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,126 @@
+{% extends 'base_admin.html' %}
+
+{% block title_page %}
+Finanzas
+{% endblock %}
+
+{% block content %}
+<div class="finanzas-container">
+
+    <div class="filtros-section">
+        <div class="filtros-tabs">
+            <button class="filtro-tab active" onclick="setFiltro(this)">Hoy</button>
+            <button class="filtro-tab" onclick="setFiltro(this)">Esta semana</button>
+            <button class="filtro-tab" onclick="setFiltro(this)">Este mes</button>
+            <button class="filtro-tab" onclick="setFiltro(this)">Personalizado</button>
+        </div>
+        <div class="filtros-fecha">
+            <label>[Desde:</label>
+            <input type="date" value="2026-01-01">
+            <label>]</label>
+            <label>[Hasta:</label>
+            <input type="date" value="2026-01-13">
+            <label>]</label>
+            <button class="btn-filtrar">[Filtrar]</button>
+        </div>
+    </div>
+
+    <div class="finanzas-grid">
+        <div class="resumen-box">
+            <h3>RESUMEN FINANCIERO</h3>
+            <div class="resumen-row">
+                <span>Ingresos totales:</span>
+                <span>$85,000</span>
+            </div>
+            <div class="resumen-row">
+                <span>Gastos en insumos:</span>
+                <span class="valor-negativo">-$12,000</span>
+            </div>
+            <div class="resumen-row">
+                <span>Gastos operativos:</span>
+                <span class="valor-negativo">-$25,000</span>
+            </div>
+            <div class="resumen-row total">
+                <span>UTILIDAD NETA:</span>
+                <span class="valor-positivo">$48,000</span>
+            </div>
+        </div>
+
+        <div class="desglose-box">
+            <h3>DESGLOSE POR METODO DE PAGO</h3>
+            <div class="desglose-row">
+                <span>Efectivo:</span>
+                <span>$55,000 <span class="desglose-porcentaje">(65%)</span></span>
+            </div>
+            <div class="desglose-row">
+                <span>Tarjeta:</span>
+                <span>$25,000 <span class="desglose-porcentaje">(29%)</span></span>
+            </div>
+            <div class="desglose-row">
+                <span>Transferencia:</span>
+                <span>$5,000 <span class="desglose-porcentaje">(6%)</span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="grafica-section">
+        <h3>GRAFICA DE TENDENCIAS DE ROPA</h3>
+        <div class="grafica-container">
+            <div class="pie-chart"></div>
+            <div class="pie-legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #333;"></div>
+                    <span>Calcetines 15%</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #555;"></div>
+                    <span>Ropa interior 15%</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #777;"></div>
+                    <span>Playeras 25%</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #999;"></div>
+                    <span>Tenis 5%</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #bbb;"></div>
+                    <span>Pantalones 30%</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ddd;"></div>
+                    <span>Trajes 10%</span>
+                </div>
+            </div>
+        </div>
+        <p class="grafica-descripcion">
+            Grafica 1. La grafica 1 muestra lo que es las tendencias de ropa, las prendas mas se entregan para los
+            servicios
+        </p>
+    </div>
+
+    <div class="acciones-section">
+        <h4>ACCIONES RAPIDAS</h4>
+        <div class="acciones-rapidas">
+            <button class="btn-accion">* Exportar a Excel</button>
+            <button class="btn-accion">* Imprimir Reporte</button>
+            <button class="btn-accion">* Enviar por Email</button>
+        </div>
+    </div>
+
+    <div class="botones-footer">
+        <button class="btn-footer">Resumen</button>
+        <button class="btn-footer">Ingresos</button>
+        <button class="btn-footer">Gastos</button>
+        <a href="{% url 'admin_corte_caja' %}" class="btn-footer">Corte de Caja</a>
+    </div>
+</div>
+
+<script>
+    function setFiltro(btn) {
+        document.querySelectorAll('.filtro-tab').forEach(tab => tab.classList.remove('active'));
+        btn.classList.add('active');
+    }
+</script>
+{% endblock %}

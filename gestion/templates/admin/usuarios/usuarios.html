@@ -1,0 +1,135 @@
+{% extends 'base_admin.html' %}
+
+{% block title_page %}
+Usuarios
+{% endblock %}
+
+{% block content %}
+<div class="usuarios-container">
+
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-error{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="usuarios-header">
+        <h2>{% if tab == 'trabajadores' %}Trabajadores Registrados{% else %}Clientes Registrados{% endif %}</h2>
+    </div>
+
+    <div class="tabs-container">
+        <a href="?tab=trabajadores" class="tab-btn trabajadores {% if tab == 'trabajadores' %}active{% endif %}">
+            <span>&#128188;</span> Trabajadores
+        </a>
+        <a href="?tab=clientes" class="tab-btn clientes {% if tab == 'clientes' %}active{% endif %}">
+            <span>&#128100;</span> Clientes
+        </a>
+    </div>
+
+    <div class="search-row">
+        <div class="search-box">
+            <label>Buscar usuario:</label>
+            <input type="text" id="searchInput" placeholder="Escribe para buscar..." onkeyup="filterTable()">
+        </div>
+        <a href="{% url 'admin_nuevo_usuario' %}" class="btn-nuevo">
+            + Nuevo Usuario
+        </a>
+    </div>
+
+    {% if tab == 'trabajadores' %}
+
+    <table class="tabla-usuarios" id="tablaUsuarios">
+        <thead>
+            <tr>
+                <th>Usuario</th>
+                <th>Perfil</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for trabajador in trabajadores %}
+            <tr>
+                <td>{{ trabajador.username }}</td>
+                <td>{{ trabajador.get_rol_display }}</td>
+                <td class="{% if trabajador.is_active %}estado-activo{% else %}estado-inactivo{% endif %}">
+                    {% if trabajador.is_active %}Activo{% else %}Inactivo{% endif %}
+                </td>
+                <td class="acciones-cell">
+                    <a href="#" class="btn-editar">Editar</a>
+                    <a href="{% url 'admin_eliminar_usuario' trabajador.id %}" class="btn-eliminar"
+                        onclick="return confirm('¿Estás seguro de eliminar este usuario?')">Eliminar</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" style="text-align: center; color: #666;">No hay trabajadores registrados</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="total-usuarios">
+        Mostrando {{ total_trabajadores }} de {{ total_trabajadores }} usuarios
+    </div>
+
+    {% else %}
+
+    <table class="tabla-usuarios" id="tablaUsuarios">
+        <thead>
+            <tr>
+                <th>Cliente</th>
+                <th>Telefono</th>
+                <th>Servicios</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cliente in clientes %}
+            <tr>
+                <td>{{ cliente.username }}</td>
+                <td>{{ cliente.telefono|default:"-" }}</td>
+                <td>0</td>
+                <td class="acciones-cell">
+                    <a href="#" class="btn-editar">Editar</a>
+                    <a href="{% url 'admin_eliminar_usuario' cliente.id %}" class="btn-eliminar"
+                        onclick="return confirm('¿Estás seguro de eliminar este usuario?')">Eliminar</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" style="text-align: center; color: #666;">No hay clientes registrados</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="total-usuarios">
+        Mostrando {{ total_clientes }} de {{ total_clientes }} usuarios
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    function filterTable() {
+        const input = document.getElementById('searchInput');
+        const filter = input.value.toLowerCase();
+        const table = document.getElementById('tablaUsuarios');
+        const rows = table.getElementsByTagName('tr');
+
+        for (let i = 1; i < rows.length; i++) {
+            const cells = rows[i].getElementsByTagName('td');
+            let found = false;
+
+            for (let j = 0; j < cells.length; j++) {
+                if (cells[j].textContent.toLowerCase().includes(filter)) {
+                    found = true;
+                    break;
+                }
+            }
+
+            rows[i].style.display = found ? '' : 'none';
+        }
+    }
+</script>
+{% endblock %}

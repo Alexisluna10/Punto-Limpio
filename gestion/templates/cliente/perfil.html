@@ -1,0 +1,55 @@
+{% extends 'base_cliente.html' %}
+
+{% block title_page %}
+Mi Perfil
+{% endblock %}
+
+{% block cliente_content %}
+<div class="cliente-container">
+
+    <div class="perfil-card">
+
+        <!-- Avatar -->
+        <div class="perfil-avatar">
+            <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+            </svg>
+        </div>
+
+        <!-- Nombre y Rol -->
+        <h2 class="perfil-nombre">NOMBRE APELLIDO1 APELLIDO2</h2>
+        <span class="perfil-rol">CLIENTE</span>
+
+        <!-- Información del perfil -->
+        <div class="perfil-info">
+
+            <div class="perfil-campo">
+                <label class="perfil-label">Teléfono:</label>
+                <div class="campo-con-icono">
+                    <input type="text" class="perfil-input" value="+52 123 456 7890" readonly>
+                    <button class="icon-editar" title="Editar teléfono">
+                        ✏️
+                    </button>
+                </div>
+            </div>
+
+            <div class="perfil-campo">
+                <label class="perfil-label">E-mail:</label>
+                <div class="perfil-valor">cliente@email.com</div>
+            </div>
+
+            <div class="perfil-campo">
+                <label class="perfil-label">Último servicio:</label>
+                <div class="perfil-valor">15/01/2026 - Lavado por encargo</div>
+            </div>
+
+            <div class="perfil-campo">
+                <label class="perfil-label">Miembro desde:</label>
+                <div class="perfil-valor">Enero 2025</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

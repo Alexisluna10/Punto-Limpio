@@ -1,0 +1,39 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Punto Limpio - Gestión</title>
+    <link rel="stylesheet" href="{% static 'gestion/css/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'gestion/css/trabajador.css' %}">
+    <link rel="stylesheet" href="{% static 'gestion/css/cliente.css' %}">
+    <link rel="stylesheet" href="{% static 'gestion/css/administrador.css' %}">
+</head>
+
+<body>
+
+    <nav class="top-bar">
+
+        <div class="bar-left">
+            <span class="menu-icon" onclick="toggleMenu()">☰</span> <span class="user-tag">@{{ user.username }}</span>
+        </div>
+
+        <div class="bar-center">
+            {% block title_page %}Panel General{% endblock %}
+        </div>
+
+        <div class="bar-right">
+            Punto Limpio
+        </div>
+
+    </nav>
+
+    <div class="main-content">
+        {% block content %}
+        {% endblock %}
+    </div>
+
+</body>
+
+</html>

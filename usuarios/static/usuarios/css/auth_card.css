@@ -1,0 +1,177 @@
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #f0f2f5;
+    padding: 20px;
+}
+
+/* --- TARJETA PRINCIPAL --- */
+.auth-card {
+    background-color: white;
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(17, 130, 198, 0.15);
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+    margin-top: 20px;
+
+    animation: fadeIn 0.5s ease-out;
+    position: relative;
+}
+
+/* Variante para Registro (Más ancha) */
+.auth-card.wide-card {
+    max-width: 800px;
+}
+
+/* --- ICONOS Y TÍTULOS --- */
+.auth-icon {
+    font-size: 50px;
+    color: #1182C6;
+    margin-bottom: 10px;
+}
+
+.auth-title {
+    font-family: 'Poppins', sans-serif;
+    color: #1182C6;
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.auth-subtitle {
+    font-family: 'Poppins', sans-serif;
+    color: #295D64;
+    font-size: 16px;
+    margin-bottom: 30px;
+}
+
+/* --- FORMULARIO E INPUTS --- */
+.auth-form {
+    text-align: left;
+    width: 100%;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 14px;
+    color: #295D64;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.auth-input {
+    width: 100%;
+    height: 45px;
+    padding: 10px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 15px;
+    color: #333;
+    background-color: #fafafa;
+    transition: all 0.3s;
+}
+
+/* Efecto al escribir: Borde Turquesa de tu paleta */
+.auth-input:focus {
+    outline: none;
+    border-color: #6BC0B1;
+    background-color: white;
+    box-shadow: 0 0 8px rgba(107, 192, 177, 0.2);
+}
+
+/* --- BOTÓN PRINCIPAL --- */
+.btn-auth-primary {
+    width: 100%;
+    padding: 14px;
+    background-color: #1182C6;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background 0.3s;
+    box-shadow: 0 4px 15px rgba(17, 130, 198, 0.3);
+}
+
+.btn-auth-primary:hover {
+    background-color: #0d6ba1;
+    transform: translateY(-2px);
+}
+
+/* --- LAYOUT DE COLUMNAS (Para Registro) --- */
+.form-grid {
+    display: flex;
+    gap: 30px;
+}
+
+.form-col {
+    flex: 1;
+}
+
+/* --- EXTRAS --- */
+.forgot-password {
+    text-align: right;
+    margin-bottom: 20px;
+}
+
+.forgot-password a {
+    color: #6BC0B1;
+    text-decoration: none;
+    font-size: 13px;
+}
+
+.auth-footer {
+    margin-top: 25px;
+    font-size: 14px;
+    color: #666;
+}
+
+.auth-footer a {
+    color: #1182C6;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+/* Alerta de Error */
+.alert-error {
+    background-color: #ffebee;
+    color: #d32f2f;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    border: 1px solid #ffcdd2;
+    text-align: left;
+}
+
+/* Animación */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsivo para celulares */
+@media (max-width: 768px) {
+    .form-grid {
+        flex-direction: column;
+        gap: 0;
+    }
+}

@@ -1,0 +1,634 @@
+{% extends 'base_admin.html' %}
+
+{% block title_page %}
+Precios
+{% endblock %}
+
+{% block content %}
+<div class="precios-container">
+
+    <div class="search-section">
+        <label>Buscar prenda o servicio</label>
+        <div class="search-wrapper">
+            <input type="text" id="searchInput" placeholder="Escribe para filtrar..." onkeyup="buscarItem()">
+        </div>
+    </div>
+
+    <!-- Seccion Prendas -->
+    <div class="precio-section">
+        <div class="section-header">
+            <h3>Prendas</h3>
+            <button type="button" class="btn-agregar-nuevo" onclick="abrirModalPrenda()">+ Agregar Prenda</button>
+        </div>
+        <table class="tabla-precios" id="tablaPrendas">
+            <thead>
+                <tr>
+                    <th>Prenda</th>
+                    <th>Precio</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for prenda in prendas %}
+                <tr data-id="{{ prenda.id }}" data-nombre="{{ prenda.nombre|lower }}">
+                    <td>{{ prenda.nombre }}</td>
+                    <td class="celda-precio">
+                        <span class="signo-peso">$</span>
+                        <input type="number" class="input-precio" value="{{ prenda.precio }}"
+                            data-original="{{ prenda.precio }}" onchange="habilitarGuardar(this, 'prenda')" step="0.01"
+                            min="0">
+                    </td>
+                    <td class="celda-acciones">
+                        <button type="button" class="btn-guardar" disabled
+                            onclick="guardarPrecioPrenda(this, {{ prenda.id }})">Guardar</button>
+                        <button type="button" class="btn-eliminar"
+                            onclick="eliminarPrenda({{ prenda.id }}, '{{ prenda.nombre }}')">Eliminar</button>
+                        <span class="mensaje-estado"></span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" style="text-align: center;">No hay prendas registradas</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Seccion Servicios -->
+    <div class="precio-section">
+        <div class="section-header">
+            <h3>Servicios</h3>
+            <button type="button" class="btn-agregar-nuevo" onclick="abrirModalServicio()">+ Agregar Servicio</button>
+        </div>
+        <table class="tabla-precios" id="tablaServicios">
+            <thead>
+                <tr>
+                    <th>Servicio</th>
+                    <th>Tipo</th>
+                    <th>Precio</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for servicio in servicios %}
+                <tr data-id="{{ servicio.id }}" data-nombre="{{ servicio.nombre|lower }}">
+                    <td>{{ servicio.nombre }}</td>
+                    <td>{{ servicio.get_tipo_display }}</td>
+                    <td class="celda-precio">
+                        <span class="signo-peso">$</span>
+                        <input type="number" class="input-precio" value="{{ servicio.precio }}"
+                            data-original="{{ servicio.precio }}" onchange="habilitarGuardar(this, 'servicio')"
+                            step="0.01" min="0">
+                    </td>
+                    <td class="celda-acciones">
+                        <button type="button" class="btn-guardar" disabled
+                            onclick="guardarPrecioServicio(this, {{ servicio.id }})">Guardar</button>
+                        <button type="button" class="btn-eliminar"
+                            onclick="eliminarServicio({{ servicio.id }}, '{{ servicio.nombre }}')">Eliminar</button>
+                        <span class="mensaje-estado"></span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="text-align: center;">No hay servicios registrados</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<!-- Modal para agregar prenda -->
+<div class="modal-overlay" id="modal-prenda">
+    <div class="modal-contenido">
+        <h3>Agregar Nueva Prenda</h3>
+        <div class="form-grupo">
+            <label for="nombre-prenda">Nombre de la prenda</label>
+            <input type="text" id="nombre-prenda" placeholder="Ej: Camisa de seda">
+        </div>
+        <div class="form-grupo">
+            <label for="precio-prenda">Precio</label>
+            <input type="number" id="precio-prenda" placeholder="Ej: 150" min="0" step="0.01">
+        </div>
+        <div class="modal-botones">
+            <button type="button" class="btn-cancelar" onclick="cerrarModal('modal-prenda')">Cancelar</button>
+            <button type="button" class="btn-confirmar" onclick="agregarPrenda()">Agregar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para agregar servicio -->
+<div class="modal-overlay" id="modal-servicio">
+    <div class="modal-contenido">
+        <h3>Agregar Nuevo Servicio</h3>
+        <div class="form-grupo">
+            <label for="nombre-servicio">Nombre del servicio</label>
+            <input type="text" id="nombre-servicio" placeholder="Ej: Planchado express">
+        </div>
+        <div class="form-grupo">
+            <label for="tipo-servicio">Tipo de servicio</label>
+            <select id="tipo-servicio">
+                <option value="autoservicio">Autoservicio</option>
+                <option value="por_encargo">Por encargo</option>
+                <option value="a_domicilio">A domicilio</option>
+                <option value="tintoreria">Tintoreria</option>
+            </select>
+        </div>
+        <div class="form-grupo">
+            <label for="precio-servicio">Precio</label>
+            <input type="number" id="precio-servicio" placeholder="Ej: 50" min="0" step="0.01">
+        </div>
+        <div class="modal-botones">
+            <button type="button" class="btn-cancelar" onclick="cerrarModal('modal-servicio')">Cancelar</button>
+            <button type="button" class="btn-confirmar" onclick="agregarServicio()">Agregar</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .precios-container {
+        padding: 20px;
+        max-width: 1000px;
+    }
+
+    .search-section {
+        margin-bottom: 20px;
+    }
+
+    .search-section label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .search-section input {
+        width: 100%;
+        max-width: 400px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+
+    .precio-section {
+        margin-bottom: 30px;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        border-bottom: 2px solid #17a2b8;
+        padding-bottom: 10px;
+    }
+
+    .section-header h3 {
+        margin: 0;
+        color: #333;
+    }
+
+    .btn-agregar-nuevo {
+        background-color: #17a2b8;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    .btn-agregar-nuevo:hover {
+        background-color: #138496;
+    }
+
+    .tabla-precios {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .tabla-precios th,
+    .tabla-precios td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+    }
+
+    .tabla-precios th {
+        background-color: #f8f9fa;
+        font-weight: bold;
+    }
+
+    .celda-precio {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .signo-peso {
+        font-weight: bold;
+    }
+
+    .input-precio {
+        width: 100px;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        text-align: right;
+    }
+
+    .input-precio:focus {
+        border-color: #17a2b8;
+        outline: none;
+    }
+
+    .celda-acciones {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .btn-guardar {
+        background-color: #28a745;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .btn-guardar:hover:not(:disabled) {
+        background-color: #218838;
+    }
+
+    .btn-guardar:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+    }
+
+    .btn-eliminar {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .btn-eliminar:hover {
+        background-color: #c82333;
+    }
+
+    .mensaje-estado {
+        font-size: 12px;
+        margin-left: 10px;
+    }
+
+    .mensaje-exito {
+        color: #28a745;
+    }
+
+    .mensaje-error {
+        color: #dc3545;
+    }
+
+    /* Estilos del modal */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .modal-overlay.activo {
+        display: flex;
+    }
+
+    .modal-contenido {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        width: 100%;
+        max-width: 400px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-contenido h3 {
+        margin-top: 0;
+        margin-bottom: 20px;
+        color: #333;
+    }
+
+    .form-grupo {
+        margin-bottom: 15px;
+    }
+
+    .form-grupo label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+
+    .form-grupo input,
+    .form-grupo select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box;
+    }
+
+    .modal-botones {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .modal-botones button {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+
+    .btn-cancelar {
+        background-color: #6c757d;
+        color: white;
+    }
+
+    .btn-confirmar {
+        background-color: #17a2b8;
+        color: white;
+    }
+
+    .hidden-row {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function buscarItem() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const tables = document.querySelectorAll('.tabla-precios tbody');
+
+        tables.forEach(tbody => {
+            const rows = tbody.querySelectorAll('tr[data-nombre]');
+            rows.forEach(row => {
+                const nombre = row.dataset.nombre;
+                if (nombre.includes(searchTerm)) {
+                    row.classList.remove('hidden-row');
+                } else {
+                    row.classList.add('hidden-row');
+                }
+            });
+        });
+    }
+
+    function habilitarGuardar(input, tipo) {
+        const btn = input.closest('tr').querySelector('.btn-guardar');
+        const original = parseFloat(input.dataset.original);
+        const actual = parseFloat(input.value);
+        btn.disabled = (original === actual);
+    }
+
+    function mostrarMensaje(row, mensaje, esError = false) {
+        const mensajeSpan = row.querySelector('.mensaje-estado');
+        mensajeSpan.textContent = mensaje;
+        mensajeSpan.className = 'mensaje-estado ' + (esError ? 'mensaje-error' : 'mensaje-exito');
+        setTimeout(() => {
+            mensajeSpan.textContent = '';
+        }, 3000);
+    }
+
+    async function guardarPrecioPrenda(btn, id) {
+        const row = btn.closest('tr');
+        const input = row.querySelector('.input-precio');
+        const precio = parseFloat(input.value);
+
+        try {
+            const response = await fetch('{% url "actualizar_precio_prenda" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ id: id, precio: precio })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                input.dataset.original = precio;
+                btn.disabled = true;
+                mostrarMensaje(row, 'Guardado');
+            } else {
+                mostrarMensaje(row, data.mensaje, true);
+            }
+        } catch (error) {
+            mostrarMensaje(row, 'Error de conexion', true);
+        }
+    }
+
+    async function guardarPrecioServicio(btn, id) {
+        const row = btn.closest('tr');
+        const input = row.querySelector('.input-precio');
+        const precio = parseFloat(input.value);
+
+        try {
+            const response = await fetch('{% url "actualizar_precio_servicio" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ id: id, precio: precio })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                input.dataset.original = precio;
+                btn.disabled = true;
+                mostrarMensaje(row, 'Guardado');
+            } else {
+                mostrarMensaje(row, data.mensaje, true);
+            }
+        } catch (error) {
+            mostrarMensaje(row, 'Error de conexion', true);
+        }
+    }
+
+    function abrirModalPrenda() {
+        document.getElementById('modal-prenda').classList.add('activo');
+        document.getElementById('nombre-prenda').value = '';
+        document.getElementById('precio-prenda').value = '';
+    }
+
+    function abrirModalServicio() {
+        document.getElementById('modal-servicio').classList.add('activo');
+        document.getElementById('nombre-servicio').value = '';
+        document.getElementById('precio-servicio').value = '';
+        document.getElementById('tipo-servicio').value = 'autoservicio';
+    }
+
+    function cerrarModal(id) {
+        document.getElementById(id).classList.remove('activo');
+    }
+
+    async function agregarPrenda() {
+        const nombre = document.getElementById('nombre-prenda').value.trim();
+        const precio = parseFloat(document.getElementById('precio-prenda').value);
+
+        if (!nombre || isNaN(precio)) {
+            alert('Por favor complete todos los campos');
+            return;
+        }
+
+        try {
+            const response = await fetch('{% url "agregar_prenda" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ nombre: nombre, precio: precio })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                cerrarModal('modal-prenda');
+                location.reload();
+            } else {
+                alert(data.mensaje);
+            }
+        } catch (error) {
+            alert('Error de conexion');
+        }
+    }
+
+    async function agregarServicio() {
+        const nombre = document.getElementById('nombre-servicio').value.trim();
+        const precio = parseFloat(document.getElementById('precio-servicio').value);
+        const tipo = document.getElementById('tipo-servicio').value;
+
+        if (!nombre || isNaN(precio)) {
+            alert('Por favor complete todos los campos');
+            return;
+        }
+
+        try {
+            const response = await fetch('{% url "agregar_servicio" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ nombre: nombre, precio: precio, tipo: tipo })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                cerrarModal('modal-servicio');
+                location.reload();
+            } else {
+                alert(data.mensaje);
+            }
+        } catch (error) {
+            alert('Error de conexion');
+        }
+    }
+
+    async function eliminarPrenda(id, nombre) {
+        if (!confirm('Esta seguro de eliminar la prenda "' + nombre + '"?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch('{% url "eliminar_prenda" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ id: id })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.mensaje);
+            }
+        } catch (error) {
+            alert('Error de conexion');
+        }
+    }
+
+    async function eliminarServicio(id, nombre) {
+        if (!confirm('Esta seguro de eliminar el servicio "' + nombre + '"?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch('{% url "eliminar_servicio" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ id: id })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.mensaje);
+            }
+        } catch (error) {
+            alert('Error de conexion');
+        }
+    }
+
+    // Cerrar modal al hacer clic fuera
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+        modal.addEventListener('click', function (e) {
+            if (e.target === this) {
+                this.classList.remove('activo');
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends 'base_cliente.html' %}
+
+{% block title_page %}
+Pago Confirmado
+{% endblock %}
+
+{% block cliente_content %}
+<div class="cliente-container">
+
+    <div class="terminado-container">
+        
+        <div class="terminado-icon-circle">
+            <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+        </div>
+
+        <h2 class="terminado-titulo">GRACIAS POR CONFIRMAR EL PAGO</h2>
+
+        <p class="terminado-mensaje">
+            EN UN MOMENTO SE DESCARGARÁ SU TICKET EN PDF<br>
+            Y UN CÓDIGO QR EN DONDE SE RASTREARÁ EL ESTADO<br>
+            DEL SERVICIO
+        </p>
+
+        <a href="{% url 'cliente_dashboard' %}" class="btn-terminado-aceptar">ACEPTAR</a>
+
+    </div>
+
+</div>
+{% endblock %}

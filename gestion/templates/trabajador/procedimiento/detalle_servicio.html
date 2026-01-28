@@ -1,0 +1,186 @@
+{% extends 'base_trabajador.html' %}
+
+{% block title_page %}
+Gestionar Servicio {{ pedido.folio }}
+{% endblock %}
+
+{% block trabajador_content %}
+
+<div class="main-content">
+
+    {% if pedido %}
+    <div class="trab-edit-container">
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="color: #008CC9; margin: 0;">Folio: {{ pedido.folio }}</h2>
+            <div>
+                {% if pedido.estado == 'pendiente' %}
+                <span class="badge badge-pendiente" style="font-size: 14px;">PENDIENTE</span>
+                {% elif pedido.estado == 'en_proceso' %}
+                <span class="badge badge-proceso" style="font-size: 14px;">EN PROCESO</span>
+                {% elif pedido.estado == 'listo' %}
+                <span class="badge badge-entregado" style="font-size: 14px;">LISTO</span>
+                {% elif pedido.estado == 'entregado' %}
+                <span class="badge badge-entregado" style="font-size: 14px;">ENTREGADO</span>
+                {% endif %}
+                
+                {% if pedido.estado_pago == 'pendiente' %}
+                <span class="badge badge-pendiente" style="font-size: 14px; margin-left: 5px;">PAGO PENDIENTE</span>
+                {% else %}
+                <span class="badge badge-pagado" style="font-size: 14px; margin-left: 5px;">PAGADO</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="trab-timeline">
+            <div class="trab-timeline-step {% if pedido.estado in 'pendiente,en_proceso,listo,entregado' %}completed{% endif %}">
+                <div class="trab-step-circle">1</div>
+                <small>Recibido</small>
+            </div>
+            <div class="trab-timeline-step {% if pedido.estado == 'en_proceso' %}active{% elif pedido.estado in 'listo,entregado' %}completed{% endif %}">
+                <div class="trab-step-circle">2</div>
+                <small>En Proceso</small>
+            </div>
+            <div class="trab-timeline-step {% if pedido.estado == 'listo' %}active{% elif pedido.estado == 'entregado' %}completed{% endif %}">
+                <div class="trab-step-circle">3</div>
+                <small>Listo</small>
+            </div>
+            <div class="trab-timeline-step {% if pedido.estado == 'entregado' %}active completed{% endif %}">
+                <div class="trab-step-circle">4</div>
+                <small>Entregado</small>
+            </div>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+        <div class="trab-edit-row">
+            <span class="trab-edit-label">Cliente:</span>
+            <span class="trab-edit-value">{{ pedido.cliente.first_name }} {{ pedido.cliente.last_name }}{% if not pedido.cliente.first_name %}{{ pedido.cliente.username }}{% endif %}</span>
+        </div>
+        <div class="trab-edit-row">
+            <span class="trab-edit-label">Tipo de Servicio:</span>
+            <span class="trab-edit-value">{{ pedido.tipo_servicio }}</span>
+        </div>
+        <div class="trab-edit-row">
+            <span class="trab-edit-label">Total:</span>
+            <span class="trab-edit-value">${{ pedido.total }}</span>
+        </div>
+        <div class="trab-edit-row">
+            <span class="trab-edit-label">Origen:</span>
+            <span class="trab-edit-value">{% if pedido.origen == 'cliente' %}Solicitado por cliente{% else %}Registrado por operador{% endif %}</span>
+        </div>
+        {% if pedido.peso > 0 %}
+        <div class="trab-edit-row">
+            <span class="trab-edit-label">Peso:</span>
+            <span class="trab-edit-value">{{ pedido.peso }} Kg</span>
+        </div>
+        {% endif %}
+        {% if pedido.cantidad_prendas > 0 %}
+        <div class="trab-edit-row">
+            <span class="trab-edit-label">Cantidad de Prendas:</span>
+            <span class="trab-edit-value">{{ pedido.cantidad_prendas }}</span>
+        </div>
+        {% endif %}
+        <div class="trab-edit-row">
+            <span class="trab-edit-label">Fecha de Recepcion:</span>
+            <span class="trab-edit-value">{{ pedido.fecha_recepcion|date:"d/m/Y H:i" }}</span>
+        </div>
+        {% if pedido.fecha_entrega_estimada %}
+        <div class="trab-edit-row">
+            <span class="trab-edit-label">Fecha Entrega Estimada:</span>
+            <span class="trab-edit-value">{{ pedido.fecha_entrega_estimada|date:"d/m/Y" }}</span>
+        </div>
+        {% endif %}
+        {% if pedido.observaciones %}
+        <div class="trab-edit-row">
+            <span class="trab-edit-label">Observaciones:</span>
+            <span class="trab-edit-value">{{ pedido.observaciones }}</span>
+        </div>
+        {% endif %}
+
+        <form id="formActualizar" style="margin-top: 30px;">
+            {% csrf_token %}
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label class="trab-incidencia-label">Actualizar Estatus del Servicio:</label>
+                <select class="input-modern" id="selectEstado">
+                    <option value="">-- Sin cambio --</option>
+                    <option value="pendiente" {% if pedido.estado == 'pendiente' %}selected{% endif %}>Pendiente / Recibido</option>
+                    <option value="en_proceso" {% if pedido.estado == 'en_proceso' %}selected{% endif %}>En Proceso (Lavando/Secando)</option>
+                    <option value="listo" {% if pedido.estado == 'listo' %}selected{% endif %}>Listo para Entrega</option>
+                    <option value="entregado" {% if pedido.estado == 'entregado' %}selected{% endif %}>Entregado / Finalizado</option>
+                </select>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label class="trab-incidencia-label">Actualizar Estado de Pago:</label>
+                <select class="input-modern" id="selectPago">
+                    <option value="">-- Sin cambio --</option>
+                    <option value="pendiente" {% if pedido.estado_pago == 'pendiente' %}selected{% endif %}>Pago Pendiente</option>
+                    <option value="pagado" {% if pedido.estado_pago == 'pagado' %}selected{% endif %}>Pagado</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label class="trab-incidencia-label">Notas Adicionales (Opcional):</label>
+                <textarea class="input-modern" rows="3" id="notasAdicionales"
+                    placeholder="Ej: Cliente solicitó suavizante extra..."></textarea>
+            </div>
+
+            <div class="buttons-container">
+                <a href="{% url 'servicios_proceso' %}" class="btn-cancel"
+                    style="padding: 12px 25px; text-decoration: none; display: inline-block;">Cancelar</a>
+
+                <button type="button" class="btn-submit" onclick="guardarCambios()">GUARDAR CAMBIOS</button>
+            </div>
+        </form>
+
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 40px;">
+        <p>No se encontro el servicio solicitado.</p>
+        <a href="{% url 'servicios_proceso' %}" class="btn-submit">Volver a Servicios</a>
+    </div>
+    {% endif %}
+
+</div>
+
+<script>
+    function guardarCambios() {
+        const estado = document.getElementById('selectEstado').value;
+        const estadoPago = document.getElementById('selectPago').value;
+        const notas = document.getElementById('notasAdicionales').value;
+        
+        if (!estado && !estadoPago && !notas) {
+            alert('No hay cambios para guardar.');
+            return;
+        }
+        
+        fetch('{% url "detalle_servicio" pedido.id %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                estado: estado || null,
+                estado_pago: estadoPago || null,
+                notas: notas
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('ESTATUS ACTUALIZADO CORRECTAMENTE.\nEl cliente podra ver el cambio en su panel.');
+                window.location.href = "{% url 'servicios_proceso' %}";
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al guardar los cambios');
+        });
+    }
+</script>
+
+{% endblock %}
