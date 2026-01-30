@@ -16,7 +16,7 @@ from usuarios.forms import RegistroUsuarioAdminForm
 from .models import (
     Insumo, NotificacionStock, Prenda, Servicio, Pedido,
     DetallePedido, MovimientoOperador, Maquina,
-    Incidencia, DudaQueja, MovimientoInsumo, GastoOperativo
+    Incidencia, DudaQueja
 )
 from .forms_inventario import InsumoForm
 
@@ -45,13 +45,19 @@ def admin_finanzas(request):
     if not request.user.groups.filter(name='Administrador').exists():
         return redirect('tasks')
 
+    from datetime import datetime, timedelta
+    from django.db.models import Sum, Count, F
+
     hoy = timezone.now().date()
+
+    # Determinar el período de filtro
     filtro = request.GET.get('filtro', 'hoy')
     fecha_desde = request.GET.get('fecha_desde')
     fecha_hasta = request.GET.get('fecha_hasta')
 
     if filtro == 'hoy':
-        fecha_inicio = fecha_fin = hoy
+        fecha_inicio = hoy
+        fecha_fin = hoy
     elif filtro == 'semana':
         fecha_inicio = hoy - timedelta(days=7)
         fecha_fin = hoy
@@ -62,134 +68,119 @@ def admin_finanzas(request):
         fecha_inicio = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
         fecha_fin = datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
     else:
-        fecha_inicio = fecha_fin = hoy
+        fecha_inicio = hoy
+        fecha_fin = hoy
 
+    # ========== DATOS FINANCIEROS ==========
+    # Pedidos pagados en el período
     pedidos_periodo = Pedido.objects.filter(
         fecha_recepcion__date__gte=fecha_inicio,
         fecha_recepcion__date__lte=fecha_fin,
         estado_pago='pagado'
     )
 
+    # Ingresos totales
     ingresos_totales = pedidos_periodo.aggregate(
-        total=Sum('total')
-    )['total'] or Decimal('0')
+        total=Sum('total'))['total'] or Decimal('0')
 
-    gastos_insumos = MovimientoInsumo.objects.filter(
-        fecha__date__gte=fecha_inicio,
-        fecha__date__lte=fecha_fin,
-        tipo='entrada'
-    ).aggregate(total=Sum('costo_total'))['total'] or Decimal('0')
+    # Utilidad neta (solo ingresos)
+    utilidad_neta = ingresos_totales
 
-    gastos_operativos_total = GastoOperativo.objects.filter(
-        fecha__gte=fecha_inicio,
-        fecha__lte=fecha_fin
-    ).aggregate(total=Sum('monto'))['total'] or Decimal('0')
+    # ========== MÉTODOS DE PAGO ==========
+    pago_efectivo = pedidos_periodo.filter(metodo_pago='efectivo').aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+    pago_tarjeta = pedidos_periodo.filter(metodo_pago='tarjeta').aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+    pago_transferencia = pedidos_periodo.filter(metodo_pago='transferencia').aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
 
-    utilidad_neta = ingresos_totales - gastos_insumos - gastos_operativos_total
-
-    # Métodos de pago
-    def pago_total(tipo):
-        return pedidos_periodo.filter(metodo_pago=tipo).aggregate(
-            total=Sum('total'))['total'] or Decimal('0')
-
-    pago_efectivo = pago_total('efectivo')
-    pago_tarjeta = pago_total('tarjeta')
-    pago_transferencia = pago_total('transferencia')
-
+    # Calcular porcentajes
     total_pagos = pago_efectivo + pago_tarjeta + pago_transferencia
-    pct = lambda x: round((x / total_pagos * 100), 1) if total_pagos > 0 else 0
+    pct_efectivo = round((pago_efectivo / total_pagos * 100),
+                         1) if total_pagos > 0 else 0
+    pct_tarjeta = round((pago_tarjeta / total_pagos * 100),
+                        1) if total_pagos > 0 else 0
+    pct_transferencia = round(
+        (pago_transferencia / total_pagos * 100), 1) if total_pagos > 0 else 0
 
-    # PRENDAS
-    detalles = DetallePedido.objects.filter(
+    # ========== GRÁFICA DE PRENDAS ==========
+    # Prendas más usadas y sus ganancias (desde DetallePedido)
+    detalles_periodo = DetallePedido.objects.filter(
         pedido__fecha_recepcion__date__gte=fecha_inicio,
         pedido__fecha_recepcion__date__lte=fecha_fin,
         pedido__estado_pago='pagado'
     )
 
-    prendas_stats = detalles.values('prenda__nombre').annotate(
-        cantidad=Sum('cantidad'),
-        ganancia=Sum('subtotal')
-    ).order_by('-cantidad')[:10]
+    prendas_stats = detalles_periodo.values(
+        'prenda__nombre'
+    ).annotate(
+        cantidad_total=Sum('cantidad'),
+        ganancia_total=Sum('subtotal')
+    ).order_by('-cantidad_total')[:10]
 
-    total_prendas = sum(p['cantidad'] for p in prendas_stats if p['cantidad'])
-    prendas_data = [
-        {
-            'nombre': p['prenda__nombre'],
-            'cantidad': p['cantidad'],
-            'ganancia': float(p['ganancia'] or 0),
-            'porcentaje': pct(p['cantidad'])
-        }
-        for p in prendas_stats if p['prenda__nombre']
-    ]
+    # Calcular porcentajes de prendas
+    total_prendas = sum(p['cantidad_total']
+                        for p in prendas_stats if p['cantidad_total']) if prendas_stats else 0
+    prendas_data = []
+    for prenda in prendas_stats:
+        if prenda['prenda__nombre'] and prenda['cantidad_total']:
+            pct = round(
+                (prenda['cantidad_total'] / total_prendas * 100), 1) if total_prendas > 0 else 0
+            prendas_data.append({
+                'nombre': prenda['prenda__nombre'],
+                'cantidad': prenda['cantidad_total'],
+                'ganancia': float(prenda['ganancia_total'] or 0),
+                'porcentaje': pct
+            })
 
-    # SERVICIOS
-    servicios_stats = pedidos_periodo.values('tipo_servicio').annotate(
+    # ========== GRÁFICA DE SERVICIOS ==========
+    servicios_stats = pedidos_periodo.values(
+        'tipo_servicio'
+    ).annotate(
         cantidad=Count('id'),
-        ganancia=Sum('total')
-    )
+        ganancia_total=Sum('total')
+    ).order_by('-cantidad')
 
-    total_serv = sum(s['cantidad'] for s in servicios_stats)
-    servicios_data = [
-        {
-            'nombre': s['tipo_servicio'] or 'Sin especificar',
-            'cantidad': s['cantidad'],
-            'ganancia': float(s['ganancia'] or 0),
-            'porcentaje': pct(s['cantidad'])
-        }
-        for s in servicios_stats
-    ]
-
-    # INSUMOS
-    insumos_stats = MovimientoInsumo.objects.filter(
-        fecha__date__gte=fecha_inicio,
-        fecha__date__lte=fecha_fin,
-        tipo='entrada'
-    ).values('insumo__nombre').annotate(
-        cantidad=Sum('cantidad'),
-        gasto=Sum('costo_total')
-    )
-
-    insumos_data = [
-        {
-            'nombre': i['insumo__nombre'],
-            'cantidad': float(i['cantidad'] or 0),
-            'gasto': float(i['gasto'] or 0)
-        }
-        for i in insumos_stats if i['insumo__nombre']
-    ]
-
-    # GASTOS OPERATIVOS
-    gastos_stats = GastoOperativo.objects.filter(
-        fecha__gte=fecha_inicio,
-        fecha__lte=fecha_fin
-    ).values('categoria').annotate(
-        total=Sum('monto'),
-        cantidad=Count('id')
-    )
-
-    categorias = dict(GastoOperativo.CATEGORIA_CHOICES)
-    gastos_data = [
-        {
-            'categoria': categorias.get(g['categoria'], g['categoria']),
-            'total': float(g['total'] or 0),
-            'cantidad': g['cantidad']
-        }
-        for g in gastos_stats
-    ]
+    total_servicios = sum(s['cantidad']
+                          for s in servicios_stats) if servicios_stats else 0
+    servicios_data = []
+    for servicio in servicios_stats:
+        pct = round((servicio['cantidad'] / total_servicios *
+                    100), 1) if total_servicios > 0 else 0
+        servicios_data.append({
+            'nombre': servicio['tipo_servicio'] or 'Sin especificar',
+            'cantidad': servicio['cantidad'],
+            'ganancia': float(servicio['ganancia_total'] or 0),
+            'porcentaje': pct
+        })
 
     context = {
-        'ingresos_totales': ingresos_totales,
-        'gastos_insumos': gastos_insumos,
-        'gastos_operativos_total': gastos_operativos_total,
-        'utilidad_neta': utilidad_neta,
+        'filtro': filtro,
+        'fecha_inicio': fecha_inicio,
+        'fecha_fin': fecha_fin,
+        # Resumen financiero - CONVERTIR A FLOAT
+        'ingresos_totales': float(ingresos_totales),
+        'utilidad_neta': float(utilidad_neta),
+        # Métodos de pago - CONVERTIR A FLOAT
+        'pago_efectivo': float(pago_efectivo),
+        'pago_tarjeta': float(pago_tarjeta),
+        'pago_transferencia': float(pago_transferencia),
+        'pct_efectivo': float(pct_efectivo),
+        'pct_tarjeta': float(pct_tarjeta),
+        'pct_transferencia': float(pct_transferencia),
+        # Datos para gráficas (JSON)
         'prendas_json': json.dumps(prendas_data),
         'servicios_json': json.dumps(servicios_data),
-        'insumos_json': json.dumps(insumos_data),
-        'gastos_operativos_json': json.dumps(gastos_data),
+        'metodos_pago_json': json.dumps([
+            {'nombre': 'Efectivo', 'total': float(
+                pago_efectivo), 'porcentaje': float(pct_efectivo)},
+            {'nombre': 'Tarjeta', 'total': float(
+                pago_tarjeta), 'porcentaje': float(pct_tarjeta)},
+            {'nombre': 'Transferencia', 'total': float(
+                pago_transferencia), 'porcentaje': float(pct_transferencia)},
+        ]),
     }
-
     return render(request, 'admin/finanzas/finanzas.html', context)
-
 
 @login_required
 def admin_corte_caja(request):
@@ -1204,3 +1195,359 @@ def tasks(request):
         return redirect('trabajador_dashboard')
     else:
         return redirect('cliente_dashboard')
+
+
+@login_required
+def exportar_finanzas_excel(request):
+    """
+    Exporta los datos financieros a un archivo Excel según el filtro seleccionado
+    """
+    if not request.user.groups.filter(name='Administrador').exists():
+        return HttpResponse("No autorizado", status=403)
+
+    from datetime import datetime, timedelta
+    from django.db.models import Sum, Count
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from openpyxl.utils import get_column_letter
+
+    hoy = timezone.now().date()
+
+    # Determinar el período de filtro
+    filtro = request.GET.get('filtro', 'hoy')
+    fecha_desde = request.GET.get('fecha_desde')
+    fecha_hasta = request.GET.get('fecha_hasta')
+
+    if filtro == 'hoy':
+        fecha_inicio = hoy
+        fecha_fin = hoy
+        periodo_nombre = f"Hoy - {hoy.strftime('%d/%m/%Y')}"
+    elif filtro == 'semana':
+        fecha_inicio = hoy - timedelta(days=7)
+        fecha_fin = hoy
+        periodo_nombre = "Última Semana"
+    elif filtro == 'mes':
+        fecha_inicio = hoy.replace(day=1)
+        fecha_fin = hoy
+        periodo_nombre = f"Este Mes - {hoy.strftime('%B %Y')}"
+    elif filtro == 'personalizado' and fecha_desde and fecha_hasta:
+        fecha_inicio = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
+        fecha_fin = datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
+        periodo_nombre = f"Del {fecha_inicio.strftime('%d/%m/%Y')} al {fecha_fin.strftime('%d/%m/%Y')}"
+    else:
+        fecha_inicio = hoy
+        fecha_fin = hoy
+        periodo_nombre = f"Hoy - {hoy.strftime('%d/%m/%Y')}"
+
+    # Obtener datos
+    pedidos_periodo = Pedido.objects.filter(
+        fecha_recepcion__date__gte=fecha_inicio,
+        fecha_recepcion__date__lte=fecha_fin,
+        estado_pago='pagado'
+    )
+
+    ingresos_totales = pedidos_periodo.aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+    utilidad_neta = ingresos_totales
+
+    # Métodos de pago
+    pago_efectivo = pedidos_periodo.filter(metodo_pago='efectivo').aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+    pago_tarjeta = pedidos_periodo.filter(metodo_pago='tarjeta').aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+    pago_transferencia = pedidos_periodo.filter(metodo_pago='transferencia').aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+
+    # Datos de prendas
+    detalles_periodo = DetallePedido.objects.filter(
+        pedido__fecha_recepcion__date__gte=fecha_inicio,
+        pedido__fecha_recepcion__date__lte=fecha_fin,
+        pedido__estado_pago='pagado'
+    )
+    prendas_stats = detalles_periodo.values(
+        'prenda__nombre'
+    ).annotate(
+        cantidad_total=Sum('cantidad'),
+        ganancia_total=Sum('subtotal')
+    ).order_by('-cantidad_total')
+
+    # Datos de servicios
+    servicios_stats = pedidos_periodo.values(
+        'tipo_servicio'
+    ).annotate(
+        cantidad=Count('id'),
+        ganancia_total=Sum('total')
+    ).order_by('-cantidad')
+
+    # Crear el libro de Excel
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Reporte Financiero"
+
+    # Estilos
+    header_fill = PatternFill(start_color="2d3748", end_color="2d3748", fill_type="solid")
+    header_font = Font(color="FFFFFF", bold=True, size=12)
+    title_font = Font(bold=True, size=14)
+    subtotal_fill = PatternFill(start_color="e2e8f0", end_color="e2e8f0", fill_type="solid")
+
+    # Título del reporte
+    ws.merge_cells('A1:D1')
+    cell = ws['A1']
+    cell.value = "REPORTE FINANCIERO - PUNTO LIMPIO"
+    cell.font = title_font
+    cell.alignment = Alignment(horizontal='center', vertical='center')
+
+    ws.merge_cells('A2:D2')
+    cell = ws['A2']
+    cell.value = periodo_nombre
+    cell.alignment = Alignment(horizontal='center', vertical='center')
+
+    # Resumen Financiero
+    row = 4
+    ws.merge_cells(f'A{row}:D{row}')
+    cell = ws[f'A{row}']
+    cell.value = "RESUMEN FINANCIERO"
+    cell.fill = header_fill
+    cell.font = header_font
+    cell.alignment = Alignment(horizontal='center')
+
+    row += 1
+    ws[f'A{row}'] = "Concepto"
+    ws[f'B{row}'] = "Monto"
+    ws[f'A{row}'].font = Font(bold=True)
+    ws[f'B{row}'].font = Font(bold=True)
+
+    row += 1
+    ws[f'A{row}'] = "Ingresos totales"
+    ws[f'B{row}'] = float(ingresos_totales)
+    ws[f'B{row}'].number_format = '$#,##0.00'
+
+    row += 1
+    ws[f'A{row}'] = "UTILIDAD NETA"
+    ws[f'B{row}'] = float(utilidad_neta)
+    ws[f'A{row}'].font = Font(bold=True)
+    ws[f'B{row}'].font = Font(bold=True)
+    ws[f'B{row}'].number_format = '$#,##0.00'
+    ws[f'A{row}'].fill = subtotal_fill
+    ws[f'B{row}'].fill = subtotal_fill
+
+    # Desglose por método de pago
+    row += 3
+    ws.merge_cells(f'A{row}:D{row}')
+    cell = ws[f'A{row}']
+    cell.value = "DESGLOSE POR MÉTODO DE PAGO"
+    cell.fill = header_fill
+    cell.font = header_font
+    cell.alignment = Alignment(horizontal='center')
+
+    row += 1
+    ws[f'A{row}'] = "Método"
+    ws[f'B{row}'] = "Monto"
+    ws[f'A{row}'].font = Font(bold=True)
+    ws[f'B{row}'].font = Font(bold=True)
+
+    row += 1
+    ws[f'A{row}'] = "Efectivo"
+    ws[f'B{row}'] = float(pago_efectivo)
+    ws[f'B{row}'].number_format = '$#,##0.00'
+
+    row += 1
+    ws[f'A{row}'] = "Tarjeta"
+    ws[f'B{row}'] = float(pago_tarjeta)
+    ws[f'B{row}'].number_format = '$#,##0.00'
+
+    row += 1
+    ws[f'A{row}'] = "Transferencia"
+    ws[f'B{row}'] = float(pago_transferencia)
+    ws[f'B{row}'].number_format = '$#,##0.00'
+
+    # Datos de prendas
+    row += 3
+    ws.merge_cells(f'A{row}:D{row}')
+    cell = ws[f'A{row}']
+    cell.value = "ESTADÍSTICAS POR PRENDA"
+    cell.fill = header_fill
+    cell.font = header_font
+    cell.alignment = Alignment(horizontal='center')
+
+    row += 1
+    ws[f'A{row}'] = "Prenda"
+    ws[f'B{row}'] = "Cantidad"
+    ws[f'C{row}'] = "Ganancia"
+    for col in ['A', 'B', 'C']:
+        ws[f'{col}{row}'].font = Font(bold=True)
+
+    for prenda in prendas_stats:
+        if prenda['prenda__nombre']:
+            row += 1
+            ws[f'A{row}'] = prenda['prenda__nombre']
+            ws[f'B{row}'] = prenda['cantidad_total']
+            ws[f'C{row}'] = float(prenda['ganancia_total'] or 0)
+            ws[f'C{row}'].number_format = '$#,##0.00'
+
+    # Datos de servicios
+    row += 3
+    ws.merge_cells(f'A{row}:D{row}')
+    cell = ws[f'A{row}']
+    cell.value = "ESTADÍSTICAS POR SERVICIO"
+    cell.fill = header_fill
+    cell.font = header_font
+    cell.alignment = Alignment(horizontal='center')
+
+    row += 1
+    ws[f'A{row}'] = "Servicio"
+    ws[f'B{row}'] = "Cantidad"
+    ws[f'C{row}'] = "Ganancia"
+    for col in ['A', 'B', 'C']:
+        ws[f'{col}{row}'].font = Font(bold=True)
+
+    for servicio in servicios_stats:
+        row += 1
+        ws[f'A{row}'] = servicio['tipo_servicio'] or 'Sin especificar'
+        ws[f'B{row}'] = servicio['cantidad']
+        ws[f'C{row}'] = float(servicio['ganancia_total'] or 0)
+        ws[f'C{row}'].number_format = '$#,##0.00'
+
+    # Ajustar ancho de columnas
+    ws.column_dimensions['A'].width = 30
+    ws.column_dimensions['B'].width = 15
+    ws.column_dimensions['C'].width = 15
+    ws.column_dimensions['D'].width = 15
+
+    # Preparar respuesta HTTP
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    filename = f"reporte_financiero_{fecha_inicio.strftime('%Y%m%d')}_{fecha_fin.strftime('%Y%m%d')}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    wb.save(response)
+    return response
+
+
+@login_required
+def imprimir_reporte_finanzas(request):
+    """
+    Genera un PDF del reporte financiero con gráficas incluidas
+    """
+    if not request.user.groups.filter(name='Administrador').exists():
+        return HttpResponse("No autorizado", status=403)
+
+    from datetime import datetime, timedelta
+    from django.db.models import Sum, Count
+    from django.template.loader import get_template
+    from xhtml2pdf import pisa
+    from io import BytesIO
+
+    hoy = timezone.now().date()
+
+    # Determinar el período de filtro
+    filtro = request.GET.get('filtro', 'hoy')
+    fecha_desde = request.GET.get('fecha_desde')
+    fecha_hasta = request.GET.get('fecha_hasta')
+
+    if filtro == 'hoy':
+        fecha_inicio = hoy
+        fecha_fin = hoy
+    elif filtro == 'semana':
+        fecha_inicio = hoy - timedelta(days=7)
+        fecha_fin = hoy
+    elif filtro == 'mes':
+        fecha_inicio = hoy.replace(day=1)
+        fecha_fin = hoy
+    elif filtro == 'personalizado' and fecha_desde and fecha_hasta:
+        fecha_inicio = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
+        fecha_fin = datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
+    else:
+        fecha_inicio = hoy
+        fecha_fin = hoy
+
+    # Obtener todos los datos
+    pedidos_periodo = Pedido.objects.filter(
+        fecha_recepcion__date__gte=fecha_inicio,
+        fecha_recepcion__date__lte=fecha_fin,
+        estado_pago='pagado'
+    )
+
+    ingresos_totales = pedidos_periodo.aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+    utilidad_neta = ingresos_totales
+
+    # Métodos de pago
+    pago_efectivo = pedidos_periodo.filter(metodo_pago='efectivo').aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+    pago_tarjeta = pedidos_periodo.filter(metodo_pago='tarjeta').aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+    pago_transferencia = pedidos_periodo.filter(metodo_pago='transferencia').aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+
+    total_pagos = pago_efectivo + pago_tarjeta + pago_transferencia
+    pct_efectivo = round((pago_efectivo / total_pagos * 100), 1) if total_pagos > 0 else 0
+    pct_tarjeta = round((pago_tarjeta / total_pagos * 100), 1) if total_pagos > 0 else 0
+    pct_transferencia = round((pago_transferencia / total_pagos * 100), 1) if total_pagos > 0 else 0
+
+    # Datos de prendas
+    detalles_periodo = DetallePedido.objects.filter(
+        pedido__fecha_recepcion__date__gte=fecha_inicio,
+        pedido__fecha_recepcion__date__lte=fecha_fin,
+        pedido__estado_pago='pagado'
+    )
+    prendas_stats = detalles_periodo.values(
+        'prenda__nombre'
+    ).annotate(
+        cantidad_total=Sum('cantidad'),
+        ganancia_total=Sum('subtotal')
+    ).order_by('-cantidad_total')[:10]
+
+    # Datos de servicios
+    servicios_stats = pedidos_periodo.values(
+        'tipo_servicio'
+    ).annotate(
+        cantidad=Count('id'),
+        ganancia_total=Sum('total')
+    ).order_by('-cantidad')
+
+    context = {
+        'fecha_inicio': fecha_inicio,
+        'fecha_fin': fecha_fin,
+        'ingresos_totales': ingresos_totales,
+        'utilidad_neta': utilidad_neta,
+        'pago_efectivo': pago_efectivo,
+        'pago_tarjeta': pago_tarjeta,
+        'pago_transferencia': pago_transferencia,
+        'pct_efectivo': pct_efectivo,
+        'pct_tarjeta': pct_tarjeta,
+        'pct_transferencia': pct_transferencia,
+        'prendas_stats': prendas_stats,
+        'servicios_stats': servicios_stats,
+        'prendas_json': json.dumps([{
+            'nombre': p['prenda__nombre'],
+            'cantidad': p['cantidad_total'],
+            'ganancia': float(p['ganancia_total'] or 0)
+        } for p in prendas_stats if p['prenda__nombre']]),
+        'servicios_json': json.dumps([{
+            'nombre': s['tipo_servicio'] or 'Sin especificar',
+            'cantidad': s['cantidad'],
+            'ganancia': float(s['ganancia_total'] or 0)
+        } for s in servicios_stats]),
+        'metodos_pago_json': json.dumps([
+            {'nombre': 'Efectivo', 'total': float(pago_efectivo), 'porcentaje': float(pct_efectivo)},
+            {'nombre': 'Tarjeta', 'total': float(pago_tarjeta), 'porcentaje': float(pct_tarjeta)},
+            {'nombre': 'Transferencia', 'total': float(pago_transferencia), 'porcentaje': float(pct_transferencia)},
+        ]),
+    }
+
+    template = get_template('admin/finanzas/reporte_finanzas_pdf.html')
+    html = template.render(context)
+
+    # Generar PDF
+    result = BytesIO()
+    pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
+
+    if pdf.err:
+        return HttpResponse("Error al generar el PDF", status=500)
+
+    response = HttpResponse(result.getvalue(), content_type='application/pdf')
+    filename = f"reporte_financiero_{fecha_inicio.strftime('%Y%m%d')}_{fecha_fin.strftime('%Y%m%d')}.pdf"
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
+    return response

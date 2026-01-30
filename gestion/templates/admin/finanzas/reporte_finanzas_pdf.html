@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte Financiero</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            color: #333;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #2d3748;
+            padding-bottom: 15px;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 20px;
+            color: #2d3748;
+        }
+        
+        .header p {
+            margin: 5px 0;
+            color: #666;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+        }
+        
+        .section-title {
+            background: #2d3748;
+            color: white;
+            padding: 8px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        
+        .summary-table td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .summary-table td:first-child {
+            width: 60%;
+        }
+        
+        .summary-table td:last-child {
+            text-align: right;
+            font-weight: bold;
+        }
+        
+        .total-row {
+            background: #e2e8f0;
+            font-weight: bold;
+            border-top: 2px solid #333;
+        }
+        
+        .positive {
+            color: #28a745;
+        }
+        
+        .negative {
+            color: #dc3545;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        .data-table th {
+            background: #e2e8f0;
+            padding: 8px;
+            text-align: left;
+            font-weight: bold;
+            border: 1px solid #ddd;
+        }
+        
+        .data-table td {
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+        }
+        
+        .data-table td:last-child {
+            text-align: right;
+        }
+        
+        .chart-section {
+            margin-top: 20px;
+            page-break-inside: avoid;
+        }
+        
+        .chart-container {
+            width: 100%;
+            height: 250px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        
+        .chart-title {
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 9px;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 5px;
+        }
+        
+        .grid-2col {
+            display: table;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        
+        .grid-col {
+            display: table-cell;
+            width: 48%;
+            vertical-align: top;
+            padding: 0 1%;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>REPORTE FINANCIERO - PUNTO LIMPIO</h1>
+        <p>Período: <strong>{{ fecha_inicio|date:'d/m/Y' }}</strong> al <strong>{{ fecha_fin|date:'d/m/Y' }}</strong></p>
+        <p>Generado el: {{ "now"|date:'d/m/Y H:i' }}</p>
+    </div>
+
+    <!-- Resumen Financiero -->
+    <div class="section">
+        <div class="section-title">RESUMEN FINANCIERO</div>
+        <table class="summary-table">
+            <tr>
+                <td>Ingresos totales:</td>
+                <td class="positive">${{ ingresos_totales|floatformat:2 }}</td>
+            </tr>
+            <tr class="total-row">
+                <td>UTILIDAD NETA:</td>
+                <td class="{% if utilidad_neta >= 0 %}positive{% else %}negative{% endif %}">
+                    ${{ utilidad_neta|floatformat:2 }}
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Desglose por Método de Pago -->
+    <div class="section">
+        <div class="section-title">DESGLOSE POR MÉTODO DE PAGO</div>
+        <table class="summary-table">
+            <tr>
+                <td>Efectivo:</td>
+                <td>${{ pago_efectivo|floatformat:2 }} ({{ pct_efectivo }}%)</td>
+            </tr>
+            <tr>
+                <td>Tarjeta:</td>
+                <td>${{ pago_tarjeta|floatformat:2 }} ({{ pct_tarjeta }}%)</td>
+            </tr>
+            <tr>
+                <td>Transferencia:</td>
+                <td>${{ pago_transferencia|floatformat:2 }} ({{ pct_transferencia }}%)</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Estadísticas por Prenda -->
+    <div class="section">
+        <div class="section-title">ESTADÍSTICAS POR PRENDA</div>
+        {% if prendas_stats %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Prenda</th>
+                    <th>Cantidad</th>
+                    <th>Ganancia</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for prenda in prendas_stats %}
+                {% if prenda.prenda__nombre %}
+                <tr>
+                    <td>{{ prenda.prenda__nombre }}</td>
+                    <td>{{ prenda.cantidad_total }}</td>
+                    <td>${{ prenda.ganancia_total|floatformat:2 }}</td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="text-align: center; color: #999; padding: 20px;">Sin datos para mostrar</p>
+        {% endif %}
+    </div>
+
+    <!-- Estadísticas por Servicio -->
+    <div class="section">
+        <div class="section-title">ESTADÍSTICAS POR SERVICIO</div>
+        {% if servicios_stats %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Servicio</th>
+                    <th>Cantidad</th>
+                    <th>Ganancia</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for servicio in servicios_stats %}
+                <tr>
+                    <td>{{ servicio.tipo_servicio|default:"Sin especificar" }}</td>
+                    <td>{{ servicio.cantidad }}</td>
+                    <td>${{ servicio.ganancia_total|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="text-align: center; color: #999; padding: 20px;">Sin datos para mostrar</p>
+        {% endif %}
+    </div>
+
+    <!-- Nota sobre gráficas -->
+    <div class="section" style="background: #f8f9fa; padding: 15px; border-left: 4px solid #2d3748;">
+        <p style="margin: 0; font-style: italic;">
+            <strong>Nota:</strong> Las gráficas interactivas se pueden visualizar en la plataforma web. 
+            Este reporte PDF contiene las tablas con todos los datos numéricos.
+        </p>
+    </div>
+
+    <div class="footer">
+        Punto Limpio - Sistema de Gestión de Lavandería | Página <pdf:pagenumber>
+    </div>
+</body>
+</html>

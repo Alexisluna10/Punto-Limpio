@@ -271,14 +271,6 @@
                 <span>Ingresos totales:</span>
                 <span>${{ ingresos_totales|floatformat:2 }}</span>
             </div>
-            <div class="linea-resumen">
-                <span>Gastos en insumos:</span>
-                <span class="valor-negativo">-${{ gastos_insumos|floatformat:2 }}</span>
-            </div>
-            <div class="linea-resumen">
-                <span>Gastos operativos:</span>
-                <span class="valor-negativo">-${{ gastos_operativos_total|floatformat:2 }}</span>
-            </div>
             <div class="linea-resumen total">
                 <span>UTILIDAD NETA:</span>
                 <span class="{% if utilidad_neta >= 0 %}valor-positivo{% else %}valor-negativo{% endif %}">
@@ -372,8 +364,8 @@
     <div class="acciones-rapidas">
         <h4>ACCIONES RAPIDAS</h4>
         <div class="acciones-buttons">
-            <button disabled>* Exportar a Excel</button>
-            <button disabled>* Imprimir Reporte</button>
+            <button onclick="exportarExcel()" style="cursor: pointer; opacity: 1; background: #28a745; color: white;">Exportar a Excel</button>
+            <button onclick="imprimirReporte()" style="cursor: pointer; opacity: 1; background: #007bff; color: white;">Imprimir Reporte</button>
             <button disabled>* Enviar por Email</button>
         </div>
     </div>
@@ -386,7 +378,6 @@
         <button onclick="window.location.href='{% url 'admin_corte_caja' %}'">Corte de Caja</button>
     </div>
 </div>
-
 <script>
     // Colores para las gráficas
     const coloresPie = [
@@ -401,8 +392,6 @@
     // Datos desde Django
     const prendasData = {{ prendas_json|safe }};
     const serviciosData = {{ servicios_json|safe }};
-    const insumosData = {{ insumos_json|safe }};
-    const gastosOperativosData = {{ gastos_operativos_json|safe }};
     const metodosPagoData = {{ metodos_pago_json|safe }};
 
     // Función para formatear moneda
@@ -581,5 +570,41 @@
         document.querySelectorAll('.filtros-rapidos a').forEach(a => a.classList.remove('active'));
         this.classList.add('active');
     });
+
+    // Función para exportar a Excel
+    function exportarExcel() {
+        // Obtener los parámetros actuales de filtro
+        const urlParams = new URLSearchParams(window.location.search);
+        const filtro = urlParams.get('filtro') || 'hoy';
+        const fechaDesde = urlParams.get('fecha_desde') || '';
+        const fechaHasta = urlParams.get('fecha_hasta') || '';
+        
+        // Construir la URL con los parámetros
+        let url = '{% url "exportar_finanzas_excel" %}?filtro=' + filtro;
+        if (filtro === 'personalizado' && fechaDesde && fechaHasta) {
+            url += '&fecha_desde=' + fechaDesde + '&fecha_hasta=' + fechaHasta;
+        }
+        
+        // Abrir en nueva ventana para descargar
+        window.location.href = url;
+    }
+
+    // Función para imprimir reporte
+    function imprimirReporte() {
+        // Obtener los parámetros actuales de filtro
+        const urlParams = new URLSearchParams(window.location.search);
+        const filtro = urlParams.get('filtro') || 'hoy';
+        const fechaDesde = urlParams.get('fecha_desde') || '';
+        const fechaHasta = urlParams.get('fecha_hasta') || '';
+        
+        // Construir la URL con los parámetros
+        let url = '{% url "imprimir_reporte_finanzas" %}?filtro=' + filtro;
+        if (filtro === 'personalizado' && fechaDesde && fechaHasta) {
+            url += '&fecha_desde=' + fechaDesde + '&fecha_hasta=' + fechaHasta;
+        }
+        
+        // Abrir en nueva ventana para visualizar/imprimir el PDF
+        window.open(url, '_blank');
+    }
 </script>
 {% endblock %}

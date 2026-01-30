@@ -1,6 +1,5 @@
 from django.contrib import admin
-from .models import Prenda, Servicio
-from .models import Prenda, Servicio, Incidencia, DudaQueja, MovimientoInsumo, GastoOperativo
+from .models import Prenda, Servicio, Incidencia, DudaQueja
 
 
 @admin.register(Prenda)
@@ -43,21 +42,4 @@ class DudaQuejaAdmin(admin.ModelAdmin):
     list_filter = ('estado', 'fecha_creacion')
     search_fields = ('comentario', 'cliente__username')
     readonly_fields = ('fecha_creacion', 'fecha_resolucion')
-
-
-@admin.register(MovimientoInsumo)
-class MovimientoInsumoAdmin(admin.ModelAdmin):
-    list_display = ('insumo', 'tipo', 'cantidad',
-                    'costo_total', 'fecha', 'usuario')
-    list_filter = ('tipo', 'fecha', 'insumo')
-    search_fields = ('insumo__nombre', 'observaciones')
-    readonly_fields = ('costo_total',)
-    date_hierarchy = 'fecha'
-
-
-@admin.register(GastoOperativo)
-class GastoOperativoAdmin(admin.ModelAdmin):
-    list_display = ('categoria', 'descripcion', 'monto', 'fecha', 'usuario')
-    list_filter = ('categoria', 'fecha')
-    search_fields = ('descripcion',)
-    date_hierarchy = 'fecha'
+    
