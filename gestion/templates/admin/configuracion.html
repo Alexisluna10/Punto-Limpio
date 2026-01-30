@@ -1,11 +1,103 @@
 {% extends 'base_admin.html' %}
 
 {% block title_page %}
-Configuración
+Configuración del Sistema
 {% endblock %}
 
 {% block content %}
-<div class="config-container">
-    <a href="{% url 'logout' %}">Cerrar Sesión</a>
+<div class="configuracion-container">
+
+    <!-- Header -->
+    <div class="config-header">
+        <h1 class="config-title">Configuración</h1>
+        <p class="config-subtitle">Gestiona la configuración general y estadísticas del sistema</p>
+    </div>
+
+    <!-- Grid de 2 columnas -->
+    <div class="config-grid-2">
+
+        <!-- Información del Negocio -->
+        <div class="config-card">
+            <h2 class="config-card-title">
+                Información del Negocio
+            </h2>
+            
+            <form id="formNegocio" onsubmit="guardarNegocio(event)">
+                {% csrf_token %}
+                
+                <div class="config-form-group">
+                    <label class="config-label">Nombre del Negocio</label>
+                    <input type="text" name="nombre" value="Punto Limpio" class="config-input">
+                </div>
+
+                <div class="config-form-group">
+                    <label class="config-label">Dirección</label>
+                    <input type="text" name="direccion" value="" placeholder="Calle, Número, Colonia" class="config-input">
+                </div>
+
+                <div class="config-form-row">
+                    <div class="config-form-group">
+                        <label class="config-label">Teléfono</label>
+                        <input type="tel" name="telefono" value="" placeholder="123 456 7890" class="config-input">
+                    </div>
+                    <div class="config-form-group">
+                        <label class="config-label">Email</label>
+                        <input type="email" name="email" value="" placeholder="contacto@puntolimpio.com" class="config-input">
+                    </div>
+                </div>
+
+                <div class="config-form-group">
+                    <label class="config-label">Horario de Atención</label>
+                    <input type="text" name="horario" value="Lun-Vie: 8:00-20:00, Sáb: 9:00-18:00" class="config-input">
+                </div>
+
+                <button type="submit" class="config-btn config-btn-primary">
+                    Guardar Información
+                </button>
+            </form>
+        </div>
+
+        <!-- Estado del Sistema -->
+        <div class="config-card">
+            <h2 class="config-card-title">
+                Estado del Sistema
+            </h2>
+
+            <div class="config-stats-grid">
+
+                <!-- Incidencias Pendientes -->
+                <div class="config-stat-card config-stat-yellow">
+                    <div class="config-stat-content">
+                        <span class="config-stat-label">⚠️ Incidencias Pendientes</span>
+                        <span class="config-stat-value">{{ incidencias_pendientes }}</span>
+                    </div>
+                </div>
+
+                <!-- Productos con Stock Bajo -->
+                <div class="config-stat-card config-stat-red">
+                    <div class="config-stat-content">
+                        <span class="config-stat-label">📦 Stock Bajo (≤10%)</span>
+                        <span class="config-stat-value">{{ productos_bajo_stock }}</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
 </div>
+<script>
+function guardarNegocio(event) {
+    event.preventDefault();
+    alert('Información del negocio guardada correctamente');
+    // Aquí implementarías el guardado real con AJAX
+}
+
+function guardarNotificaciones(event) {
+    event.preventDefault();
+    alert('Preferencias de notificaciones guardadas');
+    // Implementar guardado con AJAX
+}
+
+</script>
+
 {% endblock %}

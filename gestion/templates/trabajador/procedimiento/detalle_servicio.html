@@ -23,7 +23,7 @@ Gestionar Servicio {{ pedido.folio }}
                 {% elif pedido.estado == 'entregado' %}
                 <span class="badge badge-entregado" style="font-size: 14px;">ENTREGADO</span>
                 {% endif %}
-                
+
                 {% if pedido.estado_pago == 'pendiente' %}
                 <span class="badge badge-pendiente" style="font-size: 14px; margin-left: 5px;">PAGO PENDIENTE</span>
                 {% else %}
@@ -33,18 +33,23 @@ Gestionar Servicio {{ pedido.folio }}
         </div>
 
         <div class="trab-timeline">
-            <div class="trab-timeline-step {% if pedido.estado in 'pendiente,en_proceso,listo,entregado' %}completed{% endif %}">
+            <div class="trab-timeline-step completed">
                 <div class="trab-step-circle">1</div>
                 <small>Recibido</small>
             </div>
-            <div class="trab-timeline-step {% if pedido.estado == 'en_proceso' %}active{% elif pedido.estado in 'listo,entregado' %}completed{% endif %}">
+
+            <div
+                class="trab-timeline-step {% if pedido.estado == 'en_proceso' %}active{% elif pedido.estado == 'listo' or pedido.estado == 'entregado' %}completed{% endif %}">
                 <div class="trab-step-circle">2</div>
                 <small>En Proceso</small>
             </div>
-            <div class="trab-timeline-step {% if pedido.estado == 'listo' %}active{% elif pedido.estado == 'entregado' %}completed{% endif %}">
+
+            <div
+                class="trab-timeline-step {% if pedido.estado == 'listo' %}active{% elif pedido.estado == 'entregado' %}completed{% endif %}">
                 <div class="trab-step-circle">3</div>
                 <small>Listo</small>
             </div>
+
             <div class="trab-timeline-step {% if pedido.estado == 'entregado' %}active completed{% endif %}">
                 <div class="trab-step-circle">4</div>
                 <small>Entregado</small>
@@ -55,7 +60,13 @@ Gestionar Servicio {{ pedido.folio }}
 
         <div class="trab-edit-row">
             <span class="trab-edit-label">Cliente:</span>
-            <span class="trab-edit-value">{{ pedido.cliente.first_name }} {{ pedido.cliente.last_name }}{% if not pedido.cliente.first_name %}{{ pedido.cliente.username }}{% endif %}</span>
+            <span class="trab-edit-value">
+                {% if pedido.cliente.first_name %}
+                {{ pedido.cliente.first_name }} {{ pedido.cliente.last_name }}
+                {% else %}
+                {{ pedido.cliente.username }}
+                {% endif %}
+            </span>
         </div>
         <div class="trab-edit-row">
             <span class="trab-edit-label">Tipo de Servicio:</span>
@@ -67,7 +78,9 @@ Gestionar Servicio {{ pedido.folio }}
         </div>
         <div class="trab-edit-row">
             <span class="trab-edit-label">Origen:</span>
-            <span class="trab-edit-value">{% if pedido.origen == 'cliente' %}Solicitado por cliente{% else %}Registrado por operador{% endif %}</span>
+            <span class="trab-edit-value">
+                {% if pedido.origen == 'cliente' %}Solicitado por cliente{% else %}Registrado por operador{% endif %}
+            </span>
         </div>
         {% if pedido.peso > 0 %}
         <div class="trab-edit-row">
@@ -94,7 +107,7 @@ Gestionar Servicio {{ pedido.folio }}
         {% if pedido.observaciones %}
         <div class="trab-edit-row">
             <span class="trab-edit-label">Observaciones:</span>
-            <span class="trab-edit-value">{{ pedido.observaciones }}</span>
+            <span class="trab-edit-value">{{ pedido.observaciones|linebreaksbr }}</span>
         </div>
         {% endif %}
 
@@ -104,19 +117,31 @@ Gestionar Servicio {{ pedido.folio }}
                 <label class="trab-incidencia-label">Actualizar Estatus del Servicio:</label>
                 <select class="input-modern" id="selectEstado">
                     <option value="">-- Sin cambio --</option>
-                    <option value="pendiente" {% if pedido.estado == 'pendiente' %}selected{% endif %}>Pendiente / Recibido</option>
-                    <option value="en_proceso" {% if pedido.estado == 'en_proceso' %}selected{% endif %}>En Proceso (Lavando/Secando)</option>
-                    <option value="listo" {% if pedido.estado == 'listo' %}selected{% endif %}>Listo para Entrega</option>
-                    <option value="entregado" {% if pedido.estado == 'entregado' %}selected{% endif %}>Entregado / Finalizado</option>
+                    <option value="pendiente" {% if pedido.estado == 'pendiente' %}selected{% endif %}>
+                        Pendiente / Recibido
+                    </option>
+                    <option value="en_proceso" {% if pedido.estado == 'en_proceso' %}selected{% endif %}>
+                        En Proceso (Lavando/Secando)
+                    </option>
+                    <option value="listo" {% if pedido.estado == 'listo' %}selected{% endif %}>
+                        Listo para Entrega
+                    </option>
+                    <option value="entregado" {% if pedido.estado == 'entregado' %}selected{% endif %}>
+                        Entregado / Finalizado
+                    </option>
                 </select>
             </div>
-            
+
             <div class="form-group" style="margin-bottom: 20px;">
                 <label class="trab-incidencia-label">Actualizar Estado de Pago:</label>
                 <select class="input-modern" id="selectPago">
                     <option value="">-- Sin cambio --</option>
-                    <option value="pendiente" {% if pedido.estado_pago == 'pendiente' %}selected{% endif %}>Pago Pendiente</option>
-                    <option value="pagado" {% if pedido.estado_pago == 'pagado' %}selected{% endif %}>Pagado</option>
+                    <option value="pendiente" {% if pedido.estado_pago == 'pendiente' %}selected{% endif %}>
+                        Pago Pendiente
+                    </option>
+                    <option value="pagado" {% if pedido.estado_pago == 'pagado' %}selected{% endif %}>
+                        Pagado
+                    </option>
                 </select>
             </div>
 
@@ -130,7 +155,7 @@ Gestionar Servicio {{ pedido.folio }}
                 <a href="{% url 'servicios_proceso' %}" class="btn-cancel"
                     style="padding: 12px 25px; text-decoration: none; display: inline-block;">Cancelar</a>
 
-                <button type="button" class="btn-submit" onclick="guardarCambios()">GUARDAR CAMBIOS</button>
+                <button type="button" class="btn-submit" onclick="prepararGuardado()">GUARDAR CAMBIOS</button>
             </div>
         </form>
 
@@ -144,42 +169,116 @@ Gestionar Servicio {{ pedido.folio }}
 
 </div>
 
+<div id="modalSeleccionMaquina" class="modal-overlay">
+    <div class="modern-card" style="max-width: 450px; padding: 25px; width: 90%;">
+        <h3 style="color: #008CC9; text-align: center; margin-bottom: 20px;">Asignar Máquina</h3>
+        <p style="text-align: center; color: #666; font-size: 14px; margin-bottom: 20px;">
+            El servicio pasará a <strong>"En Proceso"</strong>. Selecciona dónde se lavará.
+        </p>
+
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label class="trab-incidencia-label">Máquina Disponible:</label>
+            <select class="input-modern" id="maquinaSeleccionada">
+                <option value="">-- Selecciona una --</option>
+                <optgroup label="Lavadoras">
+                    {% for m in lavadoras %}
+                    <option value="{{ m.id }}">{{ m.nombre }} (Lavadora)</option>
+                    {% empty %}
+                    <option disabled>No hay lavadoras disponibles</option>
+                    {% endfor %}
+                </optgroup>
+                <optgroup label="Secadoras">
+                    {% for m in secadoras %}
+                    <option value="{{ m.id }}">{{ m.nombre }} (Secadora)</option>
+                    {% empty %}
+                    <option disabled>No hay secadoras disponibles</option>
+                    {% endfor %}
+                </optgroup>
+            </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label class="trab-incidencia-label">Tiempo Estimado (minutos):</label>
+            <input type="number" id="tiempoCiclo" class="input-modern" value="30" min="10" max="120">
+        </div>
+
+        <div class="buttons-container" style="justify-content: center;">
+            <button type="button" class="btn-cancel" onclick="cerrarModalMaquina()">Cancelar</button>
+            <button type="button" class="btn-submit" onclick="confirmarYGuardar()">CONFIRMAR INICIO</button>
+        </div>
+    </div>
+</div>
+
 <script>
-    function guardarCambios() {
+    function prepararGuardado() {
         const estado = document.getElementById('selectEstado').value;
         const estadoPago = document.getElementById('selectPago').value;
         const notas = document.getElementById('notasAdicionales').value;
-        
+
         if (!estado && !estadoPago && !notas) {
             alert('No hay cambios para guardar.');
             return;
         }
-        
+
+        if (estado === 'en_proceso') {
+            document.getElementById('modalSeleccionMaquina').classList.add('open');
+        } else {
+            enviarDatos(estado, estadoPago, notas, null, null);
+        }
+    }
+
+    function cerrarModalMaquina() {
+        document.getElementById('modalSeleccionMaquina').classList.remove('open');
+        document.getElementById('selectEstado').value = "";
+    }
+
+    function confirmarYGuardar() {
+        const maquinaId = document.getElementById('maquinaSeleccionada').value;
+        const tiempo = document.getElementById('tiempoCiclo').value;
+
+        if (!maquinaId) {
+            alert("Por favor selecciona una máquina para iniciar el proceso.");
+            return;
+        }
+
+        const estado = document.getElementById('selectEstado').value;
+        const estadoPago = document.getElementById('selectPago').value;
+        const notas = document.getElementById('notasAdicionales').value;
+
+        enviarDatos(estado, estadoPago, notas, maquinaId, tiempo);
+        document.getElementById('modalSeleccionMaquina').classList.remove('open');
+    }
+
+    function enviarDatos(estado, estadoPago, notas, maquinaId, tiempo) {
+        const payload = {
+            estado: estado || null,
+            estado_pago: estadoPago || null,
+            notas: notas,
+            maquina_id: maquinaId || null,
+            tiempo_asignado: tiempo || 30
+        };
+
         fetch('{% url "detalle_servicio" pedido.id %}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': '{{ csrf_token }}'
             },
-            body: JSON.stringify({
-                estado: estado || null,
-                estado_pago: estadoPago || null,
-                notas: notas
+            body: JSON.stringify(payload)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    window.location.href = "{% url 'servicios_proceso' %}";
+                } else {
+                    alert('Error: ' + data.message);
+                }
             })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('ESTATUS ACTUALIZADO CORRECTAMENTE.\nEl cliente podra ver el cambio en su panel.');
-                window.location.href = "{% url 'servicios_proceso' %}";
-            } else {
-                alert('Error: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error al guardar los cambios');
-        });
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al guardar los cambios');
+            });
     }
 </script>
 

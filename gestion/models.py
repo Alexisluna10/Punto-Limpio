@@ -144,20 +144,20 @@ class Pedido(models.Model):
         ('entregado', 'Entregado'),
         ('cancelado', 'Cancelado'),
     )
-    
+
     ESTADOS_PAGO = (
         ('pendiente', 'Pendiente'),
         ('pagado', 'Pagado'),
     )
-    
+
     ORIGENES = (
         ('cliente', 'Solicitado por cliente'),
         ('operador', 'Registrado por operador'),
     )
-    
+
     # Generar folio automatico
     folio = models.CharField(max_length=20, unique=True, blank=True)
-    
+
     # Relaciones
     cliente = models.ForeignKey(
         Usuario, on_delete=models.CASCADE, related_name='pedidos',
@@ -171,63 +171,69 @@ class Pedido(models.Model):
         related_name='pedidos_registrados',
         limit_choices_to={'rol__in': ['operador', 'admin']}
     )
-    
+
     # Detalles del servicio
     tipo_servicio = models.CharField(max_length=50)
     peso = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     cantidad_prendas = models.IntegerField(default=0)
     observaciones = models.TextField(blank=True, null=True)
-    
+
     # Cobijas/Edredones
     cobija_tipo = models.CharField(max_length=50, blank=True, null=True)
     lavado_especial = models.BooleanField(default=False)
-    
+
     # Precios
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     metodo_pago = models.CharField(max_length=20, default='efectivo')
-    
+
     # Estados
-    estado = models.CharField(max_length=20, choices=ESTADOS_PEDIDO, default='pendiente')
-    estado_pago = models.CharField(max_length=20, choices=ESTADOS_PAGO, default='pendiente')
-    origen = models.CharField(max_length=20, choices=ORIGENES, default='cliente')
-    
+    estado = models.CharField(
+        max_length=20, choices=ESTADOS_PEDIDO, default='pendiente')
+    estado_pago = models.CharField(
+        max_length=20, choices=ESTADOS_PAGO, default='pendiente')
+    origen = models.CharField(
+        max_length=20, choices=ORIGENES, default='cliente')
+
     # Fechas
     fecha_recepcion = models.DateTimeField(default=timezone.now)
     fecha_entrega_estimada = models.DateField(blank=True, null=True)
     fecha_entrega_real = models.DateTimeField(blank=True, null=True)
-    
+
     class Meta:
         ordering = ['-fecha_recepcion']
         verbose_name = 'Pedido'
         verbose_name_plural = 'Pedidos'
-    
+
     def save(self, *args, **kwargs):
         if not self.folio:
             import random
             import string
             # Generar folio unico: CK-YYYY-XXXX
             year = timezone.now().year
-            random_part = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+            random_part = ''.join(random.choices(
+                string.ascii_uppercase + string.digits, k=4))
             self.folio = f"CK-{year}-{random_part}"
         super().save(*args, **kwargs)
-    
+
     def __str__(self):
         return f"{self.folio} - {self.cliente.username} - {self.tipo_servicio}"
 
 
 class DetallePedido(models.Model):
     """Detalles de las prendas incluidas en un pedido"""
-    pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='detalles')
+    pedido = models.ForeignKey(
+        Pedido, on_delete=models.CASCADE, related_name='detalles')
     prenda = models.ForeignKey(Prenda, on_delete=models.SET_NULL, null=True)
     cantidad = models.IntegerField(default=1)
     peso = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    precio_unitario = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0)
     subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    
+
     def save(self, *args, **kwargs):
         self.subtotal = self.precio_unitario * self.cantidad
         super().save(*args, **kwargs)
-    
+
     def __str__(self):
         return f"{self.pedido.folio} - {self.prenda.nombre if self.prenda else 'Sin prenda'}"
 
@@ -242,7 +248,7 @@ class MovimientoOperador(models.Model):
         ('actualizo', 'Actualizo'),
         ('registro_servicio', 'Registro servicio'),
     )
-    
+
     operador = models.ForeignKey(
         Usuario, on_delete=models.CASCADE, related_name='movimientos',
         limit_choices_to={'rol__in': ['operador', 'admin']}
@@ -254,16 +260,18 @@ class MovimientoOperador(models.Model):
         related_name='movimientos'
     )
     fecha = models.DateTimeField(default=timezone.now)
-    
+
     class Meta:
         ordering = ['-fecha']
         verbose_name = 'Movimiento de Operador'
         verbose_name_plural = 'Movimientos de Operadores'
-    
+
     def __str__(self):
         return f"{self.operador.username} - {self.accion} - {self.fecha.strftime('%d/%m/%Y %H:%M')}"
 
 # Modelo para las máquinas  vista/TRABAJADOR
+
+
 class Maquina(models.Model):
     TIPOS = (
         ('lavadora', 'Lavadora'),
@@ -283,9 +291,28 @@ class Maquina(models.Model):
 
     descripcion_falla = models.TextField(blank=True, null=True)
 
+    pedido_actual = models.ForeignKey(
+        'Pedido', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='maquina_asignada'
+    )
+    hora_inicio_uso = models.DateTimeField(null=True, blank=True)
+    tiempo_asignado = models.IntegerField(
+        default=0, help_text="Tiempo en minutos")
+
+    def tiempo_restante(self):
+        """Calcula los minutos restantes basado en la hora de inicio y el tiempo asignado"""
+        if not self.hora_inicio_uso or self.estado != 'ocupado':
+            return 0
+        ahora = timezone.now()
+        tiempo_transcurrido = (
+            ahora - self.hora_inicio_uso).total_seconds() / 60
+        restante = self.tiempo_asignado - tiempo_transcurrido
+        return max(0, int(restante))
+
     def __str__(self):
         return f"{self.nombre} ({self.get_estado_display()})"
-    
+
+
 class Incidencia(models.Model):
     PRIORIDADES = (
         ('baja', 'Baja'),
@@ -293,7 +320,7 @@ class Incidencia(models.Model):
         ('alta', 'Alta'),
         ('urgente', 'Urgente'),
     )
-    
+
     ESTADOS = (
         ('pendiente', 'Pendiente'),
         ('en_proceso', 'En Proceso'),
@@ -302,7 +329,8 @@ class Incidencia(models.Model):
 
     trabajador = models.ForeignKey(
         Usuario, on_delete=models.CASCADE, related_name='incidencias')
-    asunto = models.CharField(max_length=200, verbose_name="Asunto del Problema")
+    asunto = models.CharField(
+        max_length=200, verbose_name="Asunto del Problema")
     descripcion = models.TextField(verbose_name="Descripción Detallada")
     prioridad = models.CharField(
         max_length=20, choices=PRIORIDADES, default='media')
@@ -321,3 +349,67 @@ class Incidencia(models.Model):
 
     def __str__(self):
         return f"{self.asunto} - {self.trabajador.username} - {self.get_prioridad_display()}"
+
+
+class MovimientoInsumo(models.Model):
+    """Registro de movimientos de insumos (entradas/compras y salidas/uso)"""
+    TIPOS = (
+        ('entrada', 'Entrada/Compra'),
+        ('salida', 'Salida/Uso'),
+    )
+
+    insumo = models.ForeignKey(
+        Insumo, on_delete=models.CASCADE, related_name='movimientos')
+    tipo = models.CharField(max_length=10, choices=TIPOS)
+    cantidad = models.DecimalField(max_digits=10, decimal_places=2)
+    costo_unitario = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0)
+    costo_total = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0)
+    observaciones = models.TextField(blank=True, null=True)
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    fecha = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-fecha']
+        verbose_name = 'Movimiento de Insumo'
+        verbose_name_plural = 'Movimientos de Insumos'
+
+    def save(self, *args, **kwargs):
+        self.costo_total = self.cantidad * self.costo_unitario
+        super().save(*args, **kwargs)
+
+    def _str_(self):
+        return f"{self.get_tipo_display()} - {self.insumo.nombre} - {self.cantidad}"
+
+
+class GastoOperativo(models.Model):
+    """Registro de gastos operativos del negocio"""
+    CATEGORIA_CHOICES = (
+        ('luz', 'Luz'),
+        ('agua', 'Agua'),
+        ('gas', 'Gas'),
+        ('renta', 'Renta'),
+        ('nomina', 'Nomina'),
+        ('mantenimiento', 'Mantenimiento'),
+        ('publicidad', 'Publicidad'),
+        ('otros', 'Otros'),
+    )
+
+    categoria = models.CharField(max_length=20, choices=CATEGORIA_CHOICES)
+    descripcion = models.CharField(max_length=255)
+    monto = models.DecimalField(max_digits=10, decimal_places=2)
+    fecha = models.DateField(default=timezone.now)
+    comprobante = models.FileField(upload_to='gastos/', blank=True, null=True)
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    fecha_registro = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-fecha']
+        verbose_name = 'Gasto Operativo'
+        verbose_name_plural = 'Gastos Operativos'
+
+    def _str_(self):
+        return f"{self.get_categoria_display()} - ${self.monto} - {self.fecha}"

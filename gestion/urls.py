@@ -103,4 +103,8 @@ urlpatterns = [
          views.editar_insumo, name='editar_insumo'),
     path('panel-admin/inventarios/eliminar/<int:id>/',
          views.eliminar_insumo, name='eliminar_insumo'),
+
+    path('api/asignar-maquina/', views.asignar_maquina, name='asignar_maquina'),
+    path('ticket/imprimir/<int:pedido_id>/',
+         views.imprimir_ticket, name='imprimir_ticket'),
 ]

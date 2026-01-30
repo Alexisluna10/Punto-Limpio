@@ -2067,3 +2067,315 @@
     opacity: 0.6;
     background-color: #f8f9fa;
 }
+
+
+/* ============================================
+   PÁGINA DE CONFIGURACIÓN - ESTILOS
+   ============================================ */
+
+.configuracion-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 30px;
+}
+
+/* Header */
+.config-header {
+    margin-bottom: 30px;
+}
+
+.config-title {
+    font-size: 28px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.config-subtitle {
+    color: #666;
+    font-size: 14px;
+}
+
+/* Grid de 2 columnas */
+.config-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+    margin-bottom: 25px;
+}
+
+/* Cards */
+.config-card {
+    background: white;
+    border-radius: 8px;
+    padding: 25px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.config-full-width {
+    margin-bottom: 25px;
+}
+
+.config-card-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.config-icon {
+    font-size: 24px;
+}
+
+/* Formularios */
+.config-form-group {
+    margin-bottom: 15px;
+}
+
+.config-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.config-label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 5px;
+    color: #555;
+}
+
+.config-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.config-input:focus {
+    outline: none;
+    border-color: #008CC9;
+    box-shadow: 0 0 0 3px rgba(0, 140, 201, 0.1);
+}
+
+/* Botones */
+.config-btn {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.config-btn-primary {
+    width: 100%;
+    padding: 12px;
+    background: #008CC9;
+    color: white;
+}
+
+.config-btn-primary:hover {
+    background: #006fa1;
+}
+
+.config-btn-success {
+    margin-top: 20px;
+    padding: 12px 30px;
+    background: #28a745;
+    color: white;
+}
+
+.config-btn-success:hover {
+    background: #218838;
+}
+
+/* Estadísticas */
+.config-stats-grid {
+    display: grid;
+    gap: 15px;
+}
+
+.config-stat-card {
+    padding: 15px;
+    border-radius: 6px;
+    border-left: 4px solid;
+}
+
+.config-stat-blue {
+    background: #f8f9fa;
+    border-left-color: #008CC9;
+}
+
+.config-stat-yellow {
+    background: #fff3cd;
+    border-left-color: #ffc107;
+}
+
+.config-stat-red {
+    background: #f8d7da;
+    border-left-color: #dc3545;
+}
+
+.config-stat-cyan {
+    background: #d1ecf1;
+    border-left-color: #17a2b8;
+}
+
+.config-stat-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.config-stat-label {
+    color: #666;
+    font-size: 14px;
+}
+
+.config-stat-value {
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+}
+
+.config-stat-detail {
+    font-size: 12px;
+    color: #888;
+    margin-top: 5px;
+}
+
+/* Notificaciones */
+.config-notif-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.config-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.config-checkbox-label:hover {
+    background: #e9ecef;
+}
+
+.config-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.config-checkbox-label span {
+    font-size: 14px;
+}
+
+/* Acciones Rápidas */
+.config-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.config-action-btn {
+    padding: 15px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+    color: white;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    justify-content: center;
+}
+
+.config-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.config-action-icon {
+    font-size: 20px;
+}
+
+.config-action-cyan {
+    background: #17a2b8;
+}
+
+.config-action-cyan:hover {
+    background: #138496;
+}
+
+.config-action-purple {
+    background: #6f42c1;
+}
+
+.config-action-purple:hover {
+    background: #5a32a3;
+}
+
+.config-action-orange {
+    background: #fd7e14;
+}
+
+.config-action-orange:hover {
+    background: #e56b0d;
+}
+
+.config-action-gray {
+    background: #6c757d;
+}
+
+.config-action-gray:hover {
+    background: #5a6268;
+}
+
+.config-action-green {
+    background: #28a745;
+}
+
+.config-action-green:hover {
+    background: #218838;
+}
+
+.config-action-blue {
+    background: #007bff;
+}
+
+.config-action-blue:hover {
+    background: #0056b3;
+}
+
+/* Responsive */
+@media (max-width: 968px) {
+    .config-grid-2 {
+        grid-template-columns: 1fr;
+    }
+
+    .config-form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .config-notif-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .config-actions-grid {
+        grid-template-columns: 1fr;
+    }
+}
