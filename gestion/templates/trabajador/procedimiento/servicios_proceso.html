@@ -8,14 +8,21 @@ Servicios en Proceso
 
 <div class="main-content">
 
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="color: #555; margin: 0;">Cola de Trabajo Actual ({{ pedidos.count }})</h3>
+        
+        <a href="{% url 'historial_servicios' %}" class="btn-base" 
+           style="background-color: #E0F7FA; color: #006064; border: 1px solid #B2EBF2; padding: 10px 20px; border-radius: 8px; text-decoration: none; display: flex; align-items: center; gap: 8px; font-weight: bold;">
+           <span>📂</span> Ver Historial / Entregados
+        </a>
+    </div>
+
     <form method="GET" class="trab-serv-buscador-container">
         <input type="text" name="buscar" class="trab-serv-input-busqueda" 
                placeholder="Buscar por Folio o Nombre de Cliente..." 
-               value="{{ busqueda }}">
+               value="{{ busqueda|default:'' }}">
         <button type="submit" class="trab-serv-btn-buscar">BUSCAR</button>
     </form>
-
-    <h3 style="color: #555; margin-bottom: 20px;">Cola de Trabajo Actual ({{ pedidos.count }} servicios)</h3>
 
     <div class="trab-serv-grid">
         {% for pedido in pedidos %}
@@ -25,7 +32,13 @@ Servicios en Proceso
                 <span class="trab-serv-tipo">{{ pedido.tipo_servicio }}</span>
             </div>
             <div class="trab-serv-info">
-                <p><strong>Cliente:</strong> {{ pedido.cliente.first_name }} {{ pedido.cliente.last_name }}{% if not pedido.cliente.first_name %}{{ pedido.cliente.username }}{% endif %}</p>
+                <p><strong>Cliente:</strong> 
+                    {% if pedido.cliente.first_name %}
+                        {{ pedido.cliente.first_name }} {{ pedido.cliente.last_name }}
+                    {% else %}
+                        {{ pedido.cliente.username }}
+                    {% endif %}
+                </p>
                 {% if pedido.peso > 0 %}
                 <p><strong>Peso:</strong> {{ pedido.peso }} Kg</p>
                 {% endif %}
@@ -39,29 +52,29 @@ Servicios en Proceso
             </div>
             
             {% if pedido.estado == 'pendiente' %}
-            <span class="trab-estatus-badge estatus-lavando">PENDIENTE</span>
+                <span class="trab-estatus-badge estatus-lavando">PENDIENTE</span>
             {% elif pedido.estado == 'en_proceso' %}
-            <span class="trab-estatus-badge estatus-secando">EN PROCESO</span>
+                <span class="trab-estatus-badge estatus-secando">EN PROCESO</span>
             {% elif pedido.estado == 'listo' %}
-            <span class="trab-estatus-badge estatus-listo">LISTO PARA ENTREGA</span>
+                <span class="trab-estatus-badge estatus-listo">LISTO PARA ENTREGA</span>
             {% endif %}
             
-            <!-- Estado de pago -->
             <div style="margin-top: 8px;">
                 {% if pedido.estado_pago == 'pendiente' %}
-                <span style="background: #FFC107; color: #333; padding: 4px 10px; border-radius: 4px; font-size: 12px;">PAGO PENDIENTE</span>
+                <span style="background: #FFC107; color: #333; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold;">PAGO PENDIENTE</span>
                 {% else %}
-                <span style="background: #4CAF50; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px;">PAGADO</span>
+                <span style="background: #4CAF50; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold;">PAGADO</span>
                 {% endif %}
             </div>
             
             <a href="{% url 'detalle_servicio' pedido.id %}" class="trab-serv-btn-gestionar">
-                {% if pedido.estado == 'listo' %}FINALIZAR{% else %}GESTIONAR / EDITAR{% endif %}
+                {% if pedido.estado == 'listo' %}VER DETALLE{% else %}GESTIONAR / EDITAR{% endif %}
             </a>
         </div>
         {% empty %}
-        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #666;">
-            <p>No hay servicios en proceso actualmente.</p>
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #666; background: #f9f9f9; border-radius: 12px;">
+            <p style="font-size: 18px; margin-bottom: 10px;">✅ No hay servicios pendientes.</p>
+            <p style="font-size: 14px;">Todo el trabajo está al día. Revisa el historial para ver entregas pasadas.</p>
         </div>
         {% endfor %}
     </div>

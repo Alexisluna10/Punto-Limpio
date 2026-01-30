@@ -1,76 +1,201 @@
 {% extends 'base_trabajador.html' %}
+{% load static %}
 
-{% block title_page %}
-Validar ticket
-{% endblock %}
+{% block title_page %}Validar Ticket{% endblock %}
 
 {% block trabajador_content %}
+<div class="validar-container">
+    <div class="validar-card">
+        <div style="font-size: 40px; margin-bottom: 10px;">🧾</div>
 
-<div class="modern-card" id="formContainer">
+        <h2 class="validar-title">Entrega de Ropa</h2>
+        <p class="validar-subtitle">Ingresa el folio para entregar</p>
 
-    <div class="form-row" style="align-items: center;">
-        <div class="form-group" style="flex: 2;">
-            <label>Buscar por folio:</label>
-            <input type="text" class="input-modern" placeholder="Ej: 00123">
+        <div class="input-group" style="margin-bottom: 0; display: flex; flex-direction: column; align-items: center; width: 100%;">
+            
+            <input type="text" id="inputFolio" class="validar-input" placeholder="CK-2026-XXXX" autocomplete="off" 
+                   style="width: 80%; text-align: center;">
+            
+            <button type="button" onclick="buscarFolio()" 
+                style="margin-top: 15px; width: 80%; padding: 12px; background: #1182C6; color: white; border:none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; box-shadow: 0 4px 6px rgba(17, 130, 198, 0.2);">
+                🔍 BUSCAR FOLIO
+            </button>
         </div>
-        <div class="form-group" style="flex: 1;">
-            <label>&nbsp;</label>
-            <button type="button" class="btn-base btn-submit" style="width: 100%;">Buscar</button>
+
+        <div id="resultadoBox" class="resultado-box">
+            <div id="mensajeEstado" class="status-tag" style="display: none;"></div>
+
+            <div class="res-row">
+                <span class="res-label">Cliente:</span>
+                <span class="res-value" id="resCliente">-</span>
+            </div>
+            <div class="res-row">
+                <span class="res-label">Servicio:</span>
+                <span class="res-value" id="resServicio">-</span>
+            </div>
+            <div class="res-row">
+                <span class="res-label">Estatus Actual:</span>
+                <span class="res-value" id="resEstatusTxt">-</span>
+            </div>
+
+            <div class="total-box">
+                <div>
+                    <span class="res-label" style="display:block;">Estado Pago:</span>
+                    <span id="resPagoStatus" style="font-weight:bold;">-</span>
+                </div>
+                <div class="total-amount" id="resTotal">$0.00</div>
+            </div>
+
+            <button id="btnAccion" class="btn-validar" disabled onclick="procesarEntrega()">
+                Esperando búsqueda...
+            </button>
         </div>
+
     </div>
-
-    <hr style="border: 1px solid #eee; margin: 30px 0;">
-
-    <div class="form-row">
-        <div class="form-group">
-            <label>Estatus del servicio:</label>
-            <input type="text" class="input-modern" readonly>
-        </div>
-    </div>
-
-    <div class="form-row">
-        <div class="form-group">
-            <label>Estatus del pago:</label>
-            <input type="text" class="input-modern" readonly>
-        </div>
-    </div>
-
-    <div class="form-row">
-        <div class="form-group">
-            <label>Nombre del cliente:</label>
-            <input type="text" class="input-modern" readonly>
-        </div>
-    </div>
-
-    <div class="form-group">
-        <label>Lista de entrega:</label>
-        <div
-            style="background: #f9f9f9; padding: 15px; border: 1px solid #e0e0e0; border-radius: 8px; min-height: 60px;">
-        </div>
-    </div>
-
-    <div style="margin-top: 40px; text-align: center;">
-        <button type="button" onclick="confirmarEntrega()" class="btn-base btn-submit"
-            style="padding: 15px 60px;">CONFIRMAR ENTREGA</button>
-    </div>
-
 </div>
 
-<div id="pantallaExito" class="modal-overlay">
-    <div class="success-icon-circle">
-        <span class="success-checkmark">✔</span>
+<div id="modalExito" class="modal-overlay">
+    <div class="modern-card" style="text-align: center; padding: 40px; max-width: 400px;">
+        <div style="font-size: 60px; color: #2e7d32; margin-bottom: 15px;">✔</div>
+        <h3 style="color: #1182C6; margin-bottom: 10px;">¡Entrega Exitosa!</h3>
+        <p style="color: #666; margin-bottom: 30px; line-height: 1.5;">
+            El servicio ha sido marcado como entregado.<br>
+            Si había adeudo, se registró como pagado.
+        </p>
+        <button onclick="reiniciarPantalla()" class="btn-validar"
+            style="width: auto; padding: 12px 40px;">ACEPTAR</button>
     </div>
-    <div class="success-title">
-        GRACIAS POR ENTREGAR<br>CORRECTAMENTE EL SERVICIO SOLICITADO
-    </div>
-    <a href="{% url 'trabajador_dashboard' %}" class="btn-base btn-submit" style="min-width: 200px;">ACEPTAR</a>
 </div>
 
 <script>
-    function confirmarEntrega() {
-        document.getElementById("formContainer").style.display = "none";
-        document.getElementById("pantallaExito").style.display = "flex";
+    let pedidoActualId = null;
+
+    // Detectar "Enter" en el input
+    document.getElementById('inputFolio').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') buscarFolio();
+    });
+
+    function buscarFolio() {
+        const folio = document.getElementById('inputFolio').value.trim();
+        if (!folio) return;
+
+        // UI Feedback
+        const btn = document.getElementById('btnAccion');
+        btn.innerText = "BUSCANDO...";
+        btn.disabled = true;
+        btn.className = "btn-validar"; // Resetear color
+
+        fetch(`/api/buscar-pedido/?folio=${folio}`)
+            .then(res => res.json())
+            .then(data => {
+                mostrarResultado(data);
+            })
+            .catch(err => {
+                alert("Error de conexión con el servidor.");
+                console.error(err);
+                btn.innerText = "ERROR DE CONEXIÓN";
+            });
+    }
+
+    function mostrarResultado(data) {
+        const box = document.getElementById('resultadoBox');
+        const msg = document.getElementById('mensajeEstado');
+        const btn = document.getElementById('btnAccion');
+
+        box.style.display = 'block';
+
+        if (!data.success) {
+            msg.style.display = 'block';
+            msg.className = 'status-tag st-error';
+            msg.innerText = data.message || "Folio no encontrado";
+
+            // Limpiar datos visuales
+            document.getElementById('resCliente').innerText = "-";
+            document.getElementById('resServicio').innerText = "-";
+            document.getElementById('resEstatusTxt').innerText = "-";
+            document.getElementById('resTotal').innerText = "$0.00";
+            document.getElementById('resPagoStatus').innerText = "-";
+
+            btn.innerText = "NO ENCONTRADO";
+            btn.disabled = true;
+            return;
+        }
+
+        // Llenar datos
+        pedidoActualId = data.pedido.id;
+        document.getElementById('resCliente').innerText = data.pedido.cliente;
+        document.getElementById('resServicio').innerText = data.pedido.servicio;
+        document.getElementById('resEstatusTxt').innerText = data.pedido.estado_display;
+        document.getElementById('resTotal').innerText = "$" + data.pedido.total;
+
+        // --- LÓGICA DE NEGOCIO ---
+
+        // 1. Validar Estado "Listo"
+        if (data.pedido.estado !== 'listo') {
+            msg.style.display = 'block';
+            msg.className = 'status-tag st-warn';
+            msg.innerText = `⚠️ El pedido está "${data.pedido.estado_display.toUpperCase()}". Solo se puede entregar cuando esté LISTO.`;
+
+            btn.disabled = true;
+            btn.className = "btn-validar"; // Azul default (deshabilitado)
+            btn.innerText = "NO SE PUEDE ENTREGAR";
+            return;
+        } else {
+            msg.style.display = 'none';
+        }
+
+        // 2. Validar Pago
+        const esPagado = data.pedido.estado_pago === 'pagado';
+        const pagoElem = document.getElementById('resPagoStatus');
+
+        if (esPagado) {
+            pagoElem.innerText = "PAGADO";
+            pagoElem.style.color = "#2e7d32";
+            btn.className = "btn-validar"; // Azul
+            btn.innerText = "CONFIRMAR ENTREGA";
+            btn.disabled = false;
+        } else {
+            pagoElem.innerText = "PENDIENTE DE PAGO";
+            pagoElem.style.color = "#d32f2f";
+            btn.className = "btn-validar btn-cobrar"; // Verde
+            btn.innerText = `COBRAR $${data.pedido.total} Y ENTREGAR`;
+            btn.disabled = false;
+        }
+    }
+
+    function procesarEntrega() {
+        if (!pedidoActualId) return;
+
+        if (!confirm("¿Confirmas la entrega de las prendas?")) return;
+
+        fetch('/api/entregar-pedido/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ pedido_id: pedidoActualId })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('modalExito').classList.add('open');
+                } else {
+                    alert("Error: " + data.message);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Error al procesar la entrega.");
+            });
+    }
+
+    function reiniciarPantalla() {
+        document.getElementById('modalExito').classList.remove('open');
+        document.getElementById('inputFolio').value = "";
+        document.getElementById('resultadoBox').style.display = 'none';
+        document.getElementById('inputFolio').focus();
+        pedidoActualId = null;
     }
 </script>
-
 {% endblock %}

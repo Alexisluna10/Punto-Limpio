@@ -2,7 +2,7 @@
    ESTILOS ESPECÍFICOS DEL MÓDULO TRABAJADOR
    ========================================================================== */
 
-/* --- 1. BOTONES DE MENÚ GRANDE (DASHBOARD) - DUPLICADO --- */
+/* --- 1. BOTONES DE MENÚ GRANDE (DASHBOARD) --- */
 .menu-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -530,7 +530,10 @@
     font-weight: bold;
 }
 
-/* --- 5. ESTATUS DE MÁQUINAS (Centrado) --- */
+/* ==========================================================================
+   5. ESTATUS DE MÁQUINAS (DISEÑO DINÁMICO & PALETA OFICIAL)
+   ========================================================================== */
+
 .trab-estatus-header {
     display: flex;
     justify-content: space-between;
@@ -545,6 +548,7 @@
     margin: 0;
 }
 
+/* Botón Agregar: Usa el Azul Corporativo #008CC9 */
 .trab-estatus-btn-agregar {
     background-color: #008CC9;
     color: white;
@@ -556,11 +560,15 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    transition: background 0.3s;
+    transition: background 0.3s, transform 0.2s;
+    text-transform: uppercase;
+    font-size: 14px;
 }
 
 .trab-estatus-btn-agregar:hover {
     background-color: #0077aa;
+    /* Tono más oscuro para hover */
+    transform: translateY(-2px);
 }
 
 .trab-section-title {
@@ -573,189 +581,279 @@
     letter-spacing: 1px;
 }
 
+/* Grid Layout */
 .trab-estatus-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 30px;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 25px;
+    margin-top: 20px;
 }
 
-.trab-estatus-card {
-    background-color: white;
+/* --- TARJETA DE MÁQUINA --- */
+.card-maquina {
+    background: white;
     border-radius: 12px;
-    padding: 20px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-    position: relative;
     overflow: hidden;
-    transition: transform 0.2s;
-    border: 2px solid transparent;
-    text-align: center;
+    transition: transform 0.3s, box-shadow 0.3s;
+    border: 1px solid #f0f0f0;
+    position: relative;
     display: flex;
     flex-direction: column;
-    align-items: center;
 }
 
-.trab-estatus-card:hover {
+.card-maquina:hover {
     transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 }
 
-.trab-estatus-top {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-    margin-bottom: 15px;
-    margin-top: 15px;
-    position: relative;
+/* Bordes Superiores por Estado (Colores de la Paleta) */
+.estado-disponible {
+    border-top: 6px solid #4CAF50;
 }
 
-.trab-estatus-icono {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
+/* Verde */
+.estado-ocupado {
+    border-top: 6px solid #E53935;
+}
+
+/* Rojo */
+.estado-mantenimiento {
+    border-top: 6px solid #9E9E9E;
+}
+
+/* Gris */
+
+/* Header de la tarjeta */
+.card-header-maquina {
+    padding: 15px 20px;
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
-    font-size: 28px;
+    border-bottom: 1px solid #f9f9f9;
+    background-color: #fff;
 }
 
-.trab-estatus-config {
-    color: #bbb;
-    cursor: pointer;
-    font-size: 20px;
-    padding: 5px;
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    transition: color 0.2s;
-}
-
-.trab-estatus-config:hover {
-    color: #008CC9;
-}
-
-.trab-estatus-nombre {
-    font-size: 18px;
-    font-weight: bold;
+.maquina-nombre {
+    font-weight: 800;
+    font-size: 1.1em;
     color: #333;
-    margin: 0 0 8px 0;
+    letter-spacing: 0.5px;
 }
 
-.maquina-disponible {
-    border-color: #4CAF50;
+.btn-opciones {
+    background: none;
+    border: none;
+    font-size: 1.4em;
+    cursor: pointer;
+    color: #999;
+    transition: color 0.2s;
+    padding: 0 5px;
 }
 
-.maquina-disponible .trab-estatus-icono {
-    color: #4CAF50;
-    background: #E8F5E9;
+.btn-opciones:hover {
+    color: #008CC9;
+    /* Azul al pasar el mouse */
 }
 
-.maquina-disponible .trab-estatus-badge {
-    background: #4CAF50;
-}
-
-.maquina-ocupada {
-    border-color: #E53935;
-}
-
-.maquina-ocupada .trab-estatus-icono {
-    color: #E53935;
-    background: #FFEBEE;
-}
-
-.maquina-ocupada .trab-estatus-badge {
-    background: #E53935;
-    animation: latido 2s infinite;
-}
-
-.maquina-mantenimiento {
-    border-color: #9E9E9E;
-    opacity: 0.8;
-    background-color: #f5f5f5;
-}
-
-.maquina-mantenimiento .trab-estatus-icono {
-    color: #757575;
-    background: #E0E0E0;
-}
-
-.maquina-mantenimiento .trab-estatus-badge {
-    background: #757575;
-}
-
-.trab-estatus-timer {
-    margin-top: 15px;
+/* Cuerpo de la tarjeta */
+.card-body-maquina {
+    padding: 25px 20px;
     text-align: center;
-}
-
-.trab-timer-barra {
-    height: 6px;
-    background: #eee;
-    border-radius: 3px;
-    overflow: hidden;
-    margin-top: 5px;
-}
-
-.trab-timer-progreso {
-    height: 100%;
-    background: #E53935;
-    width: 0%;
-    transition: width 1s linear;
-}
-
-.trab-timer-texto {
-    font-size: 13px;
-    font-weight: bold;
-    color: #E53935;
-}
-
-.trab-card-folio {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    background-color: #f0f0f0;
-    color: #555;
-    font-size: 11px;
-    font-weight: bold;
-    padding: 2px 8px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-}
-
-.maquina-ocupada .trab-card-folio {
-    background-color: #ffebee;
-    color: #c62828;
-    border-color: #ef9a9a;
-}
-
-.trab-card-usuario {
-    margin-top: 15px;
-    padding-top: 10px;
-    border-top: 1px dashed #eee;
-    width: 100%;
-    font-size: 13px;
-    color: #666;
+    min-height: 140px;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 1;
 }
 
-.trab-card-usuario strong {
+/* --- ESTADOS --- */
+
+/* 1. Ocupado */
+.info-ocupado {
+    width: 100%;
+}
+
+.cliente-nombre {
+    font-weight: 600;
+    margin: 0;
+    color: #333;
+    font-size: 15px;
+}
+
+.folio-badge {
+    background: #E3F2FD;
+    /* Fondo azul muy claro */
     color: #008CC9;
-    font-size: 14px;
+    /* Texto azul corporativo */
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: bold;
+    margin: 8px 0;
+    display: inline-block;
+    border: 1px solid #B3E5FC;
 }
 
-@keyframes latido {
-    0% {
-        transform: scale(1);
+.timer-container {
+    margin-top: 15px;
+    font-size: 1.6em;
+    font-weight: 800;
+    color: #E53935;
+    /* Rojo para el tiempo */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #FFEBEE;
+    /* Fondo rojo muy claro */
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.icono-reloj {
+    font-size: 0.8em;
+}
+
+/* 2. Disponible */
+.info-disponible .icono-check {
+    font-size: 3em;
+    display: block;
+    margin-bottom: 10px;
+    color: #4CAF50;
+}
+
+.info-disponible p {
+    color: #4CAF50;
+    font-weight: bold;
+    font-size: 1.1em;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+/* 3. Mantenimiento */
+.info-mantenimiento .icono-alerta {
+    font-size: 3em;
+    display: block;
+    margin-bottom: 10px;
+    color: #9E9E9E;
+}
+
+.info-mantenimiento p {
+    color: #757575;
+    font-weight: bold;
+    margin: 0;
+}
+
+/* Footer / Botones acción */
+.card-footer-maquina {
+    padding: 15px;
+    background: #fafafa;
+    text-align: center;
+    border-top: 1px solid #f0f0f0;
+}
+
+.btn-liberar {
+    background: white;
+    border: 2px solid #E53935;
+    color: #E53935;
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: bold;
+    transition: all 0.2s;
+    width: 100%;
+    text-transform: uppercase;
+}
+
+.btn-liberar:hover {
+    background: #E53935;
+    color: white;
+    box-shadow: 0 4px 10px rgba(229, 57, 53, 0.2);
+}
+
+/* --- MODALES --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    /* Fondo un poco más oscuro */
+    z-index: 2000;
+    /* Z-index alto para asegurar que tape todo */
+    justify-content: center;
+    align-items: center;
+    display: none;
+    backdrop-filter: blur(2px);
+    /* Efecto borroso sutil de fondo */
+}
+
+.modal-overlay.open {
+    display: flex !important;
+}
+
+.modern-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    border: 1px solid #eee;
+    animation: fadeInModal 0.3s ease-out;
+}
+
+@keyframes fadeInModal {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
     }
 
-    50% {
-        transform: scale(1.05);
-    }
-
-    100% {
-        transform: scale(1);
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }
+
+/* Botones en Modales */
+.btn-base {
+    transition: all 0.2s;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+}
+
+.btn-base:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
+}
+
+.btn-cancel {
+    background: #f5f5f5;
+    color: #666;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.btn-cancel:hover {
+    background: #e0e0e0;
+}
+
+.btn-submit {
+    /* Aseguramos que el botón de registrar use la paleta */
+    background: #008CC9 !important;
+}
+
+.btn-submit:hover {
+    background: #0077aa !important;
+}
+
+
+/* ==========================================================================
+   6. UTILIDADES GENERALES & OTROS MÓDULOS (INCIDENCIAS / COMPARTIDO)
+   ========================================================================== */
 
 .msg-trabajador {
     background: #E8F5E9;
@@ -797,11 +895,19 @@
     color: #666;
 }
 
-.trab-barra-relleno {
-    height: 100%;
-    border-radius: 3px;
-    transition: width 0.5s ease;
-    width: var(--ancho);
+/* Animación de latido (usada antes, se puede reusar si se necesita) */
+@keyframes latido {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+
+    100% {
+        transform: scale(1);
+    }
 }
 
 .empty-state-trab {
@@ -813,8 +919,7 @@
     border-radius: 12px;
 }
 
-
-
+/* Badges Generales */
 .badge-pendiente {
     background-color: #ffc107;
     color: #000;
@@ -850,18 +955,14 @@
     color: #fff;
 }
 
-.modal-overlay.open {
-    display: flex !important;
-}
-
-/* Responsive */
+/* Responsive General */
 @media (max-width: 968px) {
     .dudas-quejas-container {
         flex-direction: column !important;
     }
 }
 
-/* Layout de dos columnas */
+/* Layout de dos columnas (Incidencias) */
 .trab-incidencias-layout {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -871,20 +972,20 @@
     padding: 20px;
 }
 
-/* Contenedor del formulario */
+/* Contenedor del formulario Incidencias */
 .trab-incidencia-form-container {
     background: white;
     border-radius: 12px;
     padding: 30px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Contenedor del historial */
+/* Contenedor del historial Incidencias */
 .trab-incidencias-historial-container {
     background: white;
     border-radius: 12px;
     padding: 30px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     max-height: calc(100vh - 180px);
     overflow-y: auto;
 }
@@ -923,7 +1024,7 @@
 }
 
 .incidencia-card:hover {
-    box-shadow: 0 4px 12px rgba(0,140,201,0.2);
+    box-shadow: 0 4px 12px rgba(0, 140, 201, 0.2);
     transform: translateY(-2px);
 }
 
@@ -956,7 +1057,7 @@
     text-transform: uppercase;
 }
 
-/* Prioridades */
+/* Prioridades (Redefinición para asegurar especificidad en incidencias) */
 .prioridad-baja {
     background: #d4edda;
     color: #155724;
@@ -977,7 +1078,7 @@
     color: white;
 }
 
-/* Estados */
+/* Estados Incidencias */
 .estado-pendiente {
     background: #fff3cd;
     color: #856404;
@@ -1098,13 +1199,332 @@
     line-height: 1.6;
 }
 
-/* Responsive */
+/* Responsive Incidencias */
 @media (max-width: 1024px) {
     .trab-incidencias-layout {
         grid-template-columns: 1fr;
     }
-    
+
     .trab-incidencias-historial-container {
         max-height: none;
     }
+}
+
+/* ==========================================================================
+   7. ESTILOS PANTALLA VALIDAR TICKET (Estilo Auth)
+   ========================================================================== */
+
+.validar-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 70vh;
+    /* Ajustado para que no se pegue al footer */
+    padding: 20px;
+}
+
+.validar-card {
+    background-color: white;
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(17, 130, 198, 0.15);
+    width: 100%;
+    max-width: 500px;
+    text-align: center;
+    position: relative;
+    border-top: 5px solid #6BC0B1;
+    /* Turquesa */
+}
+
+.validar-title {
+    font-family: sans-serif;
+    /* Usamos la fuente del sistema para evitar errores si no cargó Poppins */
+    color: #1182C6;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.validar-subtitle {
+    color: #295D64;
+    font-size: 14px;
+    margin-bottom: 30px;
+}
+
+/* Inputs */
+.validar-input {
+    width: 100%;
+    height: 50px;
+    padding: 10px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 18px;
+    color: #333;
+    background-color: #fafafa;
+    transition: all 0.3s;
+    text-align: center;
+    letter-spacing: 2px;
+    font-weight: bold;
+}
+
+.validar-input:focus {
+    outline: none;
+    border-color: #6BC0B1;
+    background-color: white;
+    box-shadow: 0 0 8px rgba(107, 192, 177, 0.2);
+}
+
+/* Caja de Resultados */
+.resultado-box {
+    margin-top: 30px;
+    padding: 20px;
+    border-radius: 12px;
+    background: #f8f9fa;
+    border: 1px solid #eee;
+    display: none;
+    text-align: left;
+    animation: slideDown 0.3s ease-out;
+}
+
+.res-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: #555;
+}
+
+.res-label {
+    font-weight: 600;
+    color: #295D64;
+}
+
+.res-value {
+    font-weight: 500;
+}
+
+.total-box {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 2px dashed #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.total-amount {
+    font-size: 24px;
+    font-weight: 800;
+    color: #1182C6;
+}
+
+/* Etiquetas de Estado */
+.status-tag {
+    display: block;
+    text-align: center;
+    padding: 8px;
+    border-radius: 6px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    font-size: 13px;
+}
+
+.st-error {
+    background: #ffebee;
+    color: #d32f2f;
+    border: 1px solid #ffcdd2;
+}
+
+.st-warn {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+.st-success {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+}
+
+/* Botones */
+.btn-validar {
+    width: 100%;
+    padding: 15px;
+    background-color: #1182C6;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: background 0.3s;
+    box-shadow: 0 4px 15px rgba(17, 130, 198, 0.3);
+    text-transform: uppercase;
+}
+
+.btn-validar:hover {
+    background-color: #0d6ba1;
+    transform: translateY(-2px);
+}
+
+.btn-validar:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+.btn-cobrar {
+    background-color: #2e7d32;
+    /* Verde */
+    box-shadow: 0 4px 15px rgba(46, 125, 50, 0.3);
+}
+
+.btn-cobrar:hover {
+    background-color: #1b5e20;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* ==========================================================================
+   8. DASHBOARD (MENÚ PRINCIPAL) ESTILO AUTH-CARD
+   ========================================================================== */
+
+.trab-dash-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    text-align: center;
+    min-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.trab-dash-header {
+    margin-bottom: 50px;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.trab-dash-title {
+    font-family: 'Poppins', sans-serif;
+    color: #1182C6; /* Azul Fuerte */
+    font-size: 36px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.trab-dash-subtitle {
+    color: #295D64; /* Azul Oscuro */
+    font-size: 18px;
+    opacity: 0.8;
+}
+
+/* GRID DE TARJETAS */
+.trab-dash-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
+    margin-bottom: 50px;
+}
+
+/* ESTILO DE LA TARJETA (Hereda la estética del Login) */
+.trab-dash-card {
+    background-color: white;
+    padding: 35px 20px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(17, 130, 198, 0.1); /* Sombra suave azulada */
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    border: 1px solid transparent;
+    animation: slideUp 0.5s ease-out;
+}
+
+/* Efecto Hover: Se levanta y brilla */
+.trab-dash-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 35px rgba(17, 130, 198, 0.2);
+    border-color: #e0f7fa;
+}
+
+/* ICONOS DENTRO DE LA TARJETA */
+.dash-card-icon {
+    font-size: 45px;
+    margin-bottom: 20px;
+    transition: transform 0.3s;
+}
+
+.trab-dash-card:hover .dash-card-icon {
+    transform: scale(1.1);
+}
+
+.dash-card-text {
+    font-family: 'Poppins', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: #333;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* VARIANTES DE COLOR (Borde superior) */
+
+/* 1. Acciones Principales (Azul Fuerte #1182C6) */
+.card-primary {
+    border-top: 6px solid #1182C6;
+}
+.card-primary .dash-card-icon { color: #1182C6; }
+
+/* 2. Acciones Operativas (Turquesa #6BC0B1) */
+.card-action {
+    border-top: 6px solid #6BC0B1;
+}
+.card-action .dash-card-icon { color: #6BC0B1; }
+
+/* 3. Acciones Administrativas/Alerta (Azul Oscuro #295D64) */
+.card-info {
+    border-top: 6px solid #295D64;
+}
+.card-info .dash-card-icon { color: #295D64; }
+
+
+/* BOTÓN CERRAR SESIÓN (Estilo sutil) */
+.btn-logout-dash {
+    display: inline-block;
+    padding: 12px 30px;
+    border: 2px solid #ffebee;
+    background-color: white;
+    color: #d32f2f;
+    border-radius: 50px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: 0.3s;
+}
+
+.btn-logout-dash:hover {
+    background-color: #ffebee;
+    border-color: #ffcdd2;
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }

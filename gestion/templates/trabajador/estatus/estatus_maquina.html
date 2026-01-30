@@ -20,37 +20,136 @@ Estatus de Máquinas
     <h3 class="trab-section-title">Lavadoras</h3>
     <div class="trab-estatus-grid">
         {% for maquina in lavadoras %}
-        {% include 'trabajador/estatus/tarjeta_maquina.html' %}
+            <div class="card-maquina estado-{{ maquina.estado }}" id="maquina-{{ maquina.id }}">
+                <div class="card-header-maquina">
+                    <span class="maquina-nombre">{{ maquina.nombre }}</span>
+                    <button class="btn-opciones" onclick="abrirOpciones('{{ maquina.id }}', '{{ maquina.nombre }}')">⋮</button>
+                </div>
+                
+                <div class="card-body-maquina">
+                    {% if maquina.estado == 'ocupado' %}
+                        <div class="info-ocupado">
+                            <p class="cliente-nombre">
+                                {% if maquina.pedido_actual.cliente.first_name %}{{ maquina.pedido_actual.cliente.first_name }} {{ maquina.pedido_actual.cliente.last_name }}{% else %}@{{ maquina.pedido_actual.cliente.username }}{% endif %}
+                            </p>
+                            
+                            {% if maquina.pedido_actual %}
+                                <span class="folio-badge">{{ maquina.pedido_actual.folio }}</span>
+                            {% endif %}
+                            
+                            <div class="timer-container" 
+                                 id="timer-box-{{ maquina.id }}"
+                                 data-inicio="{{ maquina.hora_inicio_uso|date:'c' }}" 
+                                 data-duracion="{{ maquina.tiempo_asignado }}">
+                                <span class="icono-reloj">⏱</span>
+                                <span class="tiempo-restante" id="timer-val-{{ maquina.id }}">
+                                    Calculando...
+                                </span>
+                            </div>
+                        </div>
+                    {% elif maquina.estado == 'mantenimiento' %}
+                        <div class="info-mantenimiento">
+                            <span class="icono-alerta">⚠️</span>
+                            <p>En Mantenimiento</p>
+                        </div>
+                    {% else %}
+                        <div class="info-disponible">
+                            <span class="icono-check">✅</span>
+                            <p>Disponible</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                 {% if maquina.estado == 'ocupado' %}
+                <div class="card-footer-maquina">
+                    <form method="POST" action="{% url 'estatus_maquina' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="reactivar">
+                        <input type="hidden" name="maquina_id" value="{{ maquina.id }}">
+                        <button type="submit" class="btn-liberar" id="btn-liberar-{{ maquina.id }}" disabled>
+                            En Proceso...
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
         {% empty %}
-        <p class="text-muted">No hay lavadoras registradas.</p>
+            <p class="text-muted">No hay lavadoras registradas.</p>
         {% endfor %}
     </div>
 
     <h3 class="trab-section-title" style="margin-top: 50px;">Secadoras</h3>
     <div class="trab-estatus-grid">
         {% for maquina in secadoras %}
-        {% include 'trabajador/estatus/tarjeta_maquina.html' %}
+            <div class="card-maquina estado-{{ maquina.estado }}" id="maquina-{{ maquina.id }}">
+                <div class="card-header-maquina">
+                    <span class="maquina-nombre">{{ maquina.nombre }}</span>
+                    <button class="btn-opciones" onclick="abrirOpciones('{{ maquina.id }}', '{{ maquina.nombre }}')">⋮</button>
+                </div>
+                
+                <div class="card-body-maquina">
+                    {% if maquina.estado == 'ocupado' %}
+                        <div class="info-ocupado">
+                            <p class="cliente-nombre">
+                                {% if maquina.pedido_actual.cliente.first_name %}{{ maquina.pedido_actual.cliente.first_name }}{% else %}@{{ maquina.pedido_actual.cliente.username }}{% endif %}
+                            </p>
+                            
+                            {% if maquina.pedido_actual %}
+                                <span class="folio-badge">{{ maquina.pedido_actual.folio }}</span>
+                            {% endif %}
+                            
+                            <div class="timer-container" 
+                                 id="timer-box-{{ maquina.id }}"
+                                 data-inicio="{{ maquina.hora_inicio_uso|date:'c' }}" 
+                                 data-duracion="{{ maquina.tiempo_asignado }}">
+                                <span class="icono-reloj">🔥</span>
+                                <span class="tiempo-restante" id="timer-val-{{ maquina.id }}">
+                                    Calculando...
+                                </span>
+                            </div>
+                        </div>
+                    {% elif maquina.estado == 'mantenimiento' %}
+                        <div class="info-mantenimiento">
+                            <span class="icono-alerta">⚠️</span>
+                            <p>En Mantenimiento</p>
+                        </div>
+                    {% else %}
+                        <div class="info-disponible">
+                            <span class="icono-check">✅</span>
+                            <p>Disponible</p>
+                        </div>
+                    {% endif %}
+                </div>
+                 {% if maquina.estado == 'ocupado' %}
+                <div class="card-footer-maquina">
+                     <form method="POST" action="{% url 'estatus_maquina' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="reactivar">
+                        <input type="hidden" name="maquina_id" value="{{ maquina.id }}">
+                        <button type="submit" class="btn-liberar" id="btn-liberar-{{ maquina.id }}" disabled>
+                            En Proceso...
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
         {% empty %}
-        <p class="text-muted">No hay secadoras registradas.</p>
+            <p class="text-muted">No hay secadoras registradas.</p>
         {% endfor %}
     </div>
 
 </div>
 
-<div id="modalAgregarM" class="modal-overlay" style="display: none;">
+<div id="modalAgregarM" class="modal-overlay">
     <div class="modern-card" style="max-width: 500px; padding: 30px;">
         <h3 style="color: #008CC9; text-align: center;">Registrar Nueva Máquina</h3>
-
         <form method="POST" class="trab-incidencia-form" style="margin-top: 20px;">
             {% csrf_token %}
             <input type="hidden" name="accion" value="agregar">
-
             <div class="form-group" style="margin-bottom: 15px;">
                 <label class="trab-incidencia-label">Nombre / Identificador</label>
-                <input type="text" name="nombre" class="input-modern trab-incidencia-input"
-                    placeholder="Ej: Lavadora 06" required>
+                <input type="text" name="nombre" class="input-modern trab-incidencia-input" placeholder="Ej: Lavadora 06" required>
             </div>
-
             <div class="form-group" style="margin-bottom: 20px;">
                 <label class="trab-incidencia-label">Tipo</label>
                 <select name="tipo" class="input-modern trab-incidencia-select">
@@ -58,71 +157,122 @@ Estatus de Máquinas
                     <option value="secadora">Secadora</option>
                 </select>
             </div>
-
             <div class="buttons-container" style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button type="button" class="btn-cancel" onclick="cerrarModalAgregar()"
-                    style="padding: 10px; cursor: pointer;">Cancelar</button>
-                <button type="submit" class="btn-submit"
-                    style="background: #008CC9; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">REGISTRAR</button>
+                <button type="button" class="btn-cancel" onclick="cerrarModalAgregar()" style="padding: 10px; cursor: pointer;">Cancelar</button>
+                <button type="submit" class="btn-submit" style="background: #008CC9; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">REGISTRAR</button>
             </div>
         </form>
     </div>
 </div>
 
-<div id="modalOpciones" class="modal-overlay" style="display: none;">
+<div id="modalOpciones" class="modal-overlay">
     <div class="modern-card" style="max-width: 400px; padding: 30px; text-align: center;">
         <h3 id="tituloMaquinaOpc" style="margin-bottom: 20px;">Opciones</h3>
-
         <form method="POST" id="formOpciones">
             {% csrf_token %}
             <input type="hidden" name="maquina_id" id="input_maquina_id_opc">
             <input type="hidden" name="accion" id="input_accion_opc">
-
-            <button type="button" class="btn-base"
-                style="width: 100%; margin-bottom: 10px; background: #FF9800; color: white; padding: 10px; border:none; border-radius:5px; cursor:pointer;"
-                onclick="enviarOpcion('reportar_mantenimiento')">
-                🔧 Reportar Falla / Mantenimiento
-            </button>
-
-            <button type="button" class="btn-base"
-                style="width: 100%; background: #D32F2F; color: white; padding: 10px; border:none; border-radius:5px; cursor:pointer;"
-                onclick="enviarOpcion('baja_definitiva')">
-                Dar de Baja Definitiva
-            </button>
+            <button type="button" class="btn-base" style="width: 100%; margin-bottom: 10px; background: #FF9800; color: white; padding: 10px; border:none; border-radius:5px; cursor:pointer;" onclick="enviarOpcion('reportar_mantenimiento')">🔧 Reportar Falla / Mantenimiento</button>
+            <button type="button" class="btn-base" style="width: 100%; margin-bottom: 10px; background: #4CAF50; color: white; padding: 10px; border:none; border-radius:5px; cursor:pointer;" onclick="enviarOpcion('reactivar')">✅ Reactivar (Disponible)</button>
+            <button type="button" class="btn-base" style="width: 100%; background: #D32F2F; color: white; padding: 10px; border:none; border-radius:5px; cursor:pointer;" onclick="enviarOpcion('baja_definitiva')">Dar de Baja Definitiva</button>
         </form>
-
-        <button class="btn-small"
-            style="margin-top: 20px; background: none; border: none; cursor: pointer; color: #888;"
-            onclick="cerrarModalOpciones()">Cancelar</button>
+        <button class="btn-small" style="margin-top: 20px; background: none; border: none; cursor: pointer; color: #888;" onclick="cerrarModalOpciones()">Cancelar</button>
     </div>
 </div>
 
 <script>
-    // --- MODAL AGREGAR ---
-    function abrirModalAgregar() {
-        const modal = document.getElementById('modalAgregarM');
-        modal.style.display = 'flex';
-    }
-    function cerrarModalAgregar() {
-        document.getElementById('modalAgregarM').style.display = 'none';
+    // --- LÓGICA DE CRONÓMETRO PRECISO (TIEMPO REAL) ---
+    function actualizarCronometros() {
+        const contenedores = document.querySelectorAll('.timer-container');
+        
+        contenedores.forEach(div => {
+            const fechaInicioStr = div.getAttribute('data-inicio'); // Formato ISO
+            const duracionMin = parseInt(div.getAttribute('data-duracion'));
+            const spanTiempo = div.querySelector('.tiempo-restante');
+            
+            // Buscar el botón asociado a esta máquina (buscamos por ID relativo)
+            // El ID del div es timer-box-ID, el botón es btn-liberar-ID
+            const maquinaId = div.id.split('-')[2];
+            const btnLiberar = document.getElementById('btn-liberar-' + maquinaId);
+
+            if (!fechaInicioStr || !duracionMin) return;
+
+            // Calcular tiempos
+            const fechaInicio = new Date(fechaInicioStr);
+            const fechaFin = new Date(fechaInicio.getTime() + duracionMin * 60000);
+            const ahora = new Date();
+
+            let diferenciaMs = fechaFin - ahora;
+
+            if (diferenciaMs > 0) {
+                // Aún hay tiempo
+                const minutos = Math.floor((diferenciaMs % (1000 * 60 * 60)) / (1000 * 60));
+                const segundos = Math.floor((diferenciaMs % (1000 * 60)) / 1000);
+
+                // Formato con ceros a la izquierda (ej: 09:05)
+                const minStr = minutos < 10 ? "0" + minutos : minutos;
+                const segStr = segundos < 10 ? "0" + segundos : segundos;
+
+                spanTiempo.innerText = `${minStr}:${segStr} min`;
+                spanTiempo.style.color = "#E53935"; // Rojo normal
+
+                // Asegurar que el botón esté bloqueado
+                if (btnLiberar) {
+                    btnLiberar.disabled = true;
+                    btnLiberar.innerText = "En Proceso...";
+                    btnLiberar.style.opacity = "0.5";
+                    btnLiberar.style.cursor = "not-allowed";
+                    btnLiberar.style.borderColor = "#ccc";
+                }
+
+            } else {
+                // Se acabó el tiempo
+                spanTiempo.innerText = "00:00 - FIN";
+                spanTiempo.style.color = "#D32F2F"; 
+                spanTiempo.style.fontWeight = "900";
+                
+                // Cambiar fondo del contador
+                div.style.backgroundColor = "#ffcdd2"; 
+                div.style.border = "1px solid #D32F2F";
+
+                // Habilitar botón
+                if (btnLiberar) {
+                    btnLiberar.disabled = false;
+                    btnLiberar.innerText = "TERMINAR CICLO";
+                    btnLiberar.style.opacity = "1";
+                    btnLiberar.style.cursor = "pointer";
+                    btnLiberar.style.borderColor = "#E53935";
+                    
+                    // Efecto de parpadeo suave en el botón para llamar la atención
+                    if (!btnLiberar.classList.contains('pulsing')) {
+                        btnLiberar.classList.add('pulsing');
+                    }
+                }
+            }
+        });
     }
 
-    // --- MODAL OPCIONES (DINÁMICO) ---
+    // Iniciar el intervalo al cargar (cada 1 segundo)
+    document.addEventListener('DOMContentLoaded', function() {
+        actualizarCronometros(); // Ejecutar inmediatamente
+        setInterval(actualizarCronometros, 1000); // Repetir cada segundo
+    });
+
+
+    // --- FUNCIONES DE MODALES (Sin cambios) ---
+    function abrirModalAgregar() { document.getElementById('modalAgregarM').classList.add('open'); }
+    function cerrarModalAgregar() { document.getElementById('modalAgregarM').classList.remove('open'); }
     function abrirOpciones(id, nombre) {
         document.getElementById('tituloMaquinaOpc').innerText = 'Gestionar: ' + nombre;
         document.getElementById('input_maquina_id_opc').value = id;
-        document.getElementById('modalOpciones').style.display = 'flex';
+        document.getElementById('modalOpciones').classList.add('open');
     }
-
-    function cerrarModalOpciones() {
-        document.getElementById('modalOpciones').style.display = 'none';
-    }
-
+    function cerrarModalOpciones() { document.getElementById('modalOpciones').classList.remove('open'); }
     function enviarOpcion(accion) {
         let confirmacion = false;
         if (accion === 'baja_definitiva') confirmacion = confirm("¿Estás seguro de eliminar esta máquina?");
         if (accion === 'reportar_mantenimiento') confirmacion = confirm("¿Poner en mantenimiento?");
-
+        if (accion === 'reactivar') confirmacion = true; 
         if (confirmacion) {
             document.getElementById('input_accion_opc').value = accion;
             document.getElementById('formOpciones').submit();
@@ -131,22 +281,16 @@ Estatus de Máquinas
 </script>
 
 <style>
-    .modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 1000;
-        justify-content: center;
-        align-items: center;
+    /* Animación para el botón cuando termina el ciclo */
+    @keyframes pulse-red {
+        0% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.4); }
+        70% { box-shadow: 0 0 0 10px rgba(229, 57, 53, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0); }
     }
-
-    .modern-card {
-        background: white;
-        border-radius: 10px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    .pulsing {
+        animation: pulse-red 2s infinite;
+        background-color: #E53935 !important; /* Rojo fuerte */
+        color: white !important;
     }
 </style>
 

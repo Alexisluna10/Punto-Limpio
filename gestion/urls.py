@@ -8,8 +8,7 @@ urlpatterns = [
          name='trabajador_dashboard'),
     path('mis-pedidos/', views.cliente_dashboard, name='cliente_dashboard'),
     path('nuevo-servicio/', views.nuevo_servicio, name='nuevo_servicio'),
-    path('panel-trabajador/validar-ticket/',
-         views.validar_ticket, name='validar_ticket'),
+
     path('panel-admin/finanzas/', views.admin_finanzas, name='admin_finanzas'),
     path('panel-admin/usuarios/', views.admin_usuarios, name='admin_usuarios'),
     path('panel-admin/precios/', views.admin_precios, name='admin_precios'),
@@ -35,8 +34,6 @@ urlpatterns = [
          name='trabajador_dashboard'),
     path('mis-pedidos/', views.cliente_dashboard, name='cliente_dashboard'),
     path('nuevo-servicio/', views.nuevo_servicio, name='nuevo_servicio'),
-    path('panel-trabajador/validar-ticket/',
-         views.validar_ticket, name='validar_ticket'),
     path('panel-admin/finanzas/', views.admin_finanzas, name='admin_finanzas'),
     path('panel-admin/finanzas/corte-caja/',
          views.admin_corte_caja, name='admin_corte_caja'),
@@ -103,4 +100,18 @@ urlpatterns = [
          views.editar_insumo, name='editar_insumo'),
     path('panel-admin/inventarios/eliminar/<int:id>/',
          views.eliminar_insumo, name='eliminar_insumo'),
+
+    path('api/asignar-maquina/', views.asignar_maquina, name='asignar_maquina'),
+    path('ticket/imprimir/<int:pedido_id>/',
+         views.imprimir_ticket, name='imprimir_ticket'),
+
+    # --- FLUJO DE ENTREGA Y VALIDACIÓN ---
+    path('validar-ticket/', views.validar_ticket, name='validar_ticket'),
+    path('api/buscar-pedido/', views.api_buscar_pedido, name='api_buscar_pedido'),
+    path('api/entregar-pedido/', views.api_entregar_pedido,
+         name='api_entregar_pedido'),
+
+    # --- HISTORIAL ---
+    path('panel-trabajador/historial/',
+         views.historial_servicios, name='historial_servicios'),
 ]

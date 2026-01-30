@@ -16,7 +16,8 @@ Registrar Nuevo Servicio
         <div class="form-row">
             <div class="form-group" style="flex: 3; position: relative;">
                 <label>Buscar Cliente</label>
-                <input type="text" class="input-modern" id="buscarCliente" placeholder="Nombre o Telefono..." autocomplete="off">
+                <input type="text" class="input-modern" id="buscarCliente" placeholder="Nombre o Telefono..."
+                    autocomplete="off">
                 <input type="hidden" id="clienteId" name="cliente_id">
                 <div id="resultadosClientes" class="autocomplete-results" style="display: none;"></div>
                 <div class="helper-text">Selecciona de la lista autocompletable</div>
@@ -25,10 +26,12 @@ Registrar Nuevo Servicio
                 <a href="{% url 'admin_nuevo_usuario' %}" class="btn-small">+ Registrar Cliente Nuevo</a>
             </div>
         </div>
-        
-        <div id="clienteSeleccionado" style="display: none; margin-bottom: 15px; padding: 10px; background: #e8f4fd; border-radius: 8px;">
+
+        <div id="clienteSeleccionado"
+            style="display: none; margin-bottom: 15px; padding: 10px; background: #e8f4fd; border-radius: 8px;">
             <strong>Cliente seleccionado:</strong> <span id="clienteNombre"></span>
-            <button type="button" onclick="limpiarCliente()" style="margin-left: 10px; background: #dc3545; color: white; border: none; padding: 2px 8px; border-radius: 4px; cursor: pointer;">X</button>
+            <button type="button" onclick="limpiarCliente()"
+                style="margin-left: 10px; background: #dc3545; color: white; border: none; padding: 2px 8px; border-radius: 4px; cursor: pointer;">X</button>
         </div>
 
         <div class="section-title">2. Detalles del Servicio</div>
@@ -36,7 +39,8 @@ Registrar Nuevo Servicio
         <div class="form-row">
             <div class="form-group">
                 <label>Tipo de Servicio</label>
-                <select class="input-modern" id="tipoServicioSelect" name="tipo_servicio" onchange="verificarServicio()">
+                <select class="input-modern" id="tipoServicioSelect" name="tipo_servicio"
+                    onchange="verificarServicio()">
                     <option value="por_encargo">Lavado por Encargo</option>
                     <option value="autoservicio">Autoservicio</option>
                     <option value="tintoreria">Tintoreria</option>
@@ -77,7 +81,8 @@ Registrar Nuevo Servicio
 
         <div class="form-group" style="margin-bottom: 25px;">
             <label>Observaciones</label>
-            <textarea class="input-modern" id="observaciones" name="observaciones" rows="3" placeholder="Detalles de manchas, ropa delicada, etc."></textarea>
+            <textarea class="input-modern" id="observaciones" name="observaciones" rows="3"
+                placeholder="Detalles de manchas, ropa delicada, etc."></textarea>
         </div>
 
         <div class="section-title">3. Pago y Entrega</div>
@@ -97,7 +102,8 @@ Registrar Nuevo Servicio
             </div>
             <div class="form-group">
                 <label>Total Estimado ($)</label>
-                <input type="number" class="input-modern" id="totalEstimado" name="total" placeholder="0.00" step="0.01" min="0"
+                <input type="number" class="input-modern" id="totalEstimado" name="total" placeholder="0.00" step="0.01"
+                    min="0"
                     style="background-color: #e8f4fd; color: #008CC9; font-weight: bold; border-color: #b3dbf9;">
             </div>
         </div>
@@ -118,6 +124,9 @@ Registrar Nuevo Servicio
     <div class="success-title">
         Gracias por generar la Orden con exito!<br>
         <span id="folioGenerado" style="font-size: 0.8em; color: #008CC9;"></span>
+        <br>
+        <span style="font-size: 0.6em; color: #666; font-weight: normal;">(El ticket se ha abierto en otra
+            pestaña)</span>
     </div>
     <a href="{% url 'trabajador_dashboard' %}" class="btn-base btn-submit" style="min-width: 200px;">ACEPTAR</a>
 </div>
@@ -134,28 +143,28 @@ Registrar Nuevo Servicio
         max-height: 200px;
         overflow-y: auto;
         z-index: 1000;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
-    
+
     .autocomplete-item {
         padding: 10px 15px;
         cursor: pointer;
         border-bottom: 1px solid #eee;
     }
-    
+
     .autocomplete-item:hover {
         background-color: #f5f5f5;
     }
-    
+
     .autocomplete-item:last-child {
         border-bottom: none;
     }
-    
+
     .cliente-nombre {
         font-weight: bold;
         color: #333;
     }
-    
+
     .cliente-telefono {
         font-size: 0.85em;
         color: #666;
@@ -165,27 +174,27 @@ Registrar Nuevo Servicio
 <script>
     let clienteSeleccionadoId = null;
     let timeoutBusqueda = null;
-    
+
     // Busqueda de clientes con autocomplete
-    document.getElementById('buscarCliente').addEventListener('input', function() {
+    document.getElementById('buscarCliente').addEventListener('input', function () {
         const query = this.value.trim();
-        
+
         if (timeoutBusqueda) {
             clearTimeout(timeoutBusqueda);
         }
-        
+
         if (query.length < 2) {
             document.getElementById('resultadosClientes').style.display = 'none';
             return;
         }
-        
+
         timeoutBusqueda = setTimeout(() => {
             fetch('{% url "buscar_clientes" %}?q=' + encodeURIComponent(query))
                 .then(response => response.json())
                 .then(data => {
                     const container = document.getElementById('resultadosClientes');
                     container.innerHTML = '';
-                    
+
                     if (data.clientes.length === 0) {
                         container.innerHTML = '<div class="autocomplete-item" style="color: #666;">No se encontraron clientes</div>';
                     } else {
@@ -200,7 +209,7 @@ Registrar Nuevo Servicio
                             container.appendChild(div);
                         });
                     }
-                    
+
                     container.style.display = 'block';
                 })
                 .catch(error => {
@@ -208,7 +217,7 @@ Registrar Nuevo Servicio
                 });
         }, 300);
     });
-    
+
     function seleccionarCliente(cliente) {
         clienteSeleccionadoId = cliente.id;
         document.getElementById('clienteId').value = cliente.id;
@@ -217,16 +226,16 @@ Registrar Nuevo Servicio
         document.getElementById('clienteSeleccionado').style.display = 'block';
         document.getElementById('resultadosClientes').style.display = 'none';
     }
-    
+
     function limpiarCliente() {
         clienteSeleccionadoId = null;
         document.getElementById('clienteId').value = '';
         document.getElementById('buscarCliente').value = '';
         document.getElementById('clienteSeleccionado').style.display = 'none';
     }
-    
+
     // Ocultar resultados al hacer clic fuera
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         if (!e.target.closest('.form-group')) {
             document.getElementById('resultadosClientes').style.display = 'none';
         }
@@ -250,15 +259,15 @@ Registrar Nuevo Servicio
             alert('Por favor selecciona un cliente');
             return;
         }
-        
+
         const totalInput = document.getElementById('totalEstimado').value;
         const totalValue = parseFloat(totalInput) || 0;
-        
+
         if (totalValue <= 0) {
             alert('Por favor ingresa el total estimado del servicio');
             return;
         }
-        
+
         const datos = {
             cliente_id: clienteSeleccionadoId,
             tipo_servicio: document.getElementById('tipoServicioSelect').value,
@@ -271,7 +280,7 @@ Registrar Nuevo Servicio
             metodo_pago: document.getElementById('metodoPago').value,
             total: totalValue
         };
-        
+
         fetch('{% url "nuevo_servicio" %}', {
             method: 'POST',
             headers: {
@@ -280,20 +289,26 @@ Registrar Nuevo Servicio
             },
             body: JSON.stringify(datos)
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                document.getElementById("formContainer").style.display = "none";
-                document.getElementById("folioGenerado").textContent = "Folio: " + data.folio;
-                document.getElementById("pantallaExito").style.display = "flex";
-            } else {
-                alert('Error: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error al generar la orden');
-        });
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // --- NUEVO: ABRIR PDF AUTOMÁTICAMENTE ---
+                    if (data.ticket_url) {
+                        window.open(data.ticket_url, '_blank');
+                    }
+                    // ----------------------------------------
+
+                    document.getElementById("formContainer").style.display = "none";
+                    document.getElementById("folioGenerado").textContent = "Folio: " + data.folio;
+                    document.getElementById("pantallaExito").style.display = "flex";
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al generar la orden');
+            });
     }
 </script>
 
