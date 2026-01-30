@@ -1,0 +1,34 @@
+{% extends 'base_gestion.html' %}
+
+{% block content %}
+
+<div id="mySidebar" class="sidebar-menu">
+    <a href="{% url 'trabajador_dashboard' %}">Inicio</a>
+    <a href="{% url 'nuevo_servicio' %}">Nuevo Servicio</a>
+    <a href="{% url 'estatus_maquina' %}">Estatus Maquinas</a>
+    <a href="{% url 'incidencias' %}">Incidencias</a>
+    <a href="{% url 'inventario' %}">Inventario</a>
+    <a href="{% url 'validar_ticket' %}">Validar tickets</a>
+    <a href="{% url 'servicios_proceso' %}">Servicios en proceso</a>
+    <div class="sidebar-footer">
+        <a href="{% url 'logout' %}" class="sidebar-btn-logout">Cerrar Sesión</a>
+    </div>
+</div>
+
+<script>
+    var isOpen = false;
+    function toggleMenu() {
+        if (isOpen) {
+            document.getElementById("mySidebar").style.width = "0";
+            isOpen = false;
+        } else {
+            document.getElementById("mySidebar").style.width = "250px";
+            isOpen = true;
+        }
+    }
+</script>
+
+{% block trabajador_content %}
+{% endblock %}
+
+{% endblock %}

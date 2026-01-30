@@ -1,0 +1,238 @@
+{% extends 'base_admin.html' %}
+
+{% block title_page %}
+Inventario General
+{% endblock %}
+
+{% block content %}
+<div class="inventario-container">
+
+    {% if messages %}
+    {% for message in messages %}
+    <div class="mensaje-alerta {% if message.tags == 'success' %}msg-exito{% else %}msg-error{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if notificaciones %}
+    <div class="panel-notificaciones">
+        <h4 class="titulo-noti">
+            🔔 Alertas de Reabastecimiento Pendientes
+        </h4>
+        <ul style="list-style: none; padding: 0; margin: 0;">
+            {% for noti in notificaciones %}
+            <li class="item-noti">
+                <div>
+                    <strong>{{ noti.usuario.username|title }}</strong> avisó que falta
+                    <span class="texto-rojo">{{ noti.insumo.nombre }}</span>
+                    <small style="color: #666;">({{ noti.fecha|date:"d M H:i" }})</small>
+                </div>
+
+                <button type="button" class="btn-surtir" data-url="{% url 'editar_insumo' noti.insumo.id %}"
+                    data-codigo="{{ noti.insumo.codigo }}" data-nombre="{{ noti.insumo.nombre }}"
+                    data-categoria="{{ noti.insumo.categoria }}" data-unidad="{{ noti.insumo.unidad_medida }}"
+                    data-stock="{{ noti.insumo.stock_actual|floatformat:2 }}"
+                    data-capacidad="{{ noti.insumo.capacidad_maxima|floatformat:2 }}"
+                    data-precio="{{ noti.insumo.precio|floatformat:2 }}" onclick="cargarDatosEditar(this)">
+                    ⚡ Surtir Ahora
+                </button>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <table class="tabla-inventario">
+        <thead>
+            <tr>
+                <th>Lote/Cód</th>
+                <th>Producto</th>
+                <th>Nivel actual</th>
+                <th>Estado</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for insumo in insumos %}
+            <tr>
+                <td style="font-weight: bold; color: #555;">{{ insumo.codigo }}</td>
+                <td>
+                    <div class="producto-cell">
+                        <div class="producto-color 
+                                    {% if insumo.categoria == 'detergente' %}cat-detergente
+                                    {% elif insumo.categoria == 'suavizante' %}cat-suavizante
+                                    {% else %}cat-otro{% endif %}">
+
+                            {% if insumo.categoria == 'detergente' %}🧴
+                            {% elif insumo.categoria == 'suavizante' %}🌸
+                            {% else %}📦{% endif %}
+                        </div>
+                        <span class="producto-nombre">{{ insumo.nombre }}</span>
+                    </div>
+                </td>
+                <td>
+                    <div style="display:flex; flex-direction:column; gap:5px;">
+                        <span style="font-size:12px; font-weight:bold; color:#555;">
+                            {{ insumo.stock_actual }} {{ insumo.unidad_medida }}
+                        </span>
+                        <div class="barra-fondo">
+                            <div class="barra-progreso 
+                                        {% if insumo.estado_alerta %}bg-critico
+                                        {% elif insumo.porcentaje < 40 %}bg-bajo
+                                        {% else %}bg-optimo{% endif %}" style="--ancho: {{ insumo.porcentaje }}%;">
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    {% if insumo.estado_alerta %}
+                    <span class="badge badge-critico">CRÍTICO</span>
+                    {% elif insumo.porcentaje < 40 %} <span class="badge badge-bajo">BAJO</span>
+                        {% else %}
+                        <span class="badge badge-optimo">OPTIMO</span>
+                        {% endif %}
+                </td>
+                <td>
+                    <div style="display:flex; gap:10px;">
+                        <button type="button" class="btn-icon" data-url="{% url 'editar_insumo' insumo.id %}"
+                            data-codigo="{{ insumo.codigo }}" data-nombre="{{ insumo.nombre }}"
+                            data-categoria="{{ insumo.categoria }}" data-unidad="{{ insumo.unidad_medida }}"
+                            data-stock="{{ insumo.stock_actual|floatformat:2 }}"
+                            data-capacidad="{{ insumo.capacidad_maxima|floatformat:2 }}"
+                            data-precio="{{ insumo.precio|floatformat:2 }}" onclick="cargarDatosEditar(this)">
+                            ✏️
+                        </button>
+
+                        <a href="{% url 'eliminar_insumo' insumo.id %}" class="btn-icon"
+                            onclick="return confirm('¿Estás seguro de eliminar este producto?');"
+                            style="text-decoration:none; font-size:18px;">🗑️</a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" style="text-align:center; padding: 30px; color: #888;">
+                    No hay productos registrados. Usa el botón "Nuevo producto" para comenzar.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="nota-alerta">
+        Nota: Recibirás una alerta cuando tu producto esté a un nivel de 10% o menos.
+    </div>
+
+    <div class="botones-footer">
+        <a href="{% url 'admin_detalles_inventario' %}" class="btn-detallados">Productos detallados</a>
+        <button class="btn-nuevo-producto" onclick="abrirModalNuevo()">Nuevo producto</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modalNuevo">
+    <div class="modal-content modal-nuevo-content">
+        <h3 style="margin-bottom: 20px; color: #008CC9;">Registrar Nuevo Insumo</h3>
+        <form method="POST" action="{% url 'admin_inventarios' %}">
+            {% csrf_token %}
+            <div class="modal-nuevo-grid">
+                <div class="form-group"><label>Código / Lote:</label> {{ form.codigo }}</div>
+                <div class="form-group"><label>Nombre:</label> {{ form.nombre }}</div>
+                <div class="form-group"><label>Categoría:</label> {{ form.categoria }}</div>
+                <div class="form-group"><label>Unidad:</label> {{ form.unidad_medida }}</div>
+                <div class="form-group"><label>Stock Inicial:</label> {{ form.stock_actual }}</div>
+                <div class="form-group"><label>Capacidad Máx:</label> {{ form.capacidad_maxima }}</div>
+                <div class="form-group"><label>Precio ($):</label> {{ form.precio }}</div>
+
+                <div class="modal-nuevo-buttons">
+                    <button type="button" class="btn-cancelar" onclick="cerrarModalNuevo()">Cancelar</button>
+                    <button type="submit" class="btn-guardar">Guardar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modalEditar">
+    <div class="modal-content modal-nuevo-content">
+        <h3 style="margin-bottom: 20px; color: #F9A825;">Editar Insumo</h3>
+        <form method="POST" id="formEditar" action="">
+            {% csrf_token %}
+            <div class="modal-nuevo-grid">
+                <div class="form-group">
+                    <label>Código / Lote:</label>
+                    <input type="text" name="codigo" id="edit_codigo" class="input-modern" required readonly
+                        style="background-color: #eee; cursor: not-allowed;">
+                </div>
+                <div class="form-group">
+                    <label>Nombre:</label>
+                    <input type="text" name="nombre" id="edit_nombre" class="input-modern" required>
+                </div>
+                <div class="form-group">
+                    <label>Categoría:</label>
+                    <select name="categoria" id="edit_categoria" class="input-modern">
+                        <option value="detergente">Detergentes</option>
+                        <option value="suavizante">Suavizantes</option>
+                        <option value="limpieza">Limpieza General</option>
+                        <option value="otros">Otros</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Unidad:</label>
+                    <input type="text" name="unidad_medida" id="edit_unidad" class="input-modern" required>
+                </div>
+                <div class="form-group">
+                    <label>Stock Actual:</label>
+                    <input type="number" step="0.01" name="stock_actual" id="edit_stock" class="input-modern" required>
+                </div>
+                <div class="form-group">
+                    <label>Capacidad Máx:</label>
+                    <input type="number" step="0.01" name="capacidad_maxima" id="edit_capacidad" class="input-modern"
+                        required>
+                </div>
+                <div class="form-group">
+                    <label>Precio ($):</label>
+                    <input type="number" step="0.01" name="precio" id="edit_precio" class="input-modern" required>
+                </div>
+                <div class="modal-nuevo-buttons">
+                    <button type="button" class="btn-cancelar" onclick="cerrarModalEditar()">Cancelar</button>
+                    <button type="submit" class="btn-guardar">Guardar Cambios</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function abrirModalNuevo() { document.getElementById('modalNuevo').classList.add('active'); }
+    function cerrarModalNuevo() { document.getElementById('modalNuevo').classList.remove('active'); }
+
+    function cargarDatosEditar(btn) {
+        var url = btn.getAttribute('data-url');
+        var codigo = btn.getAttribute('data-codigo');
+        var nombre = btn.getAttribute('data-nombre');
+        var categoria = btn.getAttribute('data-categoria');
+        var unidad = btn.getAttribute('data-unidad');
+        var stock = btn.getAttribute('data-stock');
+        var capacidad = btn.getAttribute('data-capacidad');
+        var precio = btn.getAttribute('data-precio');
+
+        document.getElementById('formEditar').action = url;
+        document.getElementById('edit_codigo').value = codigo;
+        document.getElementById('edit_nombre').value = nombre;
+        document.getElementById('edit_categoria').value = categoria;
+        document.getElementById('edit_unidad').value = unidad;
+        document.getElementById('edit_stock').value = stock.replace(',', '.');
+        document.getElementById('edit_capacidad').value = capacidad.replace(',', '.');
+        document.getElementById('edit_precio').value = precio.replace(',', '.');
+        document.getElementById('modalEditar').classList.add('active');
+    }
+
+    function cerrarModalEditar() { document.getElementById('modalEditar').classList.remove('active'); }
+
+    window.onclick = function (event) {
+        if (event.target == document.getElementById('modalNuevo')) cerrarModalNuevo();
+        if (event.target == document.getElementById('modalEditar')) cerrarModalEditar();
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends 'base_trabajador.html' %}
+
+{% block title_page %}
+Validar ticket
+{% endblock %}
+
+{% block trabajador_content %}
+
+<div class="modern-card" id="formContainer">
+
+    <div class="form-row" style="align-items: center;">
+        <div class="form-group" style="flex: 2;">
+            <label>Buscar por folio:</label>
+            <input type="text" class="input-modern" placeholder="Ej: 00123">
+        </div>
+        <div class="form-group" style="flex: 1;">
+            <label>&nbsp;</label>
+            <button type="button" class="btn-base btn-submit" style="width: 100%;">Buscar</button>
+        </div>
+    </div>
+
+    <hr style="border: 1px solid #eee; margin: 30px 0;">
+
+    <div class="form-row">
+        <div class="form-group">
+            <label>Estatus del servicio:</label>
+            <input type="text" class="input-modern" readonly>
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div class="form-group">
+            <label>Estatus del pago:</label>
+            <input type="text" class="input-modern" readonly>
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div class="form-group">
+            <label>Nombre del cliente:</label>
+            <input type="text" class="input-modern" readonly>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>Lista de entrega:</label>
+        <div
+            style="background: #f9f9f9; padding: 15px; border: 1px solid #e0e0e0; border-radius: 8px; min-height: 60px;">
+        </div>
+    </div>
+
+    <div style="margin-top: 40px; text-align: center;">
+        <button type="button" onclick="confirmarEntrega()" class="btn-base btn-submit"
+            style="padding: 15px 60px;">CONFIRMAR ENTREGA</button>
+    </div>
+
+</div>
+
+<div id="pantallaExito" class="modal-overlay">
+    <div class="success-icon-circle">
+        <span class="success-checkmark">✔</span>
+    </div>
+    <div class="success-title">
+        GRACIAS POR ENTREGAR<br>CORRECTAMENTE EL SERVICIO SOLICITADO
+    </div>
+    <a href="{% url 'trabajador_dashboard' %}" class="btn-base btn-submit" style="min-width: 200px;">ACEPTAR</a>
+</div>
+
+<script>
+    function confirmarEntrega() {
+        document.getElementById("formContainer").style.display = "none";
+        document.getElementById("pantallaExito").style.display = "flex";
+    }
+</script>
+
+{% endblock %}

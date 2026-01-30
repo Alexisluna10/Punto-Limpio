@@ -1,0 +1,91 @@
+{% extends 'base_trabajador.html' %}
+
+{% block title_page %}
+Inventario de Insumos
+{% endblock %}
+
+{% block trabajador_content %}
+
+<div class="trab-inventario-contenedor">
+
+    <div class="trab-inventario-header">
+        <p class="trab-inventario-subtitulo">Supervise el nivel de los productos. Solicite reabastecimiento si el nivel
+            es crítico (10%).</p>
+    </div>
+
+    {% if messages %}
+    {% for message in messages %}
+    <div class="msg-trabajador">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="trab-inventario-grid">
+
+        {% for insumo in insumos %}
+        <div class="trab-inventario-card {% if insumo.estado_alerta %}card-critico{% endif %}">
+
+            <div class="trab-prod-header">
+                <div class="trab-prod-icon {% if insumo.estado_alerta %}icon-critico{% endif %}">
+                    {% if insumo.categoria == 'detergente' %}🧴
+                    {% elif insumo.categoria == 'suavizante' %}🌸
+                    {% elif insumo.categoria == 'limpieza' %}🧹
+                    {% else %}📦{% endif %}
+                </div>
+
+                <div class="trab-prod-info">
+                    <h4 class="{% if insumo.estado_alerta %}text-critico{% endif %}">
+                        {{ insumo.nombre }}
+                    </h4>
+                    <span>Lote: {{ insumo.codigo }}</span>
+                </div>
+            </div>
+
+            {% if insumo.estado_alerta %}
+            <label class="lbl-estado lbl-critico">
+                ¡NIVEL CRÍTICO!
+            </label>
+            {% else %}
+            <label class="lbl-estado lbl-normal">
+                Nivel Actual: {{ insumo.stock_actual }} {{ insumo.unidad_medida }}
+            </label>
+            {% endif %}
+
+            <div class="trab-barra-container">
+                <div class="trab-barra-relleno {{ insumo.color_barra }}" style="--ancho: {{ insumo.porcentaje }}%;">
+                </div>
+            </div>
+
+            <p class="trab-nivel-texto {% if insumo.estado_alerta %}text-critico{% endif %}">
+                {{ insumo.porcentaje }}% Disponible
+            </p>
+
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="producto_nombre" value="{{ insumo.nombre }}">
+
+                {% if insumo.estado_alerta %}
+                <button type="submit" class="trab-btn-reabastecer habilitado">
+                    🔔 SOLICITAR REABASTECIMIENTO
+                </button>
+                {% else %}
+                <button type="button" class="trab-btn-reabastecer" disabled>
+                    ✅ Nivel Óptimo
+                </button>
+                {% endif %}
+            </form>
+
+        </div>
+
+        {% empty %}
+        <div class="empty-state-trab">
+            <h3>No hay productos registrados</h3>
+            <p>El administrador aún no ha dado de alta ningún insumo en el sistema.</p>
+        </div>
+        {% endfor %}
+
+    </div>
+</div>
+
+{% endblock %}

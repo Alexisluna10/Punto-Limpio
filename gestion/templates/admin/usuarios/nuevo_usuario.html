@@ -1,0 +1,98 @@
+{% extends 'base_admin.html' %}
+
+{% block title_page %}
+Usuarios
+{% endblock %}
+
+{% block content %}
+<div class="nuevo-usuario-container">
+    <div class="form-header">
+        <h2>Nuevo Usuario</h2>
+    </div>
+
+    {% if form.errors %}
+    <div class="errors-container">
+        <p>Por favor corrige los errores:</p>
+        <ul>
+            {% for field in form %}
+            {% for error in field.errors %}
+            <li>{{ field.label }}: {{ error }}</li>
+            {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <div class="form-columns">
+            <div class="column-left">
+                <div class="form-group">
+                    <label for="id_username">Nombre de usuario *</label>
+                    <input type="text" name="username" id="id_username" required
+                        value="{{ form.username.value|default:'' }}" placeholder="Ingresa el nombre de usuario">
+                </div>
+
+                <div class="form-group">
+                    <label for="id_telefono">Numero telefonico *</label>
+                    <input type="text" name="telefono" id="id_telefono" value="{{ form.telefono.value|default:'' }}"
+                        placeholder="Ej: 771-479-38247">
+                </div>
+
+                <div class="form-group">
+                    <label for="id_password1">Contrasena *</label>
+                    <input type="password" name="password1" id="id_password1" required
+                        placeholder="Ingresa la contrasena">
+                </div>
+
+                <div class="rol-section">
+                    <label>Rol *</label>
+                    <div class="rol-options">
+                        <div class="rol-option">
+                            <input type="radio" name="rol" id="rol_cliente" value="cliente" checked>
+                            <label for="rol_cliente">Cliente</label>
+                        </div>
+                        <div class="rol-option">
+                            <input type="radio" name="rol" id="rol_operador" value="operador">
+                            <label for="rol_operador">Operador</label>
+                        </div>
+                        <div class="rol-option">
+                            <input type="radio" name="rol" id="rol_admin" value="admin">
+                            <label for="rol_admin">Admin</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="column-right">
+                <div class="form-group">
+                    <label for="id_direccion">Direccion *</label>
+                    <input type="text" name="direccion" id="id_direccion" value="{{ form.direccion.value|default:'' }}"
+                        placeholder="Ingresa la direccion">
+                </div>
+
+                <div class="form-group">
+                    <label for="id_email">Correo electronico *</label>
+                    <input type="email" name="email" id="id_email" value="{{ form.email.value|default:'' }}"
+                        placeholder="ejemplo@correo.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="id_password2">Confirmar contrasena *</label>
+                    <input type="password" name="password2" id="id_password2" required
+                        placeholder="Confirma la contrasena">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-buttons">
+            <a href="{% url 'admin_usuarios' %}" class="btn-cancelar">Cancelar</a>
+            <button type="submit" class="btn-guardar">Guardar Usuario</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

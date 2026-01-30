@@ -1,0 +1,70 @@
+{% extends 'base_trabajador.html' %}
+
+{% block title_page %}
+Servicios en Proceso
+{% endblock %}
+
+{% block trabajador_content %}
+
+<div class="main-content">
+
+    <form method="GET" class="trab-serv-buscador-container">
+        <input type="text" name="buscar" class="trab-serv-input-busqueda" 
+               placeholder="Buscar por Folio o Nombre de Cliente..." 
+               value="{{ busqueda }}">
+        <button type="submit" class="trab-serv-btn-buscar">BUSCAR</button>
+    </form>
+
+    <h3 style="color: #555; margin-bottom: 20px;">Cola de Trabajo Actual ({{ pedidos.count }} servicios)</h3>
+
+    <div class="trab-serv-grid">
+        {% for pedido in pedidos %}
+        <div class="trab-serv-card" style="{% if pedido.estado == 'listo' %}border-left-color: #66BB6A;{% elif pedido.estado == 'en_proceso' %}border-left-color: #FF9800;{% else %}border-left-color: #2196F3;{% endif %}">
+            <div class="trab-serv-header">
+                <span class="trab-serv-folio">#{{ pedido.folio }}</span>
+                <span class="trab-serv-tipo">{{ pedido.tipo_servicio }}</span>
+            </div>
+            <div class="trab-serv-info">
+                <p><strong>Cliente:</strong> {{ pedido.cliente.first_name }} {{ pedido.cliente.last_name }}{% if not pedido.cliente.first_name %}{{ pedido.cliente.username }}{% endif %}</p>
+                {% if pedido.peso > 0 %}
+                <p><strong>Peso:</strong> {{ pedido.peso }} Kg</p>
+                {% endif %}
+                {% if pedido.cantidad_prendas > 0 %}
+                <p><strong>Prendas:</strong> {{ pedido.cantidad_prendas }}</p>
+                {% endif %}
+                {% if pedido.fecha_entrega_estimada %}
+                <p><strong>Entrega:</strong> {{ pedido.fecha_entrega_estimada|date:"d/m/Y" }}</p>
+                {% endif %}
+                <p><strong>Origen:</strong> {% if pedido.origen == 'cliente' %}Solicitado por cliente{% else %}Registrado por operador{% endif %}</p>
+            </div>
+            
+            {% if pedido.estado == 'pendiente' %}
+            <span class="trab-estatus-badge estatus-lavando">PENDIENTE</span>
+            {% elif pedido.estado == 'en_proceso' %}
+            <span class="trab-estatus-badge estatus-secando">EN PROCESO</span>
+            {% elif pedido.estado == 'listo' %}
+            <span class="trab-estatus-badge estatus-listo">LISTO PARA ENTREGA</span>
+            {% endif %}
+            
+            <!-- Estado de pago -->
+            <div style="margin-top: 8px;">
+                {% if pedido.estado_pago == 'pendiente' %}
+                <span style="background: #FFC107; color: #333; padding: 4px 10px; border-radius: 4px; font-size: 12px;">PAGO PENDIENTE</span>
+                {% else %}
+                <span style="background: #4CAF50; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px;">PAGADO</span>
+                {% endif %}
+            </div>
+            
+            <a href="{% url 'detalle_servicio' pedido.id %}" class="trab-serv-btn-gestionar">
+                {% if pedido.estado == 'listo' %}FINALIZAR{% else %}GESTIONAR / EDITAR{% endif %}
+            </a>
+        </div>
+        {% empty %}
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #666;">
+            <p>No hay servicios en proceso actualmente.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}

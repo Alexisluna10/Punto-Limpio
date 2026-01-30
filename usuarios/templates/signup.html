@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'usuarios/css/auth_card.css' %}">
+
+<div class="auth-card wide-card">
+    <div class="auth-icon"><i class="fas fa-user-plus"></i></div>
+    <h2 class="auth-title">Crear Cuenta</h2>
+    <p class="auth-subtitle">Únete a Punto Limpio</p>
+
+    {% if form.errors %}
+    <div class="alert-error">
+        <strong>Por favor corrige los siguientes errores:</strong>
+        <ul>
+            {% for field in form %}
+            {% for error in field.errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <form action="/signup/" method="POST" class="auth-form">
+        {% csrf_token %}
+
+        <div class="form-grid">
+            <div class="form-col">
+                <div class="input-group">
+                    <label>Nombre de Usuario *</label>
+                    {{ form.username }}
+                </div>
+                <div class="input-group">
+                    <label>Teléfono *</label>
+                    {{ form.telefono }}
+                </div>
+                <div class="input-group">
+                    <label>Correo Electrónico *</label>
+                    {{ form.email }}
+                </div>
+            </div>
+
+            <div class="form-col">
+                <div class="input-group">
+                    <label>Dirección *</label>
+                    {{ form.direccion }}
+                </div>
+                <div class="input-group">
+                    <label>Contraseña *</label>
+                    <input type="password" name="password1" class="auth-input" required>
+                </div>
+                <div class="input-group">
+                    <label>Confirmar Contraseña *</label>
+                    <input type="password" name="password2" class="auth-input" required>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-auth-primary">
+            REGISTRARSE
+        </button>
+
+    </form>
+
+    <div class="auth-footer">
+        ¿Ya tienes cuenta? <a href="{% url 'signin' %}">Inicia sesión</a>
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var inputs = document.querySelectorAll('input, select, textarea');
+        inputs.forEach(function (input) {
+            if (!input.classList.contains('auth-input')) {
+                input.classList.add('auth-input');
+            }
+        });
+    });
+</script>
+{% endblock %}

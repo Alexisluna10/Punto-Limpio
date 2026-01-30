@@ -1,0 +1,143 @@
+{% extends 'base_admin.html' %}
+{% load static %}
+
+{% block title %}Historial de Movimientos{% endblock %}
+
+{% block page_title %}Historial{% endblock %}
+
+{% block content %}
+
+<!-- Tabs de navegacion -->
+<div class="nav-tabs-custom">
+    <a href="{% url 'historial_movimientos' %}" class="tab-btn active">Movimientos</a>
+    <a href="{% url 'historial_ventas' %}" class="tab-btn">Ventas</a>
+</div>
+
+<h2 class="page-subtitle">Historial de Movimientos</h2>
+
+<!-- Seccion de filtros -->
+<div class="filters-section">
+    <h3>Filtros:</h3>
+    <div class="filters-row">
+        <div class="filter-group">
+            <label>Usuarios:</label>
+            <select id="filterUsuario" onchange="filtrarMovimientos()">
+                <option value="">Todos</option>
+                {% for operador in operadores %}
+                <option value="{{ operador.username }}">{{ operador.username }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Accion:</label>
+            <select id="filterAccion" onchange="filtrarMovimientos()">
+                <option value="">Todas</option>
+                <option value="registro_servicio">Registro servicio</option>
+                <option value="entrego">Entrego</option>
+                <option value="cambio_precio">Cambio precio</option>
+                <option value="creo_ticket">Creo ticket</option>
+                <option value="elimino">Elimino</option>
+                <option value="actualizo">Actualizo</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Fecha:</label>
+            <select id="filterFecha" onchange="filtrarMovimientos()">
+                <option value="">Todas</option>
+                <option value="24h">Ultimas 24h</option>
+                <option value="7d">Ultimos 7 dias</option>
+                <option value="30d">Ultimos 30 dias</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de movimientos -->
+<table class="table-movimientos">
+    <thead>
+        <tr>
+            <th>Fecha/Hora</th>
+            <th>Usuario</th>
+            <th>Accion</th>
+            <th>Detalles</th>
+        </tr>
+    </thead>
+    <tbody id="tablaMovimientos">
+        {% for movimiento in movimientos %}
+        <tr data-usuario="{{ movimiento.operador.username }}" data-accion="{{ movimiento.accion }}" data-fecha="{{ movimiento.fecha|date:'Y-m-d' }}">
+            <td>{{ movimiento.fecha|date:"d/m H:i" }}</td>
+            <td>{{ movimiento.operador.username }}</td>
+            <td>{{ movimiento.get_accion_display }}</td>
+            <td>{{ movimiento.detalles }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4" style="text-align: center; color: #666;">No hay movimientos registrados</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="registros-info">
+    Mostrando <span id="registrosMostrados">{{ movimientos|length }}</span> de <span id="registrosTotal">{{ total_movimientos }}</span> registros
+</div>
+
+<button class="btn-exportar" onclick="exportarExcel()">
+    Exportar a Excel
+</button>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function filtrarMovimientos() {
+        const filterUsuario = document.getElementById('filterUsuario').value.toLowerCase();
+        const filterAccion = document.getElementById('filterAccion').value.toLowerCase();
+        const filterFecha = document.getElementById('filterFecha').value;
+        const rows = document.querySelectorAll('#tablaMovimientos tr[data-usuario]');
+        let visibleCount = 0;
+
+        const now = new Date();
+
+        rows.forEach(row => {
+            const usuario = row.getAttribute('data-usuario').toLowerCase();
+            const accion = row.getAttribute('data-accion').toLowerCase();
+            const fechaStr = row.getAttribute('data-fecha');
+            const fecha = new Date(fechaStr);
+
+            let showByUsuario = !filterUsuario || usuario.includes(filterUsuario);
+            let showByAccion = !filterAccion || accion.includes(filterAccion);
+            let showByFecha = true;
+
+            if (filterFecha) {
+                const diffTime = Math.abs(now - fecha);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                if (filterFecha === '24h') {
+                    showByFecha = diffDays <= 1;
+                } else if (filterFecha === '7d') {
+                    showByFecha = diffDays <= 7;
+                } else if (filterFecha === '30d') {
+                    showByFecha = diffDays <= 30;
+                }
+            }
+
+            if (showByUsuario && showByAccion && showByFecha) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        document.getElementById('registrosMostrados').textContent = visibleCount;
+    }
+    
+    function exportarExcel() {
+        alert('Funcionalidad de exportar a Excel proximamente');
+    }
+
+    // Inicializar filtros
+    filtrarMovimientos();
+</script>
+{% endblock %}

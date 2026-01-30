@@ -1,0 +1,64 @@
+{% extends 'base_admin.html' %}
+
+{% block title_page %}
+Inicio
+{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard-container">
+    <!-- Tarjetas de estadísticas -->
+    <div class="admin-stats-row">
+        <div class="admin-stat-card">
+            <h3 class="admin-stat-title">HOY</h3>
+            <p class="admin-stat-amount">$6728</p>
+            <p class="admin-stat-services">32 Servicios</p>
+        </div>
+        <div class="admin-stat-card">
+            <h3 class="admin-stat-title">ESTA SEMANA</h3>
+            <p class="admin-stat-amount">$14,603</p>
+            <p class="admin-stat-services">116 Servicios</p>
+        </div>
+        <div class="admin-stat-card">
+            <h3 class="admin-stat-title">ESTE MES</h3>
+            <p class="admin-stat-amount">$34,737</p>
+            <p class="admin-stat-services">302 Servicios</p>
+        </div>
+    </div>
+
+    <div class="admin-section-block">
+        <a href="{% url 'admin_incidencias' %}" class="admin-section-title-link">
+            <h3 class="admin-section-title">
+                <span class="admin-warning-icon">&#9888;</span> Alertas Críticas
+            </h3>
+        </a>
+        <div class="admin-section-content">
+            <ul class="admin-alert-list">
+                <li>Suavizante al 8% de stock mínimo</li>
+                <li>3 servicios a punto de terminar</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="admin-section-block">
+        <h3 class="admin-section-title">Servicios Activos Ahora</h3>
+        <div class="admin-section-content">
+            <p class="admin-services-status">En proceso: 6 &nbsp;|&nbsp; Listos: 2 &nbsp;|&nbsp; Por procesar: 4</p>
+        </div>
+    </div>
+
+    <div class="admin-section-block">
+        <a href="{% url 'admin_precios' %}" class="admin-section-title-link">
+            <h3 class="admin-section-title">Precios</h3>
+        </a>
+        <div class="admin-section-content">
+            <ul class="admin-alert-list">
+                <li>Traje completo (saco y pantalón) $250</li>
+                <li>Vestido de gala/noche $400</li>
+                <li>Chamarra (piel/sintetica) $400</li>
+                <li>Combo $290</li>
+            </ul>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends 'base_cliente.html' %}
+{% block title_page %}
+Inicio
+{% endblock %}
+
+{% block cliente_content %}
+<div class="cliente-container">
+
+    <div class="cliente-header">
+        <h2>Hola, @{{ user.username }}</h2>
+        <h3>Bienvenido a Punto Limpio; estos son tus servicios activos:</h3>
+    </div>
+
+    <table class="tabla-servicios">
+        <thead>
+            <tr>
+                <th>No.</th>
+                <th>Folio</th>
+                <th>Servicio</th>
+                <th>Estatus</th>
+                <th>Estado de Pago</th>
+                <th>Fecha de Recepcion</th>
+                <th>Fecha Estimada de Entrega</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pedido in pedidos_activos %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ pedido.folio }}</td>
+                <td>{{ pedido.tipo_servicio|upper }}</td>
+                <td>
+                    {% if pedido.estado == 'pendiente' %}
+                    <span class="badge badge-pendiente">PENDIENTE</span>
+                    {% elif pedido.estado == 'en_proceso' %}
+                    <span class="badge badge-proceso">EN PROCESO</span>
+                    {% elif pedido.estado == 'listo' %}
+                    <span class="badge badge-entregado">LISTO</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if pedido.estado_pago == 'pendiente' %}
+                    <span class="badge badge-pendiente">PENDIENTE</span>
+                    {% else %}
+                    <span class="badge badge-pagado">PAGADO</span>
+                    {% endif %}
+                </td>
+                <td>{{ pedido.fecha_recepcion|date:"d / F / Y" }}</td>
+                <td>{% if pedido.fecha_entrega_estimada %}{{ pedido.fecha_entrega_estimada|date:"d / F / Y" }}{% else %}---{% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" style="text-align: center; color: #666;">No tienes servicios activos</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="cliente-header" style="margin-top: 40px;">
+        <h3>Historial de servicios finalizados</h3>
+    </div>
+
+    <table class="tabla-servicios">
+        <thead>
+            <tr>
+                <th>No.</th>
+                <th>Folio</th>
+                <th>Servicio</th>
+                <th>Fecha de Recepcion</th>
+                <th>Fecha de Entrega</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pedido in pedidos_finalizados %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ pedido.folio }}</td>
+                <td>{{ pedido.tipo_servicio|upper }}</td>
+                <td>{{ pedido.fecha_recepcion|date:"d / F / Y" }}</td>
+                <td>{% if pedido.fecha_entrega_real %}{{ pedido.fecha_entrega_real|date:"d / F / Y" }}{% else %}---{% endif %}</td>
+                <td>
+                    <span class="badge badge-entregado">ENTREGADO</span>
+                    {% if pedido.estado_pago == 'pagado' %}
+                    <span class="badge badge-pagado">PAGADO</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" style="text-align: center; color: #666;">No tienes servicios finalizados</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+{% endblock %}

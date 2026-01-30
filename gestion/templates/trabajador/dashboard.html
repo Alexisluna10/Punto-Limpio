@@ -1,0 +1,28 @@
+{% extends 'base_gestion.html' %}
+
+{% block title_page %}
+Menú Operador
+{% endblock %}
+
+{% block content %}
+
+<style>
+    .menu-icon {
+        display: none !important;
+    }
+</style>
+
+<h2 class="welcome-title">Hola @{{ user.username }}, bienvenido</h2>
+
+<div class="menu-grid">
+    <a href="{% url 'nuevo_servicio' %}" class="btn-menu-big">Nuevo Servicio</a>
+    <a href="{% url 'estatus_maquina' %}" class="btn-menu-big">Estatus de Maquinas</a>
+    <a href="{% url 'incidencias' %}" class="btn-menu-big">Registrar Incidencia</a>
+    <a href="{% url 'inventario' %}" class="btn-menu-big">Inventario</a>
+    <a href="{% url 'validar_ticket' %}" class="btn-menu-big">Validar Ticket</a>
+    <a href="{% url 'servicios_proceso' %}" class="btn-menu-big">Servicios en Proceso</a>
+</div>
+
+<a href="{% url 'logout' %}" class="btn-logout-big">Cerrar Sesion</a>
+
+{% endblock %}

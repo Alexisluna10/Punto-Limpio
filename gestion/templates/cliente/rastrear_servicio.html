@@ -1,0 +1,81 @@
+{% extends 'base_cliente.html' %}
+
+{% block title_page %}
+Rastrear Servicio
+{% endblock %}
+
+{% block cliente_content %}
+<div class="cliente-container">
+
+    <div class="cliente-header">
+        <h2>Rastrear Servicio</h2>
+        <p>Consulta el estado de tu servicio ingresando el número de folio</p>
+    </div>
+
+    <div class="rastreo-busqueda">
+        <form class="rastreo-form" id="formRastreo">
+            <div class="rastreo-input-group">
+                <label for="folio">Número de Folio</label>
+                <input type="text" id="folio" name="folio" class="input-modern" placeholder="Ej: 1234" required>
+            </div>
+
+            <button type="submit" class="btn-buscar-folio">
+                Buscar
+            </button>
+        </form>
+    </div>
+
+    <div class="rastreo-resultado" id="resultadoRastreo">
+
+        <h3 class="resultado-titulo">Resultado del servicio</h3>
+
+        <div class="rastreo-campo">
+            <span class="rastreo-label">FOLIO:</span>
+            <span class="rastreo-valor" id="resultFolio">----</span>
+        </div>
+
+        <div class="rastreo-campo">
+            <span class="rastreo-label">ESTATUS ACTUAL:</span>
+            <span class="rastreo-estatus">LAVANDO</span>
+        </div>
+
+        <div class="rastreo-historial">
+            <div class="rastreo-campo">
+                <span class="rastreo-label-hist">RECIBIDO:</span>
+                <span class="rastreo-fecha">12 DE ENERO DEL 2026</span>
+            </div>
+
+            <div class="rastreo-campo">
+                <span class="rastreo-label-hist">TINTORERÍA:</span>
+                <span class="rastreo-fecha">14 DE ENERO DEL 2026</span>
+            </div>
+
+            <div class="rastreo-campo">
+                <span class="rastreo-label-hist">SECADO:</span>
+                <span class="rastreo-fecha pendiente">PENDIENTE</span>
+            </div>
+
+            <div class="rastreo-campo">
+                <span class="rastreo-label-hist">ENTREGADO:</span>
+                <span class="rastreo-fecha pendiente">PENDIENTE</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    document.getElementById('formRastreo').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const folio = document.getElementById('folio').value;
+        if (!folio) return;
+
+        document.getElementById('resultFolio').textContent = folio;
+
+        const resultado = document.getElementById('resultadoRastreo');
+        resultado.classList.add('active');
+        resultado.scrollIntoView({ behavior: 'smooth' });
+    });
+</script>
+{% endblock %}
