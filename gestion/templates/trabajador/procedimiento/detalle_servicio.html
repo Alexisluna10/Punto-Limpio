@@ -39,11 +39,15 @@ Gestionar Servicio {{ pedido.folio }}
             </div>
 
             <div class="trab-timeline-step {% if pedido.estado == 'en_proceso' %}active{% elif pedido.estado == 'listo' or pedido.estado == 'entregado' %}completed{% endif %}">
+            <div
+                class="trab-timeline-step {% if pedido.estado == 'en_proceso' %}active{% elif pedido.estado == 'listo' or pedido.estado == 'entregado' %}completed{% endif %}">
                 <div class="trab-step-circle">2</div>
                 <small>En Proceso</small>
             </div>
 
             <div class="trab-timeline-step {% if pedido.estado == 'listo' %}active{% elif pedido.estado == 'entregado' %}completed{% endif %}">
+            <div
+                class="trab-timeline-step {% if pedido.estado == 'listo' %}active{% elif pedido.estado == 'entregado' %}completed{% endif %}">
                 <div class="trab-step-circle">3</div>
                 <small>Listo</small>
             </div>
@@ -63,6 +67,9 @@ Gestionar Servicio {{ pedido.folio }}
                     {{ pedido.cliente.first_name }} {{ pedido.cliente.last_name }}
                 {% else %}
                     {{ pedido.cliente.username }}
+                {{ pedido.cliente.first_name }} {{ pedido.cliente.last_name }}
+                {% else %}
+                {{ pedido.cliente.username }}
                 {% endif %}
             </span>
         </div>
@@ -127,6 +134,10 @@ Gestionar Servicio {{ pedido.folio }}
                         Listo para Entrega
                     </option>
                     </select>
+                    <option value="entregado" {% if pedido.estado == 'entregado' %}selected{% endif %}>
+                        Entregado / Finalizado
+                    </option>
+                </select>
             </div>
 
             <div class="form-group" style="margin-bottom: 20px;">
