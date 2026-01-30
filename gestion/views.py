@@ -6,14 +6,24 @@ from django.views.decorators.http import require_POST
 from django.contrib.auth.models import Group
 from django.utils import timezone
 from django.db import models
+from django.db.models import Q, Sum, Count
 from decimal import Decimal
-from .models import Insumo, NotificacionStock, Maquina
 import json
+from datetime import datetime, timedelta
 
+# Modelos
 from usuarios.models import Usuario
 from usuarios.forms import RegistroUsuarioAdminForm
-from .models import Insumo, NotificacionStock, Prenda, Servicio, Pedido, DetallePedido, MovimientoOperador
+from .models import (
+    Insumo, NotificacionStock, Prenda, Servicio, Pedido,
+    DetallePedido, MovimientoOperador, Maquina,
+    Incidencia, DudaQueja, MovimientoInsumo, GastoOperativo
+)
 from .forms_inventario import InsumoForm
+
+# Utils
+from .utils import render_pdf_ticket, enviar_ticket_email
+from django.urls import reverse
 from .utils import render_pdf_ticket, enviar_ticket_email
 from django.urls import reverse
 # Create your views here.
@@ -21,7 +31,10 @@ from django.urls import reverse
 
 def prueba(request):
     return HttpResponse("Prueba app gestión")
-    return HttpResponse("Prueba app gestion")
+
+# ==========================================
+#              VISTAS ADMINISTRADOR
+# ==========================================
 
 
 @login_required
@@ -64,6 +77,21 @@ def admin_finanzas(request):
         fecha_fin = hoy
 
     # ========== DATOS FINANCIEROS ==========
+    pedidos_periodo = Pedido.objects.filter(
+        fecha_recepcion__date__gte=fecha_inicio,
+        fecha_recepcion__date__lte=fecha_fin,
+        estado_pago='pagado'
+    )
+
+    ingresos_totales = pedidos_periodo.aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+
+    gastos_insumos = MovimientoInsumo.objects.filter(
+        fecha__date__gte=fecha_inicio,
+        fecha__date__lte=fecha_fin,
+        tipo='entrada'
+    ).aggregate(total=Sum('costo_total'))['total'] or Decimal('0')
+
     # Pedidos pagados en el período
     pedidos_periodo = Pedido.objects.filter(
         fecha_recepcion_date_gte=fecha_inicio,
@@ -109,6 +137,13 @@ def admin_finanzas(request):
         (pago_transferencia / total_pagos * 100), 1) if total_pagos > 0 else 0
 
     # ========== GRÁFICA DE PRENDAS ==========
+    detalles_periodo = DetallePedido.objects.filter(
+        pedido__fecha_recepcion__date__gte=fecha_inicio,
+        pedido__fecha_recepcion__date__lte=fecha_fin,
+        pedido__estado_pago='pagado'
+    )
+
+    prendas_stats = detalles_periodo.values('prenda__nombre').annotate(
     # Prendas más usadas y sus ganancias (desde DetallePedido)
     detalles_periodo = DetallePedido.objects.filter(
         pedido_fecha_recepciondate_gte=fecha_inicio,
@@ -139,6 +174,7 @@ def admin_finanzas(request):
             })
 
     # ========== GRÁFICA DE SERVICIOS ==========
+    servicios_stats = pedidos_periodo.values('tipo_servicio').annotate(
     servicios_stats = pedidos_periodo.values(
         'tipo_servicio'
     ).annotate(
@@ -161,6 +197,10 @@ def admin_finanzas(request):
 
     # ========== GRÁFICA DE INSUMOS ==========
     insumos_stats = MovimientoInsumo.objects.filter(
+        fecha__date__gte=fecha_inicio,
+        fecha__date__lte=fecha_fin,
+        tipo='entrada'
+    ).values('insumo__nombre').annotate(
         fecha_date_gte=fecha_inicio,
         fecha_date_lte=fecha_fin,
         tipo='entrada'
@@ -184,6 +224,7 @@ def admin_finanzas(request):
     gastos_operativos_stats = GastoOperativo.objects.filter(
         fecha__gte=fecha_inicio,
         fecha__lte=fecha_fin
+    ).values('categoria').annotate(
     ).values(
         'categoria'
     ).annotate(
@@ -246,12 +287,8 @@ def admin_usuarios(request):
     if not request.user.groups.filter(name='Administrador').exists():
         return redirect('tasks')
 
-    # Obtener trabajadores (operadores y admins)
     trabajadores = Usuario.objects.filter(rol__in=['operador', 'admin'])
-    # Obtener clientes
     clientes = Usuario.objects.filter(rol='cliente')
-
-    # Obtener la pestaña activa (por defecto clientes)
     tab = request.GET.get('tab', 'clientes')
 
     context = {
@@ -277,7 +314,6 @@ def admin_nuevo_usuario(request):
             user.rol = rol
             user.save()
 
-            # Asignar al grupo correspondiente
             if rol == 'admin':
                 grupo, created = Group.objects.get_or_create(
                     name='Administrador')
@@ -285,7 +321,6 @@ def admin_nuevo_usuario(request):
             elif rol == 'operador':
                 grupo, created = Group.objects.get_or_create(name='Trabajador')
                 user.groups.add(grupo)
-            # Los clientes no necesitan grupo especial
 
             messages.success(request, 'Usuario registrado exitosamente.')
             return redirect('admin_usuarios')
@@ -302,7 +337,7 @@ def admin_eliminar_usuario(request, usuario_id):
 
     try:
         usuario = Usuario.objects.get(id=usuario_id)
-        if usuario != request.user:  # No permitir eliminarse a si mismo
+        if usuario != request.user:
             usuario.delete()
             messages.success(request, 'Usuario eliminado exitosamente.')
         else:
@@ -326,23 +361,16 @@ def admin_precios(request):
     })
 
 
-# APIs para gestion de precios
 @login_required
 @require_POST
 def actualizar_precio_prenda(request):
-    """Vista para actualizar el precio de una prenda via AJAX"""
     if not request.user.groups.filter(name='Administrador').exists():
         return JsonResponse({'success': False, 'mensaje': 'No autorizado'}, status=403)
-
     try:
         data = json.loads(request.body)
-        prenda_id = data.get('id')
-        nuevo_precio = data.get('precio')
-
-        prenda = get_object_or_404(Prenda, id=prenda_id)
-        prenda.precio = nuevo_precio
+        prenda = get_object_or_404(Prenda, id=data.get('id'))
+        prenda.precio = data.get('precio')
         prenda.save()
-
         return JsonResponse({'success': True, 'mensaje': 'Precio actualizado correctamente'})
     except Exception as e:
         return JsonResponse({'success': False, 'mensaje': str(e)}, status=400)
@@ -351,19 +379,13 @@ def actualizar_precio_prenda(request):
 @login_required
 @require_POST
 def actualizar_precio_servicio(request):
-    """Vista para actualizar el precio de un servicio via AJAX"""
     if not request.user.groups.filter(name='Administrador').exists():
         return JsonResponse({'success': False, 'mensaje': 'No autorizado'}, status=403)
-
     try:
         data = json.loads(request.body)
-        servicio_id = data.get('id')
-        nuevo_precio = data.get('precio')
-
-        servicio = get_object_or_404(Servicio, id=servicio_id)
-        servicio.precio = nuevo_precio
+        servicio = get_object_or_404(Servicio, id=data.get('id'))
+        servicio.precio = data.get('precio')
         servicio.save()
-
         return JsonResponse({'success': True, 'mensaje': 'Precio actualizado correctamente'})
     except Exception as e:
         return JsonResponse({'success': False, 'mensaje': str(e)}, status=400)
@@ -372,19 +394,16 @@ def actualizar_precio_servicio(request):
 @login_required
 @require_POST
 def agregar_prenda(request):
-    """Vista para agregar una nueva prenda"""
     if not request.user.groups.filter(name='Administrador').exists():
         return JsonResponse({'success': False, 'mensaje': 'No autorizado'}, status=403)
-
     try:
         data = json.loads(request.body)
         nombre = data.get('nombre')
-        precio = data.get('precio')
-
         if Prenda.objects.filter(nombre=nombre).exists():
             return JsonResponse({'success': False, 'mensaje': 'Ya existe una prenda con ese nombre'}, status=400)
 
-        prenda = Prenda.objects.create(nombre=nombre, precio=precio)
+        prenda = Prenda.objects.create(
+            nombre=nombre, precio=data.get('precio'))
         return JsonResponse({
             'success': True,
             'mensaje': 'Prenda agregada correctamente',
@@ -397,22 +416,19 @@ def agregar_prenda(request):
 @login_required
 @require_POST
 def agregar_servicio(request):
-    """Vista para agregar un nuevo servicio"""
     if not request.user.groups.filter(name='Administrador').exists():
         return JsonResponse({'success': False, 'mensaje': 'No autorizado'}, status=403)
-
     try:
         data = json.loads(request.body)
         nombre = data.get('nombre')
-        precio = data.get('precio')
-        tipo = data.get('tipo', 'autoservicio')
-        descripcion = data.get('descripcion', '')
-
         if Servicio.objects.filter(nombre=nombre).exists():
             return JsonResponse({'success': False, 'mensaje': 'Ya existe un servicio con ese nombre'}, status=400)
 
         servicio = Servicio.objects.create(
-            nombre=nombre, precio=precio, tipo=tipo, descripcion=descripcion)
+            nombre=nombre, precio=data.get('precio'),
+            tipo=data.get('tipo', 'autoservicio'),
+            descripcion=data.get('descripcion', '')
+        )
         return JsonResponse({
             'success': True,
             'mensaje': 'Servicio agregado correctamente',
@@ -425,18 +441,13 @@ def agregar_servicio(request):
 @login_required
 @require_POST
 def eliminar_prenda(request):
-    """Vista para eliminar (desactivar) una prenda"""
     if not request.user.groups.filter(name='Administrador').exists():
         return JsonResponse({'success': False, 'mensaje': 'No autorizado'}, status=403)
-
     try:
         data = json.loads(request.body)
-        prenda_id = data.get('id')
-
-        prenda = get_object_or_404(Prenda, id=prenda_id)
+        prenda = get_object_or_404(Prenda, id=data.get('id'))
         prenda.activo = False
         prenda.save()
-
         return JsonResponse({'success': True, 'mensaje': 'Prenda eliminada correctamente'})
     except Exception as e:
         return JsonResponse({'success': False, 'mensaje': str(e)}, status=400)
@@ -445,46 +456,43 @@ def eliminar_prenda(request):
 @login_required
 @require_POST
 def eliminar_servicio(request):
-    """Vista para eliminar (desactivar) un servicio"""
     if not request.user.groups.filter(name='Administrador').exists():
         return JsonResponse({'success': False, 'mensaje': 'No autorizado'}, status=403)
-
     try:
         data = json.loads(request.body)
-        servicio_id = data.get('id')
-
-        servicio = get_object_or_404(Servicio, id=servicio_id)
+        servicio = get_object_or_404(Servicio, id=data.get('id'))
         servicio.activo = False
         servicio.save()
-
         return JsonResponse({'success': True, 'mensaje': 'Servicio eliminado correctamente'})
     except Exception as e:
         return JsonResponse({'success': False, 'mensaje': str(e)}, status=400)
 
 
 def obtener_precios_json(request):
-    """Vista para obtener los precios en formato JSON (para uso en JavaScript del cliente)"""
     prendas = list(Prenda.objects.filter(
         activo=True).values('id', 'nombre', 'precio'))
     servicios = list(Servicio.objects.filter(activo=True).values(
         'id', 'nombre', 'tipo', 'precio', 'descripcion'))
 
-    # Convertir Decimal a string para JSON
     for prenda in prendas:
         prenda['precio'] = str(prenda['precio'])
     for servicio in servicios:
         servicio['precio'] = str(servicio['precio'])
 
-    return JsonResponse({
-        'prendas': prendas,
-        'servicios': servicios
-    })
+    return JsonResponse({'prendas': prendas, 'servicios': servicios})
 
 
 @login_required
 def buscar_clientes(request):
-    """API para buscar clientes por nombre o telefono (solo rol cliente)"""
     query = request.GET.get('q', '').strip()
+    if len(query) < 2:
+        return JsonResponse({'clientes': []})
+
+    clientes = Usuario.objects.filter(rol='cliente').filter(
+        Q(username__icontains=query) |
+        Q(first_name__icontains=query) |
+        Q(last_name__icontains=query) |
+        Q(telefono__icontains=query)
 
     if len(query) < 2:
         return JsonResponse({'clientes': []})
@@ -514,7 +522,6 @@ def admin_inventarios(request):
         return redirect('tasks')
 
     insumos = Insumo.objects.all().order_by('-fecha_actualizacion')
-
     notificaciones = NotificacionStock.objects.filter(
         atendida=False).select_related('insumo', 'usuario')
 
@@ -533,32 +540,23 @@ def admin_inventarios(request):
         'notificaciones': notificaciones
     })
 
-# Vista para editar inventario / vistaADMINISTRADOR
 
-
-@login_required
 @login_required
 def editar_insumo(request, id):
     insumo = get_object_or_404(Insumo, id=id)
-
     if request.method == 'POST':
         form = InsumoForm(request.POST, instance=insumo)
         if form.is_valid():
             form.save()
-
             NotificacionStock.objects.filter(
                 insumo=insumo, atendida=False).update(atendida=True)
-
             messages.success(
                 request, 'Inventario actualizado y alertas resueltas.')
             return redirect('admin_inventarios')
         else:
             errores = form.errors.as_text()
             messages.error(request, f'Error al guardar: {errores}')
-
     return redirect('admin_inventarios')
-
-# Vista para eliminar inventario / vista ADMINISTRADOR
 
 
 @login_required
@@ -570,16 +568,11 @@ def eliminar_insumo(request, id):
 
 
 @login_required
-@login_required
 def admin_detalles_inventario(request):
     if not request.user.groups.filter(name='Administrador').exists():
         return redirect('tasks')
-
     insumos = Insumo.objects.all().order_by('nombre')
-
-    return render(request, 'admin/inventario/detalles_inventario.html', {
-        'insumos': insumos
-    })
+    return render(request, 'admin/inventario/detalles_inventario.html', {'insumos': insumos})
 
 
 @login_required
@@ -587,6 +580,8 @@ def admin_historialVentas(request):
     if not request.user.groups.filter(name='Administrador').exists():
         return redirect('tasks')
 
+    ventas = Pedido.objects.select_related(
+        'cliente', 'servicio').order_by('-fecha_recepcion')
     # Obtener TODOS los pedidos para el historial de ventas
     ventas = Pedido.objects.select_related(
         'cliente', 'servicio').order_by('-fecha_recepcion')
@@ -595,9 +590,9 @@ def admin_historialVentas(request):
     busqueda = request.GET.get('buscar', '').strip()
     if busqueda:
         ventas = ventas.filter(
-            models.Q(folio__icontains=busqueda) |
-            models.Q(cliente__username__icontains=busqueda) |
-            models.Q(cliente__first_name__icontains=busqueda)
+            Q(folio__icontains=busqueda) |
+            Q(cliente__username__icontains=busqueda) |
+            Q(cliente__first_name__icontains=busqueda)
         )
 
     context = {
@@ -613,6 +608,8 @@ def admin_historialMovimientos(request):
     if not request.user.groups.filter(name='Administrador').exists():
         return redirect('tasks')
 
+    movimientos = MovimientoOperador.objects.select_related(
+        'operador', 'pedido').order_by('-fecha')
     # Obtener movimientos realizados por operadores
     movimientos = MovimientoOperador.objects.select_related(
         'operador', 'pedido'
@@ -634,6 +631,10 @@ def admin_historialMovimientos(request):
 def admin_detalleVenta(request, pedido_id=None):
     if not request.user.groups.filter(name='Administrador').exists():
         return redirect('tasks')
+    pedido = None
+    if pedido_id:
+        pedido = get_object_or_404(Pedido, id=pedido_id)
+    return render(request, 'admin/historial/detalle-venta.html', {'pedido': pedido})
 
     pedido = None
     if pedido_id:
@@ -647,32 +648,60 @@ def admin_detalleVenta(request, pedido_id=None):
 
 @login_required
 def admin_incidencias(request):
-    from gestion.models import DudaQueja
-    from django.http import JsonResponse
+    """
+    Vista ADMIN para gestionar incidencias y dudas/quejas.
+    """
     if not request.user.groups.filter(name='Administrador').exists():
         return redirect('tasks')
+
     if request.method == 'POST':
-        duda_id = request.POST.get('duda_id')
-        respuesta = request.POST.get('respuesta')
+        tipo = request.POST.get('tipo', 'duda')
         accion = request.POST.get('accion')
 
-        try:
-            duda = DudaQueja.objects.get(id=duda_id)
-            if accion == 'resolver':
-                duda.respuesta = respuesta
-                duda.estdo = 'resuelto'
-                duda.fecha_resolucion = timezone.now()
-                duda.save()
-                return JsonResponse({'success': True, 'message': 'Duda/queja resuelta.'})
-            elif accion == 'en_proceso':
-                duda.estado = 'en_proceso'
-                duda.save()
-                return JsonResponse({'success': True, 'message': 'Actualización en proceso.'})
-        except DudaQueja.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'Duda/queja no encontrada.'})
-    dudas_quejas = DudaQueja.objects.select_related('cliente').all()
+        if tipo == 'duda':
+            duda_id = request.POST.get('duda_id')
+            respuesta = request.POST.get('respuesta')
+            try:
+                duda = DudaQueja.objects.get(id=duda_id)
+                if accion == 'resolver':
+                    duda.respuesta = respuesta
+                    duda.estado = 'resuelto'
+                    duda.fecha_resolucion = timezone.now()
+                    duda.save()
+                    return JsonResponse({'success': True, 'message': 'Duda/queja resuelta.'})
+                elif accion == 'en_proceso':
+                    duda.estado = 'en_proceso'
+                    duda.save()
+                    return JsonResponse({'success': True, 'message': 'Actualización en proceso.'})
+            except DudaQueja.DoesNotExist:
+                return JsonResponse({'success': False, 'message': 'Duda/queja no encontrada.'})
+
+        elif tipo == 'incidencia':
+            incidencia_id = request.POST.get('incidencia_id')
+            respuesta = request.POST.get('respuesta')
+            try:
+                incidencia = Incidencia.objects.get(id=incidencia_id)
+                if accion == 'resolver':
+                    incidencia.respuesta = respuesta
+                    incidencia.estado = 'resuelto'
+                    incidencia.fecha_resolucion = timezone.now()
+                    incidencia.save()
+                    return JsonResponse({'success': True, 'message': 'Incidencia resuelta.'})
+                elif accion == 'en_proceso':
+                    incidencia.estado = 'en_proceso'
+                    incidencia.save()
+                    return JsonResponse({'success': True, 'message': 'Incidencia en proceso.'})
+            except Incidencia.DoesNotExist:
+                return JsonResponse({'success': False, 'message': 'Incidencia no encontrada.'})
+
+    dudas_quejas = DudaQueja.objects.select_related(
+        'cliente').all().order_by('-fecha_creacion')
+    incidencias_list = Incidencia.objects.select_related(
+        'trabajador').all().order_by('-fecha_reporte')
+
     context = {
-        'dudas_quejas': dudas_quejas
+        'dudas_quejas': dudas_quejas,
+        'incidencias': incidencias_list
     }
     return render(request, 'admin/incidencias.html', context)
 
@@ -703,9 +732,64 @@ def admin_configuracion(request):
     
     return render(request, 'admin/configuracion.html', context)
 
+# ==========================================
+#              VISTAS TRABAJADOR
+# ==========================================
+
 @login_required
 def trabajador_dashboard(request):
     return render(request, 'trabajador/dashboard.html')
+
+
+@login_required
+def servicios_proceso(request):
+    """
+    Muestra SOLO los servicios activos que requieren atención.
+    Excluye: Entregado y Cancelado.
+    """
+    # Filtramos para ver solo lo pendiente, en proceso o listo
+    pedidos = Pedido.objects.exclude(
+        estado__in=['entregado', 'cancelado']
+    ).select_related('cliente').order_by('fecha_recepcion')
+
+    # Busqueda por folio o cliente dentro de los activos
+    busqueda = request.GET.get('buscar', '').strip()
+    if busqueda:
+        pedidos = pedidos.filter(
+            Q(folio__icontains=busqueda) |
+            Q(cliente__username__icontains=busqueda) |
+            Q(cliente__first_name__icontains=busqueda) |
+            Q(cliente__last_name__icontains=busqueda)
+        )
+
+    return render(request, 'trabajador/procedimiento/servicios_proceso.html', {
+        'pedidos': pedidos,
+        'busqueda': busqueda
+    })
+
+
+@login_required
+def historial_servicios(request):
+    """
+    Muestra SOLO el archivo muerto (servicios finalizados).
+    Ordenados del más reciente entregado al más antiguo.
+    """
+    pedidos = Pedido.objects.filter(
+        estado__in=['entregado', 'cancelado']
+    ).select_related('cliente').order_by('-fecha_entrega_real', '-fecha_recepcion')
+
+    # Busqueda en historial
+    busqueda = request.GET.get('buscar', '').strip()
+    if busqueda:
+        pedidos = pedidos.filter(
+            Q(folio__icontains=busqueda) |
+            Q(cliente__username__icontains=busqueda) |
+            Q(cliente__first_name__icontains=busqueda)
+        )
+
+    return render(request, 'trabajador/procedimiento/historial_servicios.html', {
+        'pedidos': pedidos
+    })
 
 
 @login_required
@@ -757,6 +841,8 @@ def nuevo_servicio(request):
             )
 
             # --- CORRECCIÓN CLAVE ---
+            pedido.refresh_from_db()
+
             # Esto obliga a Django a releer el pedido desde la base de datos.
             # Arregla el problema de que el folio, fechas o datos relacionados salgan vacíos en el PDF.
             pedido.refresh_from_db()
@@ -767,6 +853,10 @@ def nuevo_servicio(request):
             ticket_url = ""
 
             try:
+                pdf_bytes = render_pdf_ticket(pedido)
+                if pdf_bytes:
+                    ticket_url = reverse('imprimir_ticket', args=[pedido.id])
+                    enviado = enviar_ticket_email(pedido, pdf_bytes)
                 # Generamos el PDF en memoria
                 pdf_bytes = render_pdf_ticket(pedido)
 
@@ -783,6 +873,10 @@ def nuevo_servicio(request):
                         mensaje_ticket = " (Ticket generado, pero no se pudo enviar correo)."
                 else:
                     mensaje_ticket = " (Nota: Error al generar el PDF visual)."
+            except Exception as e:
+                print(f"Error en proceso de ticket: {e}")
+                mensaje_ticket = " (Error técnico con el ticket PDF)."
+
 
             except Exception as e:
                 print(f"Error en proceso de ticket: {e}")
@@ -794,6 +888,12 @@ def nuevo_servicio(request):
                 'success': True,
                 'message': f'Servicio registrado correctamente{mensaje_ticket}',
                 'folio': pedido.folio,
+                'ticket_url': ticket_url
+            })
+
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': f"Error interno: {str(e)}"}, status=400)
+
                 'ticket_url': ticket_url  # Esta URL es la que usa el window.open()
             })
 
@@ -811,24 +911,109 @@ def nuevo_servicio(request):
 
 @login_required
 def validar_ticket(request):
+    """
+    Vista principal para la pantalla de entrega y validación de tickets.
+    """
     return render(request, 'trabajador/tickets/validar_ticket.html')
 
 
 @login_required
+def api_buscar_pedido(request):
+    """
+    API JSON para buscar un pedido por folio (usado en validar_ticket).
+    """
+    folio = request.GET.get('folio', '').strip().upper()
+    try:
+        pedido = Pedido.objects.get(folio__iexact=folio)
+        data = {
+            'success': True,
+            'pedido': {
+                'id': pedido.id,
+                'folio': pedido.folio,
+                'cliente': f"{pedido.cliente.first_name} {pedido.cliente.last_name}" if pedido.cliente.first_name else pedido.cliente.username,
+                'servicio': pedido.tipo_servicio,
+                'total': str(pedido.total),
+                'estado': pedido.estado,
+                'estado_display': pedido.get_estado_display(),
+                'estado_pago': pedido.estado_pago,
+                'peso': str(pedido.peso)
+            }
+        }
+    except Pedido.DoesNotExist:
+        data = {'success': False,
+                'message': 'No existe ningún pedido con ese folio.'}
+    return JsonResponse(data)
+
+
+@login_required
+def api_entregar_pedido(request):
+    """
+    API JSON para cambiar el estado a entregado y registrar pago si aplica.
+    """
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        pedido = get_object_or_404(Pedido, id=data.get('pedido_id'))
+
+        # Validación de seguridad
+        if pedido.estado != 'listo':
+            return JsonResponse({'success': False, 'message': 'El pedido no está listo para entrega.'})
+
+        # Actualizar a Entregado
+        pedido.estado = 'entregado'
+        pedido.fecha_entrega_real = timezone.now()
+
+        # Cobrar si debe
+        if pedido.estado_pago == 'pendiente':
+            pedido.estado_pago = 'pagado'
+            pedido.metodo_pago = 'efectivo'  # Asumimos efectivo en mostrador
+
+        pedido.save()
+
+        # Historial
+        MovimientoOperador.objects.create(
+            operador=request.user,
+            accion='entrego',
+            detalles=f"Entregó pedido {pedido.folio}",
+            pedido=pedido
+        )
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'success': False}, status=400)
+
+
+@login_required
 def incidencias(request):
-    return render(request, 'trabajador/incidencias/incidencias.html')
+    """
+    Vista para que el trabajador reporte incidencias.
+    """
+    if request.method == 'POST':
+        asunto = request.POST.get('asunto')
+        descripcion = request.POST.get('descripcion')
+        prioridad = request.POST.get('prioridad', 'media')
+        evidencia = request.FILES.get('evidencia')
+
+        if asunto and asunto.strip() and descripcion and descripcion.strip():
+            Incidencia.objects.create(
+                trabajador=request.user,
+                asunto=asunto.strip(),
+                descripcion=descripcion.strip(),
+                prioridad=prioridad,
+                evidencia=evidencia
+            )
+            return JsonResponse({'success': True, 'message': 'Incidencia reportada exitosamente.'})
+        return JsonResponse({'success': False, 'message': 'Por favor complete todos los campos requeridos.'})
+
+    mis_incidencias = Incidencia.objects.filter(
+        trabajador=request.user).order_by('-fecha_reporte')
+    return render(request, 'trabajador/incidencias/incidencias.html', {'mis_incidencias': mis_incidencias})
 
 
-# Vista para el inventario / vista TRABAJADOR
 @login_required
 def inventario(request):
     insumos = Insumo.objects.all()
-
     if request.method == 'POST':
         producto_nombre = request.POST.get('producto_nombre')
-
         insumo_obj = Insumo.objects.filter(nombre=producto_nombre).first()
-
         if insumo_obj:
             NotificacionStock.objects.get_or_create(
                 insumo=insumo_obj,
@@ -837,13 +1022,16 @@ def inventario(request):
             )
             messages.success(
                 request, f'¡Aviso enviado al administrador sobre: {producto_nombre}!')
-
         return redirect('inventario')
 
     return render(request, 'trabajador/inventario/inventario.html', {'insumos': insumos})
 
 
 @login_required
+def detalle_servicio(request, pedido_id=None):
+    pedido = get_object_or_404(Pedido, id=pedido_id) if pedido_id else None
+
+    # Filtramos máquinas disponibles para llenar el Modal
 def servicios_proceso(request):
     # Obtener todos los pedidos que no estan entregados ni cancelados
     pedidos = Pedido.objects.filter(
@@ -883,6 +1071,11 @@ def detalle_servicio(request, pedido_id=None):
             estado_pago = data.get('estado_pago')
             notas = data.get('notas', '')
 
+            # Datos para asignación de máquina
+            maquina_id = data.get('maquina_id')
+            tiempo_asignado = data.get('tiempo_asignado')
+
+            # --- ACTUALIZACIÓN DEL PEDIDO ---
             # Datos de la máquina (si vienen)
             maquina_id = data.get('maquina_id')
             tiempo_asignado = data.get('tiempo_asignado', 30)
@@ -893,6 +1086,26 @@ def detalle_servicio(request, pedido_id=None):
                 if nuevo_estado == 'entregado':
                     pedido.fecha_entrega_real = timezone.now()
 
+            # --- LÓGICA DE ASIGNACIÓN DE MÁQUINA ---
+            if nuevo_estado == 'en_proceso' and maquina_id:
+                try:
+                    maquina = Maquina.objects.get(id=maquina_id)
+                    if maquina.estado == 'disponible':
+                        maquina.estado = 'ocupado'
+                        maquina.pedido_actual = pedido
+                        maquina.hora_inicio_uso = timezone.now()
+                        maquina.tiempo_asignado = int(
+                            tiempo_asignado) if tiempo_asignado else 30
+                        maquina.save()
+
+                        msg_sistema = f"\n[Sistema {timezone.now().strftime('%H:%M')}] Iniciado en {maquina.nombre} ({maquina.tiempo_asignado} min)."
+                        if pedido.observaciones:
+                            pedido.observaciones += msg_sistema
+                        else:
+                            pedido.observaciones = msg_sistema
+                except Maquina.DoesNotExist:
+                    pass
+            # ---------------------------------------
             # --- LÓGICA DE MÁQUINA ---
             # Si pasamos a "en_proceso" y seleccionaron una máquina
             if nuevo_estado == 'en_proceso' and maquina_id:
@@ -924,6 +1137,15 @@ def detalle_servicio(request, pedido_id=None):
 
             pedido.save()
 
+            MovimientoOperador.objects.create(
+                operador=request.user,
+                accion='actualizo',
+                detalles=f"Actualizo pedido {pedido.folio} a estado: {nuevo_estado}",
+                pedido=pedido
+            )
+
+            return JsonResponse({'success': True, 'message': 'Pedido actualizado correctamente'})
+
             # Registrar movimiento del operador
             MovimientoOperador.objects.create(
                 operador=request.user,
@@ -948,7 +1170,44 @@ def detalle_servicio(request, pedido_id=None):
 
 @login_required
 def estatus_maquina(request):
-    return render(request, 'trabajador/estatus/estatus_maquina.html')
+    if request.method == 'POST':
+        accion = request.POST.get('accion')
+
+        if accion == 'agregar':
+            nombre = request.POST.get('nombre')
+            tipo = request.POST.get('tipo')
+            if nombre and tipo:
+                Maquina.objects.create(nombre=nombre, tipo=tipo)
+                messages.success(request, 'Máquina registrada correctamente.')
+
+        elif accion == 'baja_definitiva':
+            maquina_id = request.POST.get('maquina_id')
+            Maquina.objects.filter(id=maquina_id).delete()
+            messages.success(request, 'Máquina eliminada.')
+
+        elif accion == 'reportar_mantenimiento':
+            maquina_id = request.POST.get('maquina_id')
+            maquina = get_object_or_404(Maquina, id=maquina_id)
+            maquina.estado = 'mantenimiento'
+            maquina.save()
+            messages.warning(request, 'Máquina puesta en mantenimiento.')
+
+        elif accion == 'reactivar':
+            maquina_id = request.POST.get('maquina_id')
+            maquina = get_object_or_404(Maquina, id=maquina_id)
+            maquina.estado = 'disponible'
+            maquina.save()
+            messages.success(request, 'Máquina reactivada y lista para usar.')
+
+        return redirect('estatus_maquina')
+
+    lavadoras = Maquina.objects.filter(tipo='lavadora').order_by('nombre')
+    secadoras = Maquina.objects.filter(tipo='secadora').order_by('nombre')
+
+    return render(request, 'trabajador/estatus/estatus_maquina.html', {
+        'lavadoras': lavadoras,
+        'secadoras': secadoras
+    })
 
 
 @login_required
@@ -962,6 +1221,7 @@ def asignar_maquina(request):
         data = json.loads(request.body)
         pedido_id = data.get('pedido_id')
         maquina_id = data.get('maquina_id')
+        tiempo = int(data.get('tiempo', 30))
         tiempo = int(data.get('tiempo', 30))  # Tiempo por defecto 30 min
 
         pedido = get_object_or_404(Pedido, id=pedido_id)
@@ -977,6 +1237,8 @@ def asignar_maquina(request):
         maquina.tiempo_asignado = tiempo
         maquina.save()
 
+        if maquina.tipo == 'lavadora':
+            pedido.estado = 'en_proceso'
         # Actualizar Estado del Pedido
         if maquina.tipo == 'lavadora':
             pedido.estado = 'en_proceso'  # O crea un estado específico 'lavando' si prefieres
@@ -994,6 +1256,29 @@ def asignar_maquina(request):
 
 
 @login_required
+def imprimir_ticket(request, pedido_id):
+    pedido = get_object_or_404(Pedido, id=pedido_id)
+    pdf_bytes = render_pdf_ticket(pedido)
+
+    if not pdf_bytes:
+        return HttpResponse("Error al generar el ticket", status=500)
+
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="ticket_{pedido.folio}.pdf"'
+    return response
+
+
+# ==========================================
+#              VISTAS CLIENTE
+# ==========================================
+
+@login_required
+def cliente_dashboard(request):
+    pedidos_activos = Pedido.objects.filter(cliente=request.user).exclude(
+        estado__in=['entregado', 'cancelado']).order_by('-fecha_recepcion')
+    pedidos_finalizados = Pedido.objects.filter(
+        cliente=request.user, estado='entregado').order_by('-fecha_entrega_real')
+    return render(request, 'cliente/dashboard.html', {'pedidos_activos': pedidos_activos, 'pedidos_finalizados': pedidos_finalizados})
 def cliente_dashboard(request):
     # Obtener pedidos activos del cliente (no entregados ni cancelados)
     pedidos_activos = Pedido.objects.filter(
@@ -1033,31 +1318,21 @@ def rastrear_servicio(request):
 
 @login_required
 def dudas_quejas(request):
-    from gestion.models import DudaQueja
-
     if request.method == 'POST':
         comentario = request.POST.get('comentario')
         if comentario and comentario.strip():
             DudaQueja.objects.create(
-                cliente=request.user,
-                comentario=comentario.strip()
-            )
+                cliente=request.user, comentario=comentario.strip())
             return JsonResponse({'success': True, 'message': 'Tu comentario ha sido enviado exitosamente.'})
         return JsonResponse({'success': False, 'message': 'El comentario no puede estar vacío.'})
 
-    # Obtener el historial de dudas/quejas del cliente actual
     mis_dudas = DudaQueja.objects.filter(
         cliente=request.user).order_by('-fecha_creacion')
-
-    context = {
-        'mis_dudas': mis_dudas
-    }
-    return render(request, 'cliente/dudas_quejas.html', context)
+    return render(request, 'cliente/dudas_quejas.html', {'mis_dudas': mis_dudas})
 
 
 @login_required
 def autoservicio(request):
-    # Obtener precios de servicios de autoservicio
     servicios_autoservicio = Servicio.objects.filter(
         activo=True, tipo='autoservicio')
 
@@ -1068,6 +1343,9 @@ def autoservicio(request):
             servicio_nombre = data.get('servicio_nombre')
             total = Decimal(str(data.get('total', 0)))
             metodo_pago = data.get('metodo_pago', 'efectivo')
+            servicio = Servicio.objects.filter(
+                id=servicio_id).first() if servicio_id else None
+
 
             servicio = Servicio.objects.filter(
                 id=servicio_id).first() if servicio_id else None
@@ -1083,6 +1361,10 @@ def autoservicio(request):
                 estado_pago='pendiente',
                 origen='cliente'
             )
+            return JsonResponse({'success': True, 'message': 'Servicio registrado exitosamente', 'folio': pedido.folio})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=400)
+    return render(request, 'cliente/autoservicio.html', {'servicios': servicios_autoservicio})
 
             return JsonResponse({
                 'success': True,
@@ -1104,10 +1386,7 @@ def seleccionar_servicio(request):
 
 @login_required
 def servCosto(request):
-    # Obtener el tipo de servicio de la URL
     tipo_servicio = request.GET.get('tipo', 'por_encargo')
-
-    # Mapear tipo a nombre legible
     tipos_nombres = {
         'autoservicio': 'Autoservicio',
         'por_encargo': 'Servicio por encargo',
@@ -1115,12 +1394,8 @@ def servCosto(request):
         'tintoreria': 'Tintoreria',
     }
     tipo_servicio_nombre = tipos_nombres.get(tipo_servicio, 'Servicio')
-
-    # Obtener el precio del servicio desde la BD
     servicio = Servicio.objects.filter(activo=True, tipo=tipo_servicio).first()
     servicio_precio = servicio.precio if servicio else 0
-
-    # Obtener todas las prendas para el formulario
     prendas = Prenda.objects.filter(activo=True)
 
     if request.method == 'POST':
@@ -1162,6 +1437,7 @@ def servCosto(request):
                         subtotal=Decimal(str(prenda_data.get('subtotal', 0)))
                     )
 
+            return JsonResponse({'success': True, 'message': 'Servicio registrado exitosamente', 'folio': pedido.folio})
             return JsonResponse({
                 'success': True,
                 'message': 'Servicio registrado exitosamente',
@@ -1186,13 +1462,10 @@ def terminado(request):
 @login_required
 def tasks(request):
     user = request.user
-
     if user.groups.filter(name='Administrador').exists():
         return redirect('admin_dashboard')
-
     elif user.groups.filter(name='Trabajador').exists():
         return redirect('trabajador_dashboard')
-
     else:
         return redirect('cliente_dashboard')
 

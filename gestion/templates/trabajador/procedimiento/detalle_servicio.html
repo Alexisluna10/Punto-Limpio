@@ -15,19 +15,19 @@ Gestionar Servicio {{ pedido.folio }}
             <h2 style="color: #008CC9; margin: 0;">Folio: {{ pedido.folio }}</h2>
             <div>
                 {% if pedido.estado == 'pendiente' %}
-                <span class="badge badge-pendiente" style="font-size: 14px;">PENDIENTE</span>
+                    <span class="badge badge-pendiente" style="font-size: 14px;">PENDIENTE</span>
                 {% elif pedido.estado == 'en_proceso' %}
-                <span class="badge badge-proceso" style="font-size: 14px;">EN PROCESO</span>
+                    <span class="badge badge-proceso" style="font-size: 14px;">EN PROCESO</span>
                 {% elif pedido.estado == 'listo' %}
-                <span class="badge badge-entregado" style="font-size: 14px;">LISTO</span>
+                    <span class="badge badge-entregado" style="font-size: 14px;">LISTO</span>
                 {% elif pedido.estado == 'entregado' %}
-                <span class="badge badge-entregado" style="font-size: 14px;">ENTREGADO</span>
+                    <span class="badge badge-entregado" style="font-size: 14px;">ENTREGADO</span>
                 {% endif %}
 
                 {% if pedido.estado_pago == 'pendiente' %}
-                <span class="badge badge-pendiente" style="font-size: 14px; margin-left: 5px;">PAGO PENDIENTE</span>
+                    <span class="badge badge-pendiente" style="font-size: 14px; margin-left: 5px;">PAGO PENDIENTE</span>
                 {% else %}
-                <span class="badge badge-pagado" style="font-size: 14px; margin-left: 5px;">PAGADO</span>
+                    <span class="badge badge-pagado" style="font-size: 14px; margin-left: 5px;">PAGADO</span>
                 {% endif %}
             </div>
         </div>
@@ -38,12 +38,14 @@ Gestionar Servicio {{ pedido.folio }}
                 <small>Recibido</small>
             </div>
 
+            <div class="trab-timeline-step {% if pedido.estado == 'en_proceso' %}active{% elif pedido.estado == 'listo' or pedido.estado == 'entregado' %}completed{% endif %}">
             <div
                 class="trab-timeline-step {% if pedido.estado == 'en_proceso' %}active{% elif pedido.estado == 'listo' or pedido.estado == 'entregado' %}completed{% endif %}">
                 <div class="trab-step-circle">2</div>
                 <small>En Proceso</small>
             </div>
 
+            <div class="trab-timeline-step {% if pedido.estado == 'listo' %}active{% elif pedido.estado == 'entregado' %}completed{% endif %}">
             <div
                 class="trab-timeline-step {% if pedido.estado == 'listo' %}active{% elif pedido.estado == 'entregado' %}completed{% endif %}">
                 <div class="trab-step-circle">3</div>
@@ -62,6 +64,9 @@ Gestionar Servicio {{ pedido.folio }}
             <span class="trab-edit-label">Cliente:</span>
             <span class="trab-edit-value">
                 {% if pedido.cliente.first_name %}
+                    {{ pedido.cliente.first_name }} {{ pedido.cliente.last_name }}
+                {% else %}
+                    {{ pedido.cliente.username }}
                 {{ pedido.cliente.first_name }} {{ pedido.cliente.last_name }}
                 {% else %}
                 {{ pedido.cliente.username }}
@@ -111,12 +116,14 @@ Gestionar Servicio {{ pedido.folio }}
         </div>
         {% endif %}
 
+        {% if pedido.estado != 'entregado' and pedido.estado != 'cancelado' %}
         <form id="formActualizar" style="margin-top: 30px;">
             {% csrf_token %}
             <div class="form-group" style="margin-bottom: 20px;">
                 <label class="trab-incidencia-label">Actualizar Estatus del Servicio:</label>
                 <select class="input-modern" id="selectEstado">
                     <option value="">-- Sin cambio --</option>
+                    
                     <option value="pendiente" {% if pedido.estado == 'pendiente' %}selected{% endif %}>
                         Pendiente / Recibido
                     </option>
@@ -126,6 +133,7 @@ Gestionar Servicio {{ pedido.folio }}
                     <option value="listo" {% if pedido.estado == 'listo' %}selected{% endif %}>
                         Listo para Entrega
                     </option>
+                    </select>
                     <option value="entregado" {% if pedido.estado == 'entregado' %}selected{% endif %}>
                         Entregado / Finalizado
                     </option>
@@ -158,6 +166,12 @@ Gestionar Servicio {{ pedido.folio }}
                 <button type="button" class="btn-submit" onclick="prepararGuardado()">GUARDAR CAMBIOS</button>
             </div>
         </form>
+        {% else %}
+        <div style="background: #f9f9f9; padding: 20px; text-align: center; border-radius: 8px; margin-top: 30px;">
+            <p style="color: #666; font-style: italic;">Este servicio ya fue finalizado y no se puede editar.</p>
+            <a href="{% url 'historial_servicios' %}" class="btn-base" style="color: #008CC9;">Volver al Historial</a>
+        </div>
+        {% endif %}
 
     </div>
     {% else %}

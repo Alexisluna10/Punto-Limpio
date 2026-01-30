@@ -1209,3 +1209,322 @@
         max-height: none;
     }
 }
+
+/* ==========================================================================
+   7. ESTILOS PANTALLA VALIDAR TICKET (Estilo Auth)
+   ========================================================================== */
+
+.validar-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 70vh;
+    /* Ajustado para que no se pegue al footer */
+    padding: 20px;
+}
+
+.validar-card {
+    background-color: white;
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(17, 130, 198, 0.15);
+    width: 100%;
+    max-width: 500px;
+    text-align: center;
+    position: relative;
+    border-top: 5px solid #6BC0B1;
+    /* Turquesa */
+}
+
+.validar-title {
+    font-family: sans-serif;
+    /* Usamos la fuente del sistema para evitar errores si no cargó Poppins */
+    color: #1182C6;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.validar-subtitle {
+    color: #295D64;
+    font-size: 14px;
+    margin-bottom: 30px;
+}
+
+/* Inputs */
+.validar-input {
+    width: 100%;
+    height: 50px;
+    padding: 10px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 18px;
+    color: #333;
+    background-color: #fafafa;
+    transition: all 0.3s;
+    text-align: center;
+    letter-spacing: 2px;
+    font-weight: bold;
+}
+
+.validar-input:focus {
+    outline: none;
+    border-color: #6BC0B1;
+    background-color: white;
+    box-shadow: 0 0 8px rgba(107, 192, 177, 0.2);
+}
+
+/* Caja de Resultados */
+.resultado-box {
+    margin-top: 30px;
+    padding: 20px;
+    border-radius: 12px;
+    background: #f8f9fa;
+    border: 1px solid #eee;
+    display: none;
+    text-align: left;
+    animation: slideDown 0.3s ease-out;
+}
+
+.res-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: #555;
+}
+
+.res-label {
+    font-weight: 600;
+    color: #295D64;
+}
+
+.res-value {
+    font-weight: 500;
+}
+
+.total-box {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 2px dashed #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.total-amount {
+    font-size: 24px;
+    font-weight: 800;
+    color: #1182C6;
+}
+
+/* Etiquetas de Estado */
+.status-tag {
+    display: block;
+    text-align: center;
+    padding: 8px;
+    border-radius: 6px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    font-size: 13px;
+}
+
+.st-error {
+    background: #ffebee;
+    color: #d32f2f;
+    border: 1px solid #ffcdd2;
+}
+
+.st-warn {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+.st-success {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+}
+
+/* Botones */
+.btn-validar {
+    width: 100%;
+    padding: 15px;
+    background-color: #1182C6;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: background 0.3s;
+    box-shadow: 0 4px 15px rgba(17, 130, 198, 0.3);
+    text-transform: uppercase;
+}
+
+.btn-validar:hover {
+    background-color: #0d6ba1;
+    transform: translateY(-2px);
+}
+
+.btn-validar:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+.btn-cobrar {
+    background-color: #2e7d32;
+    /* Verde */
+    box-shadow: 0 4px 15px rgba(46, 125, 50, 0.3);
+}
+
+.btn-cobrar:hover {
+    background-color: #1b5e20;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* ==========================================================================
+   8. DASHBOARD (MENÚ PRINCIPAL) ESTILO AUTH-CARD
+   ========================================================================== */
+
+.trab-dash-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    text-align: center;
+    min-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.trab-dash-header {
+    margin-bottom: 50px;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.trab-dash-title {
+    font-family: 'Poppins', sans-serif;
+    color: #1182C6; /* Azul Fuerte */
+    font-size: 36px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.trab-dash-subtitle {
+    color: #295D64; /* Azul Oscuro */
+    font-size: 18px;
+    opacity: 0.8;
+}
+
+/* GRID DE TARJETAS */
+.trab-dash-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
+    margin-bottom: 50px;
+}
+
+/* ESTILO DE LA TARJETA (Hereda la estética del Login) */
+.trab-dash-card {
+    background-color: white;
+    padding: 35px 20px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(17, 130, 198, 0.1); /* Sombra suave azulada */
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    border: 1px solid transparent;
+    animation: slideUp 0.5s ease-out;
+}
+
+/* Efecto Hover: Se levanta y brilla */
+.trab-dash-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 35px rgba(17, 130, 198, 0.2);
+    border-color: #e0f7fa;
+}
+
+/* ICONOS DENTRO DE LA TARJETA */
+.dash-card-icon {
+    font-size: 45px;
+    margin-bottom: 20px;
+    transition: transform 0.3s;
+}
+
+.trab-dash-card:hover .dash-card-icon {
+    transform: scale(1.1);
+}
+
+.dash-card-text {
+    font-family: 'Poppins', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: #333;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* VARIANTES DE COLOR (Borde superior) */
+
+/* 1. Acciones Principales (Azul Fuerte #1182C6) */
+.card-primary {
+    border-top: 6px solid #1182C6;
+}
+.card-primary .dash-card-icon { color: #1182C6; }
+
+/* 2. Acciones Operativas (Turquesa #6BC0B1) */
+.card-action {
+    border-top: 6px solid #6BC0B1;
+}
+.card-action .dash-card-icon { color: #6BC0B1; }
+
+/* 3. Acciones Administrativas/Alerta (Azul Oscuro #295D64) */
+.card-info {
+    border-top: 6px solid #295D64;
+}
+.card-info .dash-card-icon { color: #295D64; }
+
+
+/* BOTÓN CERRAR SESIÓN (Estilo sutil) */
+.btn-logout-dash {
+    display: inline-block;
+    padding: 12px 30px;
+    border: 2px solid #ffebee;
+    background-color: white;
+    color: #d32f2f;
+    border-radius: 50px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: 0.3s;
+}
+
+.btn-logout-dash:hover {
+    background-color: #ffebee;
+    border-color: #ffcdd2;
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}

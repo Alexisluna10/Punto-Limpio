@@ -1,0 +1,81 @@
+{% extends 'base_trabajador.html' %}
+
+{% block title_page %}Historial de Servicios{% endblock %}
+
+{% block trabajador_content %}
+
+<div class="main-content">
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <div>
+            <h2 style="color: #333; margin: 0; font-size: 24px;">Historial de Entregas</h2>
+            <p style="color: #666; font-size: 14px; margin-top: 5px;">Registro de servicios finalizados y entregados</p>
+        </div>
+        <a href="{% url 'servicios_proceso' %}" class="btn-base" 
+           style="background-color: #fff; color: #008CC9; border: 2px solid #008CC9; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+           ⬅ Ver Servicios Activos
+        </a>
+    </div>
+
+    <div class="trab-serv-buscador-container">
+        <input type="text" class="trab-serv-input-busqueda" placeholder="Filtrar por nombre o folio..." onkeyup="filtrarHistorial(this.value)">
+    </div>
+
+    <div class="trab-serv-grid" id="gridHistorial">
+        {% for pedido in pedidos %}
+            <div class="trab-serv-card" style="border-left: 5px solid {% if pedido.estado == 'cancelado' %}#d32f2f{% else %}#2e7d32{% endif %}; opacity: 0.95;">
+                
+                <div class="trab-serv-header">
+                    <span class="trab-serv-folio">#{{ pedido.folio }}</span>
+                    {% if pedido.estado == 'cancelado' %}
+                        <span style="background: #ffebee; color: #d32f2f; padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold;">CANCELADO</span>
+                    {% else %}
+                        <span style="background: #e8f5e9; color: #2e7d32; padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold;">ENTREGADO</span>
+                    {% endif %}
+                </div>
+
+                <div class="trab-serv-info">
+                    <p><strong>Cliente:</strong> 
+                        {% if pedido.cliente.first_name %}
+                            {{ pedido.cliente.first_name }} {{ pedido.cliente.last_name }}
+                        {% else %}
+                            {{ pedido.cliente.username }}
+                        {% endif %}
+                    </p>
+                    <p><strong>Servicio:</strong> {{ pedido.tipo_servicio }}</p>
+                    <p><strong>Fecha Entrega:</strong> {{ pedido.fecha_entrega_real|date:"d/m/Y H:i"|default:"-" }}</p>
+                    <p><strong>Total:</strong> ${{ pedido.total }}</p>
+                </div>
+
+                <a href="{% url 'detalle_servicio' pedido.id %}" class="btn-base" 
+                   style="display: block; text-align: center; margin-top: 15px; padding: 8px; background: #f5f5f5; color: #666; border-radius: 6px; text-decoration: none; border: 1px solid #ddd;">
+                   👁 Ver Detalles
+                </a>
+            </div>
+        {% empty %}
+            <div class="empty-state-trab" style="grid-column: 1/-1;">
+                <p>No hay servicios en el historial aún.</p>
+            </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<script>
+    // Script simple para filtrar las tarjetas en pantalla sin recargar
+    function filtrarHistorial(texto) {
+        texto = texto.toLowerCase();
+        const tarjetas = document.querySelectorAll('.trab-serv-card');
+        
+        tarjetas.forEach(card => {
+            const contenido = card.innerText.toLowerCase();
+            if (contenido.includes(texto)) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+</script>
+
+{% endblock %}

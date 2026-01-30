@@ -1,28 +1,41 @@
-{% extends 'base_gestion.html' %}
+{% extends 'base_trabajador.html' %} {% block title_page %} Dashboard Operador
+{% endblock %} {% block trabajador_content %}
 
-{% block title_page %}
-Menú Operador
-{% endblock %}
+<div class="trab-dash-container">
+  <div class="trab-dash-header">
+    <h1 class="trab-dash-title">Hola, @{{ user.username }}</h1>
+    <h1></h1>
+  </div>
 
-{% block content %}
+  <div class="trab-dash-grid">
+    <a href="{% url 'nuevo_servicio' %}" class="trab-dash-card card-primary">
+      <span class="dash-card-text">Nuevo Servicio</span>
+    </a>
 
-<style>
-    .menu-icon {
-        display: none !important;
-    }
-</style>
+    <a href="{% url 'validar_ticket' %}" class="trab-dash-card card-primary">
+      <span class="dash-card-text">Validar Ticket (Entrega)</span>
+    </a>
 
-<h2 class="welcome-title">Hola @{{ user.username }}, bienvenido</h2>
+    <a href="{% url 'estatus_maquina' %}" class="trab-dash-card card-action">
+      <span class="dash-card-text">Estatus Máquinas</span>
+    </a>
 
-<div class="menu-grid">
-    <a href="{% url 'nuevo_servicio' %}" class="btn-menu-big">Nuevo Servicio</a>
-    <a href="{% url 'estatus_maquina' %}" class="btn-menu-big">Estatus de Maquinas</a>
-    <a href="{% url 'incidencias' %}" class="btn-menu-big">Registrar Incidencia</a>
-    <a href="{% url 'inventario' %}" class="btn-menu-big">Inventario</a>
-    <a href="{% url 'validar_ticket' %}" class="btn-menu-big">Validar Ticket</a>
-    <a href="{% url 'servicios_proceso' %}" class="btn-menu-big">Servicios en Proceso</a>
+    <a href="{% url 'servicios_proceso' %}" class="trab-dash-card card-action">
+      <span class="dash-card-text">Servicios en Proceso</span>
+    </a>
+
+    <a href="{% url 'inventario' %}" class="trab-dash-card card-info">
+      <span class="dash-card-text">Inventario</span>
+    </a>
+
+    <a href="{% url 'incidencias' %}" class="trab-dash-card card-info">
+      <span class="dash-card-text">Reportar Incidencia</span>
+    </a>
+  </div>
+
+  <div>
+    <a href="{% url 'logout' %}" class="btn-logout-dash"> Cerrar Sesión </a>
+  </div>
 </div>
-
-<a href="{% url 'logout' %}" class="btn-logout-big">Cerrar Sesion</a>
 
 {% endblock %}
