@@ -114,4 +114,17 @@ urlpatterns = [
     # --- HISTORIAL ---
     path('panel-trabajador/historial/',
          views.historial_servicios, name='historial_servicios'),
+    path('panel-admin/corte-caja/',
+         views.admin_corte_caja, name='admin_corte_caja'),
+    # Nuevas rutas para finanzas
+    path('panel-admin/finanzas/exportar-excel/',
+         views.exportar_finanzas_excel, name='exportar_finanzas_excel'),
+    path('panel-admin/finanzas/imprimir-reporte/',
+         views.imprimir_reporte_finanzas, name='imprimir_reporte_finanzas'),
+    path('panel-admin/finanzas/enviar-email/',
+         views.enviar_reporte_email, name='enviar_reporte_email'),
+    path('panel-admin/finanzas/corte-caja/imprimir/',
+         views.imprimir_corte_caja, name='imprimir_corte_caja')
+
+
 ]

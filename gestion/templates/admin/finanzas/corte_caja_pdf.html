@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: letter;
+            margin: 1cm;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12pt;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #333;
+            padding-bottom: 15px;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 24pt;
+            color: #333;
+        }
+        
+        .header .fecha {
+            font-size: 16pt;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+        }
+        
+        .section-title {
+            font-size: 14pt;
+            font-weight: bold;
+            color: #555;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+        
+        .data-table td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .data-table td:first-child {
+            width: 60%;
+            color: #666;
+        }
+        
+        .data-table td:last-child {
+            width: 40%;
+            text-align: right;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .data-table tr.total td {
+            border-top: 2px solid #333;
+            border-bottom: 2px solid #333;
+            padding: 15px 10px;
+            font-size: 14pt;
+            font-weight: bold;
+        }
+        
+        .diferencia-box {
+            background: #f8f9fa;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .diferencia-box .label {
+            font-size: 14pt;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .diferencia-box .valor {
+            font-size: 28pt;
+            font-weight: bold;
+        }
+        
+        .diferencia-positiva {
+            color: #28a745;
+        }
+        
+        .diferencia-negativa {
+            color: #dc3545;
+        }
+        
+        .diferencia-cero {
+            color: #6c757d;
+        }
+        
+        .justificacion-box {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+            background: #f8f9fa;
+        }
+        
+        .justificacion-box .label {
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 10px;
+        }
+        
+        .justificacion-box .texto {
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .info-footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #ddd;
+        }
+        
+        .info-footer .row {
+            margin: 8px 0;
+            color: #666;
+        }
+        
+        .info-footer .row strong {
+            color: #333;
+        }
+        
+        .grid-container {
+            display: table;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        
+        .grid-item {
+            display: table-cell;
+            width: 50%;
+            padding: 0 10px;
+            vertical-align: top;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>PUNTO LIMPIO</h1>
+        <div class="fecha">CORTE DE CAJA - {{ fecha }}</div>
+    </div>
+    
+    <div class="grid-container">
+        <div class="grid-item">
+            <div class="section">
+                <div class="section-title">VENTAS REGISTRADAS EN SISTEMA</div>
+                <table class="data-table">
+                    <tr>
+                        <td>Efectivo:</td>
+                        <td>${{ ventas_efectivo|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <td>Tarjeta:</td>
+                        <td>${{ ventas_tarjeta|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <td>Transferencia:</td>
+                        <td>${{ ventas_transferencia|floatformat:2 }}</td>
+                    </tr>
+                    <tr class="total">
+                        <td>TOTAL:</td>
+                        <td>${{ total_ventas|floatformat:2 }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
+        <div class="grid-item">
+            <div class="section">
+                <div class="section-title">DINERO FÍSICO REPORTADO</div>
+                <table class="data-table">
+                    <tr>
+                        <td>Efectivo contado:</td>
+                        <td>${{ efectivo_contado|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <td>Terminal (Tarjeta):</td>
+                        <td>${{ tarjeta_terminal|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <td>Banco (Transfer):</td>
+                        <td>${{ transferencia_banco|floatformat:2 }}</td>
+                    </tr>
+                    <tr class="total">
+                        <td>TOTAL:</td>
+                        <td>${{ total_fisico|floatformat:2 }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="diferencia-box">
+        <div class="label">DIFERENCIA</div>
+        <div class="valor {% if diferencia > 0 %}diferencia-positiva{% elif diferencia < 0 %}diferencia-negativa{% else %}diferencia-cero{% endif %}">
+            ${{ diferencia|floatformat:2 }}
+        </div>
+    </div>
+    
+    {% if justificacion %}
+    <div class="justificacion-box">
+        <div class="label">JUSTIFICACIÓN:</div>
+        <div class="texto">{{ justificacion }}</div>
+    </div>
+    {% endif %}
+    
+    <div class="info-footer">
+        <div class="row">
+            <strong>RESPONSABLE:</strong> {{ responsable }}
+        </div>
+        <div class="row">
+            <strong>FECHA/HORA DE REGISTRO:</strong> {{ fecha_hora }}
+        </div>
+    </div>
+</body>
+</html>

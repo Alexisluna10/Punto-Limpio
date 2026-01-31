@@ -226,6 +226,153 @@
         margin-bottom: 20px;
     }
 
+    /* Estilos para el modal de email */
+    .modal-email {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.5);
+    }
+
+    .modal-email-content {
+        background-color: #fefefe;
+        margin: 10% auto;
+        padding: 30px;
+        border: 1px solid #888;
+        border-radius: 10px;
+        width: 90%;
+        max-width: 500px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        animation: slideDown 0.3s ease-out;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-50px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .modal-email-close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        line-height: 20px;
+    }
+
+    .modal-email-close:hover,
+    .modal-email-close:focus {
+        color: #000;
+    }
+
+    .modal-email-content h3 {
+        margin-top: 0;
+        margin-bottom: 10px;
+        color: #333;
+    }
+
+    .modal-email-content p {
+        margin-bottom: 20px;
+        color: #666;
+        font-size: 14px;
+    }
+
+    .form-group-email {
+        margin-bottom: 20px;
+    }
+
+    .form-group-email label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #333;
+    }
+
+    .input-email {
+        width: 100%;
+        padding: 10px 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+
+    .input-email:focus {
+        outline: none;
+        border-color: #ffc107;
+        box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.1);
+    }
+
+    .modal-email-buttons {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+
+    .btn-cancelar {
+        padding: 10px 20px;
+        background: #6c757d;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    .btn-cancelar:hover {
+        background: #5a6268;
+    }
+
+    .btn-enviar {
+        padding: 10px 20px;
+        background: #ffc107;
+        color: #333;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 500;
+        font-size: 14px;
+    }
+
+    .btn-enviar:hover {
+        background: #e0a800;
+    }
+
+    .btn-enviar:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+
+    .mensaje-email {
+        margin-top: 15px;
+        padding: 12px;
+        border-radius: 5px;
+        font-size: 14px;
+    }
+
+    .mensaje-email.success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .mensaje-email.error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+
     @media (max-width: 992px) {
         .resumen-grid,
         .graficas-grid {
@@ -249,6 +396,7 @@
             <a href="#" id="btn-personalizado" class="{% if filtro == 'personalizado' %}active{% endif %}">Personalizado</a>
         </div>
         <form class="filtro-personalizado" id="form-personalizado" method="GET">
+            {% csrf_token %}
             <input type="hidden" name="filtro" value="personalizado">
             <span>[Desde:</span>
             <input type="date" name="fecha_desde" id="fecha_desde" value="{{ fecha_inicio|date:'Y-m-d' }}">
@@ -270,14 +418,6 @@
             <div class="linea-resumen">
                 <span>Ingresos totales:</span>
                 <span>${{ ingresos_totales|floatformat:2 }}</span>
-            </div>
-            <div class="linea-resumen">
-                <span>Gastos en insumos:</span>
-                <span class="valor-negativo">-${{ gastos_insumos|floatformat:2 }}</span>
-            </div>
-            <div class="linea-resumen">
-                <span>Gastos operativos:</span>
-                <span class="valor-negativo">-${{ gastos_operativos_total|floatformat:2 }}</span>
             </div>
             <div class="linea-resumen total">
                 <span>UTILIDAD NETA:</span>
@@ -372,9 +512,30 @@
     <div class="acciones-rapidas">
         <h4>ACCIONES RAPIDAS</h4>
         <div class="acciones-buttons">
-            <button disabled>* Exportar a Excel</button>
-            <button disabled>* Imprimir Reporte</button>
-            <button disabled>* Enviar por Email</button>
+            <button onclick="exportarExcel()" style="cursor: pointer; opacity: 1; background: #28a745; color: white;">Exportar a Excel</button>
+            <button onclick="imprimirReporte()" style="cursor: pointer; opacity: 1; background: #007bff; color: white;">Imprimir Reporte</button>
+            <button onclick="abrirModalEmail()" style="cursor: pointer; opacity: 1; background: #ffc107; color: #333;">Enviar por Email</button>
+        </div>
+    </div>
+
+    <!-- Modal para enviar por email -->
+    <div id="modalEmail" class="modal-email" style="display: none;">
+        <div class="modal-email-content">
+            <span class="modal-email-close" onclick="cerrarModalEmail()">&times;</span>
+            <h3>Enviar Reporte por Correo</h3>
+            <p>Ingrese el correo electrónico donde desea recibir el reporte financiero.</p>
+            <form id="formEnviarEmail" onsubmit="enviarPorEmail(event)">
+                <div class="form-group-email">
+                    <label for="emailDestino">Correo electrónico:</label>
+                    <input type="email" id="emailDestino" name="emailDestino" required 
+                           placeholder="ejemplo@correo.com" class="input-email">
+                </div>
+                <div class="modal-email-buttons">
+                    <button type="button" onclick="cerrarModalEmail()" class="btn-cancelar">Cancelar</button>
+                    <button type="submit" class="btn-enviar">Enviar Reporte</button>
+                </div>
+            </form>
+            <div id="mensajeEmail" class="mensaje-email" style="display: none;"></div>
         </div>
     </div>
 
@@ -386,7 +547,6 @@
         <button onclick="window.location.href='{% url 'admin_corte_caja' %}'">Corte de Caja</button>
     </div>
 </div>
-
 <script>
     // Colores para las gráficas
     const coloresPie = [
@@ -401,8 +561,6 @@
     // Datos desde Django
     const prendasData = {{ prendas_json|safe }};
     const serviciosData = {{ servicios_json|safe }};
-    const insumosData = {{ insumos_json|safe }};
-    const gastosOperativosData = {{ gastos_operativos_json|safe }};
     const metodosPagoData = {{ metodos_pago_json|safe }};
 
     // Función para formatear moneda
@@ -581,5 +739,123 @@
         document.querySelectorAll('.filtros-rapidos a').forEach(a => a.classList.remove('active'));
         this.classList.add('active');
     });
+
+    // Función para exportar a Excel
+    function exportarExcel() {
+        // Obtener los parámetros actuales de filtro
+        const urlParams = new URLSearchParams(window.location.search);
+        const filtro = urlParams.get('filtro') || 'hoy';
+        const fechaDesde = urlParams.get('fecha_desde') || '';
+        const fechaHasta = urlParams.get('fecha_hasta') || '';
+        
+        // Construir la URL con los parámetros
+        let url = '{% url "exportar_finanzas_excel" %}?filtro=' + filtro;
+        if (filtro === 'personalizado' && fechaDesde && fechaHasta) {
+            url += '&fecha_desde=' + fechaDesde + '&fecha_hasta=' + fechaHasta;
+        }
+        
+        // Abrir en nueva ventana para descargar
+        window.location.href = url;
+    }
+
+    // Función para imprimir reporte
+    function imprimirReporte() {
+        // Obtener los parámetros actuales de filtro
+        const urlParams = new URLSearchParams(window.location.search);
+        const filtro = urlParams.get('filtro') || 'hoy';
+        const fechaDesde = urlParams.get('fecha_desde') || '';
+        const fechaHasta = urlParams.get('fecha_hasta') || '';
+        
+        // Construir la URL con los parámetros
+        let url = '{% url "imprimir_reporte_finanzas" %}?filtro=' + filtro;
+        if (filtro === 'personalizado' && fechaDesde && fechaHasta) {
+            url += '&fecha_desde=' + fechaDesde + '&fecha_hasta=' + fechaHasta;
+        }
+        
+        // Abrir en nueva ventana para visualizar/imprimir el PDF
+        window.open(url, '_blank');
+    }
+
+    // Funciones para el modal de enviar por email
+    function abrirModalEmail() {
+        document.getElementById('modalEmail').style.display = 'block';
+        document.getElementById('emailDestino').value = '';
+        document.getElementById('mensajeEmail').style.display = 'none';
+    }
+
+    function cerrarModalEmail() {
+        document.getElementById('modalEmail').style.display = 'none';
+    }
+
+    // Cerrar modal al hacer clic fuera de él
+    window.onclick = function(event) {
+        const modal = document.getElementById('modalEmail');
+        if (event.target == modal) {
+            cerrarModalEmail();
+        }
+    }
+
+    async function enviarPorEmail(event) {
+        event.preventDefault();
+        
+        const emailDestino = document.getElementById('emailDestino').value;
+        const btnEnviar = event.target.querySelector('.btn-enviar');
+        const mensajeDiv = document.getElementById('mensajeEmail');
+        
+        // Deshabilitar botón y mostrar mensaje de envío
+        btnEnviar.disabled = true;
+        btnEnviar.textContent = 'Enviando...';
+        mensajeDiv.style.display = 'none';
+        
+        // Obtener los parámetros actuales de filtro
+        const urlParams = new URLSearchParams(window.location.search);
+        const filtro = urlParams.get('filtro') || 'hoy';
+        const fechaDesde = urlParams.get('fecha_desde') || '';
+        const fechaHasta = urlParams.get('fecha_hasta') || '';
+        
+        try {
+            // Obtener el token CSRF
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            // Enviar la solicitud
+            const response = await fetch('{% url "enviar_reporte_email" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({
+                    email: emailDestino,
+                    filtro: filtro,
+                    fecha_desde: fechaDesde,
+                    fecha_hasta: fechaHasta
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                mensajeDiv.className = 'mensaje-email success';
+                mensajeDiv.textContent = '✓ Reporte enviado exitosamente a ' + emailDestino;
+                mensajeDiv.style.display = 'block';
+                
+                // Cerrar el modal después de 2 segundos
+                setTimeout(() => {
+                    cerrarModalEmail();
+                }, 2000);
+            } else {
+                mensajeDiv.className = 'mensaje-email error';
+                mensajeDiv.textContent = '✗ Error: ' + (data.message || 'No se pudo enviar el reporte');
+                mensajeDiv.style.display = 'block';
+            }
+        } catch (error) {
+            mensajeDiv.className = 'mensaje-email error';
+            mensajeDiv.textContent = '✗ Error de conexión. Por favor, intente nuevamente.';
+            mensajeDiv.style.display = 'block';
+        } finally {
+            btnEnviar.disabled = false;
+            btnEnviar.textContent = 'Enviar Reporte';
+        }
+    }
 </script>
 {% endblock %}

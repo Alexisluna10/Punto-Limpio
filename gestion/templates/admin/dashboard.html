@@ -6,25 +6,26 @@ Inicio
 
 {% block content %}
 <div class="admin-dashboard-container">
-    <!-- Tarjetas de estadísticas -->
+    <!-- Tarjetas de estadísticas con datos reales -->
     <div class="admin-stats-row">
         <div class="admin-stat-card">
             <h3 class="admin-stat-title">HOY</h3>
-            <p class="admin-stat-amount">$6728</p>
-            <p class="admin-stat-services">32 Servicios</p>
+            <p class="admin-stat-amount">${{ ganancias_hoy|floatformat:0 }}</p>
+            <p class="admin-stat-services">{{ servicios_hoy }} Servicio{{ servicios_hoy|pluralize }}</p>
         </div>
         <div class="admin-stat-card">
             <h3 class="admin-stat-title">ESTA SEMANA</h3>
-            <p class="admin-stat-amount">$14,603</p>
-            <p class="admin-stat-services">116 Servicios</p>
+            <p class="admin-stat-amount">${{ ganancias_semana|floatformat:0 }}</p>
+            <p class="admin-stat-services">{{ servicios_semana }} Servicio{{ servicios_semana|pluralize }}</p>
         </div>
         <div class="admin-stat-card">
             <h3 class="admin-stat-title">ESTE MES</h3>
-            <p class="admin-stat-amount">$34,737</p>
-            <p class="admin-stat-services">302 Servicios</p>
+            <p class="admin-stat-amount">${{ ganancias_mes|floatformat:0 }}</p>
+            <p class="admin-stat-services">{{ servicios_mes }} Servicio{{ servicios_mes|pluralize }}</p>
         </div>
     </div>
 
+    <!-- Alertas Críticas -->
     <div class="admin-section-block">
         <a href="{% url 'admin_incidencias' %}" class="admin-section-title-link">
             <h3 class="admin-section-title">
@@ -32,33 +33,258 @@ Inicio
             </h3>
         </a>
         <div class="admin-section-content">
-            <ul class="admin-alert-list">
-                <li>Suavizante al 8% de stock mínimo</li>
-                <li>3 servicios a punto de terminar</li>
-            </ul>
+            {% if alertas_insumos or incidencias_recientes or dudas_recientes %}
+                <ul class="admin-alert-list">
+                    <!-- Alertas de insumos -->
+                    {% for alerta in alertas_insumos %}
+                        <li class="alert-insumo">
+                            <span class="alert-icon">📦</span> {{ alerta.texto }}
+                        </li>
+                    {% endfor %}
+                    
+                    <!-- Incidencias del personal -->
+                    {% for incidencia in incidencias_recientes %}
+                        <li class="alert-incidencia">
+                            <span class="alert-icon">⚠️</span>
+                            <strong>Personal:</strong> {{ incidencia.asunto }} 
+                            <span class="alert-meta">({{ incidencia.trabajador.username }} - {{ incidencia.get_prioridad_display }})</span>
+                        </li>
+                    {% endfor %}
+                    
+                    <!-- Dudas/Quejas de clientes -->
+                    {% for duda in dudas_recientes %}
+                        <li class="alert-duda">
+                            <span class="alert-icon">💬</span>
+                            <strong>Cliente:</strong> {{ duda.comentario|truncatewords:10 }}
+                            <span class="alert-meta">({{ duda.cliente.username }} - {{ duda.fecha_creacion|date:"d/m/Y" }})</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="no-alerts">✓ No hay alertas críticas en este momento</p>
+            {% endif %}
         </div>
     </div>
 
+    <!-- Servicios Activos Ahora -->
     <div class="admin-section-block">
         <h3 class="admin-section-title">Servicios Activos Ahora</h3>
         <div class="admin-section-content">
-            <p class="admin-services-status">En proceso: 6 &nbsp;|&nbsp; Listos: 2 &nbsp;|&nbsp; Por procesar: 4</p>
+            <div class="servicios-grid">
+                <div class="servicio-stat">
+                    <div class="servicio-numero">{{ servicios_totales }}</div>
+                    <div class="servicio-label">Activos Totales</div>
+                </div>
+                <div class="servicio-stat">
+                    <div class="servicio-numero pendiente">{{ servicios_pendientes }}</div>
+                    <div class="servicio-label">Pendientes</div>
+                </div>
+                <div class="servicio-stat">
+                    <div class="servicio-numero proceso">{{ servicios_proceso }}</div>
+                    <div class="servicio-label">En Proceso</div>
+                </div>
+                <div class="servicio-stat">
+                    <div class="servicio-numero listo">{{ servicios_listos }}</div>
+                    <div class="servicio-label">Listos</div>
+                </div>
+            </div>
+            
+            <!-- Máquinas en uso -->
+            <div class="maquinas-status">
+                <span class="maquina-item">
+                    <span class="maquina-icon">🧺</span> Lavado: <strong>{{ maquinas_lavado }}</strong>
+                </span>
+                <span class="separador">|</span>
+                <span class="maquina-item">
+                    <span class="maquina-icon">🌀</span> Secado: <strong>{{ maquinas_secado }}</strong>
+                </span>
+            </div>
         </div>
     </div>
 
+    <!-- Precios -->
     <div class="admin-section-block">
         <a href="{% url 'admin_precios' %}" class="admin-section-title-link">
-            <h3 class="admin-section-title">Precios</h3>
+            <h3 class="admin-section-title">Precios Destacados</h3>
         </a>
         <div class="admin-section-content">
-            <ul class="admin-alert-list">
-                <li>Traje completo (saco y pantalón) $250</li>
-                <li>Vestido de gala/noche $400</li>
-                <li>Chamarra (piel/sintetica) $400</li>
-                <li>Combo $290</li>
-            </ul>
+            {% if prendas_destacadas %}
+                <ul class="admin-alert-list precios-list">
+                    {% for prenda in prendas_destacadas %}
+                        <li>
+                            <span class="prenda-nombre">{{ prenda.nombre }}</span>
+                            <span class="prenda-precio">${{ prenda.precio|floatformat:0 }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="no-alerts">No hay prendas registradas</p>
+            {% endif %}
         </div>
     </div>
 
 </div>
+
+<style>
+/* Estilos adicionales para el dashboard mejorado */
+.admin-alert-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.admin-alert-list li {
+    padding: 10px 15px;
+    margin-bottom: 8px;
+    border-radius: 5px;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.alert-insumo {
+    border-left: 4px solid #dc3545;
+}
+
+.alert-incidencia {
+    border-left: 4px solid #ffc107;
+}
+
+.alert-duda {
+    border-left: 4px solid #17a2b8;
+}
+
+.alert-icon {
+    font-size: 18px;
+}
+
+.alert-meta {
+    font-size: 12px;
+    color: #6c757d;
+    margin-left: auto;
+}
+
+.no-alerts {
+    text-align: center;
+    color: #28a745;
+    padding: 20px;
+    font-weight: 500;
+}
+
+/* Grid de servicios */
+.servicios-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.servicio-stat {
+    text-align: center;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    transition: transform 0.2s;
+}
+
+.servicio-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.servicio-numero {
+    font-size: 32px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.servicio-numero.pendiente {
+    color: #6c757d;
+}
+
+.servicio-numero.proceso {
+    color: #007bff;
+}
+
+.servicio-numero.listo {
+    color: #28a745;
+}
+
+.servicio-label {
+    font-size: 13px;
+    color: #666;
+    text-transform: uppercase;
+    font-weight: 500;
+}
+
+/* Máquinas en uso */
+.maquinas-status {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: #e9ecef;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.maquina-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.maquina-icon {
+    font-size: 20px;
+}
+
+.separador {
+    color: #adb5bd;
+    font-weight: 300;
+}
+
+/* Lista de precios */
+.precios-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    border: 1px solid #e0e0e0;
+}
+
+.prenda-nombre {
+    flex: 1;
+}
+
+.prenda-precio {
+    font-weight: bold;
+    color: #28a745;
+    font-size: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .servicios-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .maquinas-status {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .separador {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .servicios-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
 {% endblock %}

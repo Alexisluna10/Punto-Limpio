@@ -12,8 +12,15 @@
             <div class="sidebar-avatar">
                 {{ user.username|slice:":1"|upper }}
             </div>
+            
             <div class="sidebar-user-info">
-                <span class="sidebar-username">@{{ user.username }}</span>
+                <span class="sidebar-nombre-limitado" title="{{ user.username }}">
+                    {% if user.first_name %}
+                        {{ user.first_name }} {{ user.last_name }}
+                    {% else %}
+                        {{ user.username }}
+                    {% endif %}
+                </span>
                 <span class="sidebar-role">Cliente</span>
             </div>
         </div>
@@ -22,26 +29,27 @@
 
     <div class="sidebar-nav">
         <a href="{% url 'cliente_dashboard' %}"
-            class="sidebar-link {% if request.resolver_match.url_name == 'cliente_dashboard' %}active{% endif %}">
+           class="sidebar-link {% if request.resolver_match.url_name == 'cliente_dashboard' %}active{% endif %}">
             Inicio
         </a>
         <a href="{% url 'solicitar_servicio' %}"
-            class="sidebar-link {% if request.resolver_match.url_name == 'solicitar_servicio' %}active{% endif %}">
+           class="sidebar-link {% if request.resolver_match.url_name == 'solicitar_servicio' %}active{% endif %}">
             Solicitar Servicio
         </a>
         <a href="{% url 'rastrear_servicio' %}"
-            class="sidebar-link {% if request.resolver_match.url_name == 'rastrear_servicio' %}active{% endif %}">
+           class="sidebar-link {% if request.resolver_match.url_name == 'rastrear_servicio' %}active{% endif %}">
             Rastrear Servicio
         </a>
         <a href="{% url 'perfil' %}"
-            class="sidebar-link {% if request.resolver_match.url_name == 'perfil' %}active{% endif %}">
+           class="sidebar-link {% if request.resolver_match.url_name == 'perfil' %}active{% endif %}">
             Mi Perfil
         </a>
         <a href="{% url 'dudas_quejas' %}"
-            class="sidebar-link {% if request.resolver_match.url_name == 'dudas_quejas' %}active{% endif %}">
+           class="sidebar-link {% if request.resolver_match.url_name == 'dudas_quejas' %}active{% endif %}">
             Dudas y Quejas
         </a>
     </div>
+
     <div class="sidebar-footer-client">
         <a href="{% url 'logout' %}" class="sidebar-logout">
             Cerrar Sesión
@@ -50,13 +58,11 @@
 </div>
 
 <script>
-    // Sobrescribimos la función toggleMenu para que abra ESTE menú y no el del trabajador
-
+    // Función para alternar el menú lateral
     function toggleMenu() {
         const sidebar = document.getElementById('clienteSidebar');
         const overlay = document.getElementById('sidebarOverlay');
 
-        // Alternar clase 'open'
         if (sidebar.classList.contains('open')) {
             sidebar.classList.remove('open');
             overlay.classList.remove('open');

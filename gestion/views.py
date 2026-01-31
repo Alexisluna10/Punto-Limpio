@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required  # Se mantiene para 'tasks'
 from django.contrib import messages
 from django.views.decorators.http import require_POST
 from django.contrib.auth.models import Group
@@ -10,13 +10,16 @@ from decimal import Decimal
 import json
 from datetime import datetime, timedelta
 
+# IMPORTAR TUS NUEVOS DECORADORES
+from .decorators import solo_cliente, solo_trabajador, solo_admin
+
 # Modelos
 from usuarios.models import Usuario
 from usuarios.forms import RegistroUsuarioAdminForm
 from .models import (
     Insumo, NotificacionStock, Prenda, Servicio, Pedido,
     DetallePedido, MovimientoOperador, Maquina,
-    Incidencia, DudaQueja, MovimientoInsumo, GastoOperativo
+    Incidencia, DudaQueja, CorteCaja
 )
 from .forms_inventario import InsumoForm
 
@@ -33,25 +36,127 @@ def prueba(request):
 #              VISTAS ADMINISTRADOR
 # ==========================================
 
-@login_required
+@solo_admin
 def admin_dashboard(request):
-    if not request.user.groups.filter(name='Administrador').exists():
-        return redirect('tasks')
-    return render(request, 'admin/dashboard.html')
-
-
-@login_required
-def admin_finanzas(request):
     if not request.user.groups.filter(name='Administrador').exists():
         return redirect('tasks')
 
     hoy = timezone.now().date()
+    inicio_semana = hoy - timedelta(days=7)
+    inicio_mes = hoy.replace(day=1)
+
+    # ========== GANANCIAS ==========
+    # Hoy
+    pedidos_hoy = Pedido.objects.filter(
+        fecha_recepcion__date=hoy,
+        estado_pago='pagado'
+    )
+    ganancias_hoy = pedidos_hoy.aggregate(total=Sum('total'))[
+        'total'] or Decimal('0')
+    servicios_hoy = pedidos_hoy.count()
+
+    # Esta semana
+    pedidos_semana = Pedido.objects.filter(
+        fecha_recepcion__date__gte=inicio_semana,
+        fecha_recepcion__date__lte=hoy,
+        estado_pago='pagado'
+    )
+    ganancias_semana = pedidos_semana.aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+    servicios_semana = pedidos_semana.count()
+
+    # Este mes
+    pedidos_mes = Pedido.objects.filter(
+        fecha_recepcion__date__gte=inicio_mes,
+        fecha_recepcion__date__lte=hoy,
+        estado_pago='pagado'
+    )
+    ganancias_mes = pedidos_mes.aggregate(total=Sum('total'))[
+        'total'] or Decimal('0')
+    servicios_mes = pedidos_mes.count()
+
+    # ========== ALERTAS CRÍTICAS ==========
+    # Insumos con stock crítico (<=10%)
+    insumos_criticos = Insumo.objects.all()
+    alertas_insumos = []
+    for insumo in insumos_criticos:
+        if insumo.porcentaje() <= 10:
+            alertas_insumos.append({
+                'texto': f'{insumo.nombre} al {insumo.porcentaje()}% de stock',
+                'tipo': 'insumo'
+            })
+
+    # Incidencias recientes del personal (últimas 3 pendientes o en proceso)
+    incidencias_recientes = Incidencia.objects.filter(
+        estado__in=['pendiente', 'en_proceso']
+    ).order_by('-fecha_reporte')[:3]
+
+    # Dudas/Quejas recientes de clientes (últimas 3 pendientes o en proceso)
+    dudas_recientes = DudaQueja.objects.filter(
+        estado__in=['pendiente', 'en_proceso']
+    ).order_by('-fecha_creacion')[:3]
+
+    # ========== SERVICIOS ACTIVOS ==========
+    servicios_totales = Pedido.objects.exclude(estado='entregado').count()
+    servicios_pendientes = Pedido.objects.filter(estado='pendiente').count()
+    servicios_proceso = Pedido.objects.filter(estado='en_proceso').count()
+    servicios_listos = Pedido.objects.filter(estado='listo').count()
+
+    # Máquinas en uso (lavado/secado)
+    maquinas_lavado = Maquina.objects.filter(
+        tipo='lavadora', estado='ocupado').count()
+    maquinas_secado = Maquina.objects.filter(
+        tipo='secadora', estado='ocupado').count()
+
+    # ========== PRECIOS DE PRENDAS ==========
+    # Obtener 5 prendas destacadas (las más caras o populares)
+    prendas_destacadas = Prenda.objects.filter(
+        activo=True).order_by('-precio')[:5]
+
+    context = {
+        # Ganancias
+        'ganancias_hoy': ganancias_hoy,
+        'servicios_hoy': servicios_hoy,
+        'ganancias_semana': ganancias_semana,
+        'servicios_semana': servicios_semana,
+        'ganancias_mes': ganancias_mes,
+        'servicios_mes': servicios_mes,
+
+        # Alertas
+        'alertas_insumos': alertas_insumos,
+        'incidencias_recientes': incidencias_recientes,
+        'dudas_recientes': dudas_recientes,
+
+        # Servicios activos
+        'servicios_totales': servicios_totales,
+        'servicios_pendientes': servicios_pendientes,
+        'servicios_proceso': servicios_proceso,
+        'servicios_listos': servicios_listos,
+        'maquinas_lavado': maquinas_lavado,
+        'maquinas_secado': maquinas_secado,
+
+        # Precios
+        'prendas_destacadas': prendas_destacadas,
+    }
+
+    return render(request, 'admin/dashboard.html', context)
+
+
+@solo_admin
+def admin_finanzas(request):
+    from datetime import datetime, timedelta
+    from django.db.models import Sum, Count, F
+
+    hoy = timezone.now().date()
+
+    # Determinar el período de filtro
     filtro = request.GET.get('filtro', 'hoy')
     fecha_desde = request.GET.get('fecha_desde')
     fecha_hasta = request.GET.get('fecha_hasta')
 
     if filtro == 'hoy':
-        fecha_inicio = fecha_fin = hoy
+        fecha_inicio = hoy
+        fecha_fin = hoy
     elif filtro == 'semana':
         fecha_inicio = hoy - timedelta(days=7)
         fecha_fin = hoy
@@ -62,8 +167,10 @@ def admin_finanzas(request):
         fecha_inicio = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
         fecha_fin = datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
     else:
-        fecha_inicio = fecha_fin = hoy
+        fecha_inicio = hoy
+        fecha_fin = hoy
 
+    # ========== DATOS FINANCIEROS ==========
     pedidos_periodo = Pedido.objects.filter(
         fecha_recepcion__date__gte=fecha_inicio,
         fecha_recepcion__date__lte=fecha_fin,
@@ -71,138 +178,233 @@ def admin_finanzas(request):
     )
 
     ingresos_totales = pedidos_periodo.aggregate(
-        total=Sum('total')
-    )['total'] or Decimal('0')
+        total=Sum('total'))['total'] or Decimal('0')
 
-    gastos_insumos = MovimientoInsumo.objects.filter(
-        fecha__date__gte=fecha_inicio,
-        fecha__date__lte=fecha_fin,
-        tipo='entrada'
-    ).aggregate(total=Sum('costo_total'))['total'] or Decimal('0')
+    utilidad_neta = ingresos_totales
 
-    gastos_operativos_total = GastoOperativo.objects.filter(
-        fecha__gte=fecha_inicio,
-        fecha__lte=fecha_fin
-    ).aggregate(total=Sum('monto'))['total'] or Decimal('0')
-
-    utilidad_neta = ingresos_totales - gastos_insumos - gastos_operativos_total
-
-    # Métodos de pago
-    def pago_total(tipo):
-        return pedidos_periodo.filter(metodo_pago=tipo).aggregate(
-            total=Sum('total'))['total'] or Decimal('0')
-
-    pago_efectivo = pago_total('efectivo')
-    pago_tarjeta = pago_total('tarjeta')
-    pago_transferencia = pago_total('transferencia')
+    # ========== MÉTODOS DE PAGO ==========
+    pago_efectivo = pedidos_periodo.filter(metodo_pago='efectivo').aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+    pago_tarjeta = pedidos_periodo.filter(metodo_pago='tarjeta').aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+    pago_transferencia = pedidos_periodo.filter(metodo_pago='transferencia').aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
 
     total_pagos = pago_efectivo + pago_tarjeta + pago_transferencia
-    pct = lambda x: round((x / total_pagos * 100), 1) if total_pagos > 0 else 0
+    pct_efectivo = round((pago_efectivo / total_pagos * 100),
+                         1) if total_pagos > 0 else 0
+    pct_tarjeta = round((pago_tarjeta / total_pagos * 100),
+                        1) if total_pagos > 0 else 0
+    pct_transferencia = round(
+        (pago_transferencia / total_pagos * 100), 1) if total_pagos > 0 else 0
 
-    # PRENDAS
-    detalles = DetallePedido.objects.filter(
+    # ========== GRÁFICA DE PRENDAS ==========
+    detalles_periodo = DetallePedido.objects.filter(
         pedido__fecha_recepcion__date__gte=fecha_inicio,
         pedido__fecha_recepcion__date__lte=fecha_fin,
         pedido__estado_pago='pagado'
     )
 
-    prendas_stats = detalles.values('prenda__nombre').annotate(
-        cantidad=Sum('cantidad'),
-        ganancia=Sum('subtotal')
-    ).order_by('-cantidad')[:10]
+    prendas_stats = detalles_periodo.values(
+        'prenda__nombre'
+    ).annotate(
+        cantidad_total=Sum('cantidad'),
+        ganancia_total=Sum('subtotal')
+    ).order_by('-cantidad_total')[:10]
 
-    total_prendas = sum(p['cantidad'] for p in prendas_stats if p['cantidad'])
-    prendas_data = [
-        {
-            'nombre': p['prenda__nombre'],
-            'cantidad': p['cantidad'],
-            'ganancia': float(p['ganancia'] or 0),
-            'porcentaje': pct(p['cantidad'])
-        }
-        for p in prendas_stats if p['prenda__nombre']
-    ]
+    total_prendas = sum(p['cantidad_total']
+                        for p in prendas_stats if p['cantidad_total']) if prendas_stats else 0
+    prendas_data = []
+    for prenda in prendas_stats:
+        if prenda['prenda__nombre'] and prenda['cantidad_total']:
+            pct = round(
+                (prenda['cantidad_total'] / total_prendas * 100), 1) if total_prendas > 0 else 0
+            prendas_data.append({
+                'nombre': prenda['prenda__nombre'],
+                'cantidad': prenda['cantidad_total'],
+                'ganancia': float(prenda['ganancia_total'] or 0),
+                'porcentaje': pct
+            })
 
-    # SERVICIOS
-    servicios_stats = pedidos_periodo.values('tipo_servicio').annotate(
+    # ========== GRÁFICA DE SERVICIOS ==========
+    servicios_stats = pedidos_periodo.values(
+        'tipo_servicio'
+    ).annotate(
         cantidad=Count('id'),
-        ganancia=Sum('total')
-    )
+        ganancia_total=Sum('total')
+    ).order_by('-cantidad')
 
-    total_serv = sum(s['cantidad'] for s in servicios_stats)
-    servicios_data = [
-        {
-            'nombre': s['tipo_servicio'] or 'Sin especificar',
-            'cantidad': s['cantidad'],
-            'ganancia': float(s['ganancia'] or 0),
-            'porcentaje': pct(s['cantidad'])
-        }
-        for s in servicios_stats
-    ]
-
-    # INSUMOS
-    insumos_stats = MovimientoInsumo.objects.filter(
-        fecha__date__gte=fecha_inicio,
-        fecha__date__lte=fecha_fin,
-        tipo='entrada'
-    ).values('insumo__nombre').annotate(
-        cantidad=Sum('cantidad'),
-        gasto=Sum('costo_total')
-    )
-
-    insumos_data = [
-        {
-            'nombre': i['insumo__nombre'],
-            'cantidad': float(i['cantidad'] or 0),
-            'gasto': float(i['gasto'] or 0)
-        }
-        for i in insumos_stats if i['insumo__nombre']
-    ]
-
-    # GASTOS OPERATIVOS
-    gastos_stats = GastoOperativo.objects.filter(
-        fecha__gte=fecha_inicio,
-        fecha__lte=fecha_fin
-    ).values('categoria').annotate(
-        total=Sum('monto'),
-        cantidad=Count('id')
-    )
-
-    categorias = dict(GastoOperativo.CATEGORIA_CHOICES)
-    gastos_data = [
-        {
-            'categoria': categorias.get(g['categoria'], g['categoria']),
-            'total': float(g['total'] or 0),
-            'cantidad': g['cantidad']
-        }
-        for g in gastos_stats
-    ]
+    total_servicios = sum(s['cantidad']
+                          for s in servicios_stats) if servicios_stats else 0
+    servicios_data = []
+    for servicio in servicios_stats:
+        pct = round((servicio['cantidad'] / total_servicios *
+                    100), 1) if total_servicios > 0 else 0
+        servicios_data.append({
+            'nombre': servicio['tipo_servicio'] or 'Sin especificar',
+            'cantidad': servicio['cantidad'],
+            'ganancia': float(servicio['ganancia_total'] or 0),
+            'porcentaje': pct
+        })
 
     context = {
-        'ingresos_totales': ingresos_totales,
-        'gastos_insumos': gastos_insumos,
-        'gastos_operativos_total': gastos_operativos_total,
-        'utilidad_neta': utilidad_neta,
+        'filtro': filtro,
+        'fecha_inicio': fecha_inicio,
+        'fecha_fin': fecha_fin,
+        'ingresos_totales': float(ingresos_totales),
+        'utilidad_neta': float(utilidad_neta),
+        'pago_efectivo': float(pago_efectivo),
+        'pago_tarjeta': float(pago_tarjeta),
+        'pago_transferencia': float(pago_transferencia),
+        'pct_efectivo': float(pct_efectivo),
+        'pct_tarjeta': float(pct_tarjeta),
+        'pct_transferencia': float(pct_transferencia),
         'prendas_json': json.dumps(prendas_data),
         'servicios_json': json.dumps(servicios_data),
-        'insumos_json': json.dumps(insumos_data),
-        'gastos_operativos_json': json.dumps(gastos_data),
+        'metodos_pago_json': json.dumps([
+            {'nombre': 'Efectivo', 'total': float(
+                pago_efectivo), 'porcentaje': float(pct_efectivo)},
+            {'nombre': 'Tarjeta', 'total': float(
+                pago_tarjeta), 'porcentaje': float(pct_tarjeta)},
+            {'nombre': 'Transferencia', 'total': float(
+                pago_transferencia), 'porcentaje': float(pct_transferencia)},
+        ]),
     }
-
     return render(request, 'admin/finanzas/finanzas.html', context)
 
 
-@login_required
+@solo_admin
 def admin_corte_caja(request):
     if not request.user.groups.filter(name='Administrador').exists():
         return redirect('tasks')
-    return render(request, 'admin/finanzas/corte_caja.html')
+
+    # Obtener fecha de hoy
+    hoy = timezone.now().date()
+
+    # Verificar si ya existe un corte para hoy
+    corte_existente = CorteCaja.objects.filter(
+        fecha=hoy, responsable=request.user).first()
+
+    # Si es POST, guardar el corte
+    if request.method == 'POST':
+        efectivo_contado = Decimal(request.POST.get('efectivo_contado', 0))
+        tarjeta_terminal = Decimal(request.POST.get('tarjeta_terminal', 0))
+        transferencia_banco = Decimal(
+            request.POST.get('transferencia_banco', 0))
+        justificacion = request.POST.get('justificacion', '')
+
+        # Pedidos pagados del día de hoy
+        pedidos_hoy = Pedido.objects.filter(
+            fecha_recepcion__date=hoy,
+            estado_pago='pagado'
+        )
+
+        # Calcular ventas por método de pago
+        ventas_efectivo = pedidos_hoy.filter(metodo_pago='efectivo').aggregate(
+            total=Sum('total'))['total'] or Decimal('0')
+        ventas_tarjeta = pedidos_hoy.filter(metodo_pago='tarjeta').aggregate(
+            total=Sum('total'))['total'] or Decimal('0')
+        ventas_transferencia = pedidos_hoy.filter(metodo_pago='transferencia').aggregate(
+            total=Sum('total'))['total'] or Decimal('0')
+
+        total_ventas = ventas_efectivo + ventas_tarjeta + ventas_transferencia
+        total_fisico = efectivo_contado + tarjeta_terminal + transferencia_banco
+        diferencia = total_fisico - total_ventas
+
+        # Crear o actualizar el corte
+        if corte_existente:
+            corte = corte_existente
+            corte.efectivo_contado = efectivo_contado
+            corte.tarjeta_terminal = tarjeta_terminal
+            corte.transferencia_banco = transferencia_banco
+            corte.total_fisico = total_fisico
+            corte.diferencia = diferencia
+            corte.justificacion = justificacion
+            corte.fecha_hora_registro = timezone.now()
+            messages.success(request, 'Corte de caja actualizado exitosamente')
+        else:
+            corte = CorteCaja(
+                fecha=hoy,
+                responsable=request.user,
+                ventas_efectivo=ventas_efectivo,
+                ventas_tarjeta=ventas_tarjeta,
+                ventas_transferencia=ventas_transferencia,
+                total_ventas=total_ventas,
+                efectivo_contado=efectivo_contado,
+                tarjeta_terminal=tarjeta_terminal,
+                transferencia_banco=transferencia_banco,
+                total_fisico=total_fisico,
+                diferencia=diferencia,
+                justificacion=justificacion
+            )
+            messages.success(request, 'Corte de caja guardado exitosamente')
+
+        corte.save()
+
+        # Registrar movimiento del operador
+        MovimientoOperador.objects.create(
+            operador=request.user,
+            accion='actualizo',
+            detalles=f'Corte de caja - Diferencia: ${diferencia}'
+        )
+
+        return redirect('admin_corte_caja')
+
+    # Pedidos pagados del día de hoy
+    pedidos_hoy = Pedido.objects.filter(
+        fecha_recepcion__date=hoy,
+        estado_pago='pagado'
+    )
+
+    # Calcular ventas por método de pago
+    ventas_efectivo = pedidos_hoy.filter(metodo_pago='efectivo').aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+    ventas_tarjeta = pedidos_hoy.filter(metodo_pago='tarjeta').aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+    ventas_transferencia = pedidos_hoy.filter(metodo_pago='transferencia').aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+
+    total_ventas = ventas_efectivo + ventas_tarjeta + ventas_transferencia
+
+    # Si existe un corte, usar esos datos
+    if corte_existente:
+        efectivo_contado = corte_existente.efectivo_contado
+        tarjeta_terminal = corte_existente.tarjeta_terminal
+        transferencia_banco = corte_existente.transferencia_banco
+        total_fisico = corte_existente.total_fisico
+        diferencia = corte_existente.diferencia
+        justificacion = corte_existente.justificacion or ''
+    else:
+        # Valores por defecto (vacíos)
+        efectivo_contado = Decimal('0')
+        tarjeta_terminal = Decimal('0')
+        transferencia_banco = Decimal('0')
+        total_fisico = Decimal('0')
+        diferencia = Decimal('0')
+        justificacion = ''
+
+    context = {
+        'fecha': hoy.strftime('%d/%m/%Y'),
+        'fecha_hora': timezone.now().strftime('%d/%m/%Y %H:%M'),
+        'ventas_efectivo': ventas_efectivo,
+        'ventas_tarjeta': ventas_tarjeta,
+        'ventas_transferencia': ventas_transferencia,
+        'total_ventas': total_ventas,
+        'efectivo_contado': efectivo_contado,
+        'tarjeta_terminal': tarjeta_terminal,
+        'transferencia_banco': transferencia_banco,
+        'total_fisico': total_fisico,
+        'diferencia': diferencia,
+        'justificacion': justificacion,
+        'responsable': request.user.username,
+        'corte_guardado': corte_existente is not None,
+    }
+
+    return render(request, 'admin/finanzas/corte_caja.html', context)
 
 
-@login_required
+@solo_admin
 def admin_usuarios(request):
-    if not request.user.groups.filter(name='Administrador').exists():
-        return redirect('tasks')
-
     trabajadores = Usuario.objects.filter(rol__in=['operador', 'admin'])
     clientes = Usuario.objects.filter(rol='cliente')
     tab = request.GET.get('tab', 'clientes')
@@ -217,11 +419,8 @@ def admin_usuarios(request):
     return render(request, 'admin/usuarios/usuarios.html', context)
 
 
-@login_required
+@solo_admin
 def admin_nuevo_usuario(request):
-    if not request.user.groups.filter(name='Administrador').exists():
-        return redirect('tasks')
-
     if request.method == 'POST':
         form = RegistroUsuarioAdminForm(request.POST)
         if form.is_valid():
@@ -231,7 +430,8 @@ def admin_nuevo_usuario(request):
             user.save()
 
             if rol == 'admin':
-                grupo, created = Group.objects.get_or_create(name='Administrador')
+                grupo, created = Group.objects.get_or_create(
+                    name='Administrador')
                 user.groups.add(grupo)
             elif rol == 'operador':
                 grupo, created = Group.objects.get_or_create(name='Trabajador')
@@ -245,11 +445,8 @@ def admin_nuevo_usuario(request):
     return render(request, 'admin/usuarios/nuevo_usuario.html', {'form': form})
 
 
-@login_required
+@solo_admin
 def admin_eliminar_usuario(request, usuario_id):
-    if not request.user.groups.filter(name='Administrador').exists():
-        return redirect('tasks')
-
     try:
         usuario = Usuario.objects.get(id=usuario_id)
         if usuario != request.user:
@@ -263,11 +460,8 @@ def admin_eliminar_usuario(request, usuario_id):
     return redirect('admin_usuarios')
 
 
-@login_required
+@solo_admin
 def admin_precios(request):
-    if not request.user.groups.filter(name='Administrador').exists():
-        return redirect('tasks')
-
     prendas = Prenda.objects.filter(activo=True).order_by('nombre')
     servicios = Servicio.objects.filter(activo=True).order_by('tipo', 'nombre')
     return render(request, 'admin/precios.html', {
@@ -276,11 +470,9 @@ def admin_precios(request):
     })
 
 
-@login_required
+@solo_admin
 @require_POST
 def actualizar_precio_prenda(request):
-    if not request.user.groups.filter(name='Administrador').exists():
-        return JsonResponse({'success': False, 'mensaje': 'No autorizado'}, status=403)
     try:
         data = json.loads(request.body)
         prenda = get_object_or_404(Prenda, id=data.get('id'))
@@ -291,11 +483,9 @@ def actualizar_precio_prenda(request):
         return JsonResponse({'success': False, 'mensaje': str(e)}, status=400)
 
 
-@login_required
+@solo_admin
 @require_POST
 def actualizar_precio_servicio(request):
-    if not request.user.groups.filter(name='Administrador').exists():
-        return JsonResponse({'success': False, 'mensaje': 'No autorizado'}, status=403)
     try:
         data = json.loads(request.body)
         servicio = get_object_or_404(Servicio, id=data.get('id'))
@@ -306,18 +496,17 @@ def actualizar_precio_servicio(request):
         return JsonResponse({'success': False, 'mensaje': str(e)}, status=400)
 
 
-@login_required
+@solo_admin
 @require_POST
 def agregar_prenda(request):
-    if not request.user.groups.filter(name='Administrador').exists():
-        return JsonResponse({'success': False, 'mensaje': 'No autorizado'}, status=403)
     try:
         data = json.loads(request.body)
         nombre = data.get('nombre')
         if Prenda.objects.filter(nombre=nombre).exists():
             return JsonResponse({'success': False, 'mensaje': 'Ya existe una prenda con ese nombre'}, status=400)
 
-        prenda = Prenda.objects.create(nombre=nombre, precio=data.get('precio'))
+        prenda = Prenda.objects.create(
+            nombre=nombre, precio=data.get('precio'))
         return JsonResponse({
             'success': True,
             'mensaje': 'Prenda agregada correctamente',
@@ -327,11 +516,9 @@ def agregar_prenda(request):
         return JsonResponse({'success': False, 'mensaje': str(e)}, status=400)
 
 
-@login_required
+@solo_admin
 @require_POST
 def agregar_servicio(request):
-    if not request.user.groups.filter(name='Administrador').exists():
-        return JsonResponse({'success': False, 'mensaje': 'No autorizado'}, status=403)
     try:
         data = json.loads(request.body)
         nombre = data.get('nombre')
@@ -353,11 +540,9 @@ def agregar_servicio(request):
         return JsonResponse({'success': False, 'mensaje': str(e)}, status=400)
 
 
-@login_required
+@solo_admin
 @require_POST
 def eliminar_prenda(request):
-    if not request.user.groups.filter(name='Administrador').exists():
-        return JsonResponse({'success': False, 'mensaje': 'No autorizado'}, status=403)
     try:
         data = json.loads(request.body)
         prenda = get_object_or_404(Prenda, id=data.get('id'))
@@ -368,11 +553,9 @@ def eliminar_prenda(request):
         return JsonResponse({'success': False, 'mensaje': str(e)}, status=400)
 
 
-@login_required
+@solo_admin
 @require_POST
 def eliminar_servicio(request):
-    if not request.user.groups.filter(name='Administrador').exists():
-        return JsonResponse({'success': False, 'mensaje': 'No autorizado'}, status=403)
     try:
         data = json.loads(request.body)
         servicio = get_object_or_404(Servicio, id=data.get('id'))
@@ -383,9 +566,12 @@ def eliminar_servicio(request):
         return JsonResponse({'success': False, 'mensaje': str(e)}, status=400)
 
 
+@solo_admin
 def obtener_precios_json(request):
-    prendas = list(Prenda.objects.filter(activo=True).values('id', 'nombre', 'precio'))
-    servicios = list(Servicio.objects.filter(activo=True).values('id', 'nombre', 'tipo', 'precio', 'descripcion'))
+    prendas = list(Prenda.objects.filter(
+        activo=True).values('id', 'nombre', 'precio'))
+    servicios = list(Servicio.objects.filter(activo=True).values(
+        'id', 'nombre', 'tipo', 'precio', 'descripcion'))
 
     for prenda in prendas:
         prenda['precio'] = str(prenda['precio'])
@@ -395,7 +581,7 @@ def obtener_precios_json(request):
     return JsonResponse({'prendas': prendas, 'servicios': servicios})
 
 
-@login_required
+@solo_admin
 def buscar_clientes(request):
     query = request.GET.get('q', '').strip()
 
@@ -424,11 +610,8 @@ def buscar_clientes(request):
     return JsonResponse({'clientes': clientes_data})
 
 
-@login_required
+@solo_admin
 def admin_inventarios(request):
-    if not request.user.groups.filter(name='Administrador').exists():
-        return redirect('tasks')
-
     insumos = Insumo.objects.all().order_by('-fecha_actualizacion')
     notificaciones = NotificacionStock.objects.filter(
         atendida=False).select_related('insumo', 'usuario')
@@ -449,7 +632,7 @@ def admin_inventarios(request):
     })
 
 
-@login_required
+@solo_admin
 def editar_insumo(request, id):
     insumo = get_object_or_404(Insumo, id=id)
     if request.method == 'POST':
@@ -458,7 +641,8 @@ def editar_insumo(request, id):
             form.save()
             NotificacionStock.objects.filter(
                 insumo=insumo, atendida=False).update(atendida=True)
-            messages.success(request, 'Inventario actualizado y alertas resueltas.')
+            messages.success(
+                request, 'Inventario actualizado y alertas resueltas.')
             return redirect('admin_inventarios')
         else:
             errores = form.errors.as_text()
@@ -466,7 +650,7 @@ def editar_insumo(request, id):
     return redirect('admin_inventarios')
 
 
-@login_required
+@solo_admin
 def eliminar_insumo(request, id):
     insumo = get_object_or_404(Insumo, id=id)
     insumo.delete()
@@ -474,20 +658,16 @@ def eliminar_insumo(request, id):
     return redirect('admin_inventarios')
 
 
-@login_required
+@solo_admin
 def admin_detalles_inventario(request):
-    if not request.user.groups.filter(name='Administrador').exists():
-        return redirect('tasks')
     insumos = Insumo.objects.all().order_by('nombre')
     return render(request, 'admin/inventario/detalles_inventario.html', {'insumos': insumos})
 
 
-@login_required
+@solo_admin
 def admin_historialVentas(request):
-    if not request.user.groups.filter(name='Administrador').exists():
-        return redirect('tasks')
-
-    ventas = Pedido.objects.select_related('cliente', 'servicio').order_by('-fecha_recepcion')
+    ventas = Pedido.objects.select_related(
+        'cliente', 'servicio').order_by('-fecha_recepcion')
 
     busqueda = request.GET.get('buscar', '').strip()
     if busqueda:
@@ -505,16 +685,14 @@ def admin_historialVentas(request):
     return render(request, 'admin/historial/historial-ventas.html', context)
 
 
-@login_required
+@solo_admin
 def admin_historialMovimientos(request):
-    if not request.user.groups.filter(name='Administrador').exists():
-        return redirect('tasks')
-
     movimientos = MovimientoOperador.objects.select_related(
         'operador', 'pedido'
     ).order_by('-fecha')
 
-    operadores = Usuario.objects.filter(rol__in=['operador', 'admin']).order_by('username')
+    operadores = Usuario.objects.filter(
+        rol__in=['operador', 'admin']).order_by('username')
 
     context = {
         'movimientos': movimientos,
@@ -524,11 +702,8 @@ def admin_historialMovimientos(request):
     return render(request, 'admin/historial/historial-movimientos.html', context)
 
 
-@login_required
+@solo_admin
 def admin_detalleVenta(request, pedido_id=None):
-    if not request.user.groups.filter(name='Administrador').exists():
-        return redirect('tasks')
-
     pedido = None
     if pedido_id:
         pedido = get_object_or_404(Pedido, id=pedido_id)
@@ -539,14 +714,8 @@ def admin_detalleVenta(request, pedido_id=None):
     return render(request, 'admin/historial/detalle-venta.html', context)
 
 
-@login_required
+@solo_admin
 def admin_incidencias(request):
-    """
-    Vista ADMIN para gestionar incidencias y dudas/quejas.
-    """
-    if not request.user.groups.filter(name='Administrador').exists():
-        return redirect('tasks')
-
     if request.method == 'POST':
         tipo = request.POST.get('tipo', 'duda')
         accion = request.POST.get('accion')
@@ -587,8 +756,10 @@ def admin_incidencias(request):
             except Incidencia.DoesNotExist:
                 return JsonResponse({'success': False, 'message': 'Incidencia no encontrada.'})
 
-    dudas_quejas = DudaQueja.objects.select_related('cliente').all().order_by('-fecha_creacion')
-    incidencias_list = Incidencia.objects.select_related('trabajador').all().order_by('-fecha_reporte')
+    dudas_quejas = DudaQueja.objects.select_related(
+        'cliente').all().order_by('-fecha_creacion')
+    incidencias_list = Incidencia.objects.select_related(
+        'trabajador').all().order_by('-fecha_reporte')
 
     context = {
         'dudas_quejas': dudas_quejas,
@@ -597,15 +768,10 @@ def admin_incidencias(request):
     return render(request, 'admin/incidencias.html', context)
 
 
-@login_required
+@solo_admin
 def admin_configuracion(request):
-    if not request.user.groups.filter(name='Administrador').exists():
-        return redirect('tasks')
-
-    # Incidencias pendientes
-    incidencias_pendientes = Incidencia.objects.exclude(estado='resuelto').count()
-
-    # Productos con stock bajo
+    incidencias_pendientes = Incidencia.objects.exclude(
+        estado='resuelto').count()
     productos_bajo_stock = 0
     for insumo in Insumo.objects.all():
         if insumo.capacidad_maxima > 0:
@@ -625,17 +791,13 @@ def admin_configuracion(request):
 #              VISTAS TRABAJADOR
 # ==========================================
 
-@login_required
+@solo_trabajador
 def trabajador_dashboard(request):
     return render(request, 'trabajador/dashboard.html')
 
 
-@login_required
+@solo_trabajador
 def servicios_proceso(request):
-    """
-    Muestra SOLO los servicios activos que requieren atención.
-    Excluye: Entregado y Cancelado.
-    """
     pedidos = Pedido.objects.exclude(
         estado__in=['entregado', 'cancelado']
     ).select_related('cliente').order_by('fecha_recepcion')
@@ -655,12 +817,8 @@ def servicios_proceso(request):
     })
 
 
-@login_required
+@solo_trabajador
 def historial_servicios(request):
-    """
-    Muestra SOLO el archivo muerto (servicios finalizados).
-    Ordenados del más reciente entregado al más antiguo.
-    """
     pedidos = Pedido.objects.filter(
         estado__in=['entregado', 'cancelado']
     ).select_related('cliente').order_by('-fecha_entrega_real', '-fecha_recepcion')
@@ -678,7 +836,7 @@ def historial_servicios(request):
     })
 
 
-@login_required
+@solo_trabajador
 def nuevo_servicio(request):
     clientes = Usuario.objects.filter(rol='cliente').order_by('username')
     servicios = Servicio.objects.filter(activo=True)
@@ -689,7 +847,8 @@ def nuevo_servicio(request):
             data = json.loads(request.body)
 
             cliente_id = data.get('cliente_id')
-            cliente = Usuario.objects.filter(id=cliente_id, rol='cliente').first()
+            cliente = Usuario.objects.filter(
+                id=cliente_id, rol='cliente').first()
             if not cliente:
                 return JsonResponse({'success': False, 'message': 'Cliente no encontrado'}, status=400)
 
@@ -707,7 +866,8 @@ def nuevo_servicio(request):
                 estado='pendiente',
                 estado_pago='pendiente',
                 origen='operador',
-                fecha_entrega_estimada=data.get('fecha_entrega') if data.get('fecha_entrega') else None
+                fecha_entrega_estimada=data.get(
+                    'fecha_entrega') if data.get('fecha_entrega') else None
             )
 
             MovimientoOperador.objects.create(
@@ -746,26 +906,21 @@ def nuevo_servicio(request):
         except Exception as e:
             return JsonResponse({'success': False, 'message': f"Error interno: {str(e)}"}, status=400)
 
-    return render(request, 'trabajador/procedimiento/nuevo_servicio.html', {
+    # RUTA ACTUALIZADA
+    return render(request, 'trabajador/servicio/nuevo_servicio.html', {
         'clientes': clientes,
         'servicios': servicios,
         'prendas': prendas
     })
 
 
-@login_required
+@solo_trabajador
 def validar_ticket(request):
-    """
-    Vista principal para la pantalla de entrega y validación de tickets.
-    """
     return render(request, 'trabajador/tickets/validar_ticket.html')
 
 
-@login_required
+@solo_trabajador
 def api_buscar_pedido(request):
-    """
-    API JSON para buscar un pedido por folio (usado en validar_ticket).
-    """
     folio = request.GET.get('folio', '').strip().upper()
     try:
         pedido = Pedido.objects.get(folio__iexact=folio)
@@ -784,15 +939,13 @@ def api_buscar_pedido(request):
             }
         }
     except Pedido.DoesNotExist:
-        data = {'success': False, 'message': 'No existe ningún pedido con ese folio.'}
+        data = {'success': False,
+                'message': 'No existe ningún pedido con ese folio.'}
     return JsonResponse(data)
 
 
-@login_required
+@solo_trabajador
 def api_entregar_pedido(request):
-    """
-    API JSON para cambiar el estado a entregado y registrar pago si aplica.
-    """
     if request.method == 'POST':
         data = json.loads(request.body)
         pedido = get_object_or_404(Pedido, id=data.get('pedido_id'))
@@ -820,11 +973,8 @@ def api_entregar_pedido(request):
     return JsonResponse({'success': False}, status=400)
 
 
-@login_required
+@solo_trabajador
 def incidencias(request):
-    """
-    Vista para que el trabajador reporte incidencias.
-    """
     if request.method == 'POST':
         asunto = request.POST.get('asunto')
         descripcion = request.POST.get('descripcion')
@@ -842,11 +992,12 @@ def incidencias(request):
             return JsonResponse({'success': True, 'message': 'Incidencia reportada exitosamente.'})
         return JsonResponse({'success': False, 'message': 'Por favor complete todos los campos requeridos.'})
 
-    mis_incidencias = Incidencia.objects.filter(trabajador=request.user).order_by('-fecha_reporte')
+    mis_incidencias = Incidencia.objects.filter(
+        trabajador=request.user).order_by('-fecha_reporte')
     return render(request, 'trabajador/incidencias/incidencias.html', {'mis_incidencias': mis_incidencias})
 
 
-@login_required
+@solo_trabajador
 def inventario(request):
     insumos = Insumo.objects.all()
     if request.method == 'POST':
@@ -858,18 +1009,21 @@ def inventario(request):
                 atendida=False,
                 defaults={'usuario': request.user}
             )
-            messages.success(request, f'¡Aviso enviado al administrador sobre: {producto_nombre}!')
+            messages.success(
+                request, f'¡Aviso enviado al administrador sobre: {producto_nombre}!')
         return redirect('inventario')
 
     return render(request, 'trabajador/inventario/inventario.html', {'insumos': insumos})
 
 
-@login_required
+@solo_trabajador
 def detalle_servicio(request, pedido_id=None):
     pedido = get_object_or_404(Pedido, id=pedido_id) if pedido_id else None
 
-    lavadoras_disp = Maquina.objects.filter(estado='disponible', tipo='lavadora')
-    secadoras_disp = Maquina.objects.filter(estado='disponible', tipo='secadora')
+    lavadoras_disp = Maquina.objects.filter(
+        estado='disponible', tipo='lavadora')
+    secadoras_disp = Maquina.objects.filter(
+        estado='disponible', tipo='secadora')
 
     if request.method == 'POST' and pedido:
         try:
@@ -892,7 +1046,8 @@ def detalle_servicio(request, pedido_id=None):
                         maquina.estado = 'ocupado'
                         maquina.pedido_actual = pedido
                         maquina.hora_inicio_uso = timezone.now()
-                        maquina.tiempo_asignado = int(tiempo_asignado) if tiempo_asignado else 30
+                        maquina.tiempo_asignado = int(
+                            tiempo_asignado) if tiempo_asignado else 30
                         maquina.save()
 
                         msg_sistema = f"\n[Sistema {timezone.now().strftime('%H:%M')}] Iniciado en {maquina.nombre} ({maquina.tiempo_asignado} min)."
@@ -932,7 +1087,7 @@ def detalle_servicio(request, pedido_id=None):
     })
 
 
-@login_required
+@solo_trabajador
 def estatus_maquina(request):
     if request.method == 'POST':
         accion = request.POST.get('accion')
@@ -983,12 +1138,9 @@ def estatus_maquina(request):
     })
 
 
-@login_required
+@solo_trabajador
 @require_POST
 def asignar_maquina(request):
-    """
-    Asigna un pedido a una máquina, cambia su estado a ocupado e inicia el contador.
-    """
     try:
         data = json.loads(request.body)
         pedido_id = data.get('pedido_id')
@@ -1018,11 +1170,8 @@ def asignar_maquina(request):
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
 
-@login_required
+@solo_trabajador
 def imprimir_ticket(request, pedido_id):
-    """
-    Vista para descargar el ticket PDF directamente en el navegador.
-    """
     pedido = get_object_or_404(Pedido, id=pedido_id)
     pdf_bytes = render_pdf_ticket(pedido)
 
@@ -1038,7 +1187,7 @@ def imprimir_ticket(request, pedido_id):
 #              VISTAS CLIENTE
 # ==========================================
 
-@login_required
+@solo_cliente
 def cliente_dashboard(request):
     pedidos_activos = Pedido.objects.filter(
         cliente=request.user
@@ -1058,38 +1207,86 @@ def cliente_dashboard(request):
     return render(request, 'cliente/dashboard.html', context)
 
 
-@login_required
+@solo_cliente
 def solicitar_servicio(request):
     servicios = Servicio.objects.filter(activo=True)
     return render(request, 'cliente/solicitar_servicio.html', {'servicios': servicios})
 
 
-@login_required
+@solo_cliente
 def perfil(request):
-    return render(request, 'cliente/perfil.html')
+    if request.method == 'POST':
+        nuevo_telefono = request.POST.get('telefono', '').strip()
+        nuevo_email = request.POST.get('email', '').strip()
+        usuario = request.user
+        guardar = False
+        errores = False
+
+        if nuevo_telefono and nuevo_telefono != usuario.telefono:
+            if not nuevo_telefono.isdigit() or len(nuevo_telefono) != 10:
+                messages.error(
+                    request, '❌ El teléfono debe tener 10 dígitos numéricos.')
+                errores = True
+            else:
+                usuario.telefono = nuevo_telefono
+                guardar = True
+
+        if nuevo_email and nuevo_email != usuario.email:
+            if Usuario.objects.filter(email=nuevo_email).exclude(id=usuario.id).exists():
+                messages.error(
+                    request, '❌ Ese correo electrónico ya está registrado por otra persona.')
+                errores = True
+            else:
+                usuario.email = nuevo_email
+                usuario.username = nuevo_email
+                guardar = True
+
+        if guardar and not errores:
+            usuario.save()
+            messages.success(
+                request, '✅ ¡Tu información ha sido actualizada correctamente!')
+            return redirect('perfil')
+
+        if errores:
+            return redirect('perfil')
+
+    ultimo_pedido = Pedido.objects.filter(
+        cliente=request.user
+    ).exclude(
+        estado='cancelado'
+    ).order_by('-fecha_recepcion').first()
+
+    context = {
+        'ultimo_pedido': ultimo_pedido,
+        'fecha_registro': request.user.date_joined or timezone.now()
+    }
+    return render(request, 'cliente/perfil.html', context)
 
 
-@login_required
+@solo_cliente
 def rastrear_servicio(request):
     return render(request, 'cliente/rastrear_servicio.html')
 
 
-@login_required
+@solo_cliente
 def dudas_quejas(request):
     if request.method == 'POST':
         comentario = request.POST.get('comentario')
         if comentario and comentario.strip():
-            DudaQueja.objects.create(cliente=request.user, comentario=comentario.strip())
+            DudaQueja.objects.create(
+                cliente=request.user, comentario=comentario.strip())
             return JsonResponse({'success': True, 'message': 'Tu comentario ha sido enviado exitosamente.'})
         return JsonResponse({'success': False, 'message': 'El comentario no puede estar vacío.'})
 
-    mis_dudas = DudaQueja.objects.filter(cliente=request.user).order_by('-fecha_creacion')
+    mis_dudas = DudaQueja.objects.filter(
+        cliente=request.user).order_by('-fecha_creacion')
     return render(request, 'cliente/dudas_quejas.html', {'mis_dudas': mis_dudas})
 
 
-@login_required
+@solo_cliente
 def autoservicio(request):
-    servicios_autoservicio = Servicio.objects.filter(activo=True, tipo='autoservicio')
+    servicios_autoservicio = Servicio.objects.filter(
+        activo=True, tipo='autoservicio')
 
     if request.method == 'POST':
         try:
@@ -1099,7 +1296,8 @@ def autoservicio(request):
             total = Decimal(str(data.get('total', 0)))
             metodo_pago = data.get('metodo_pago', 'efectivo')
 
-            servicio = Servicio.objects.filter(id=servicio_id).first() if servicio_id else None
+            servicio = Servicio.objects.filter(
+                id=servicio_id).first() if servicio_id else None
 
             pedido = Pedido.objects.create(
                 cliente=request.user,
@@ -1122,12 +1320,12 @@ def autoservicio(request):
     return render(request, 'cliente/autoservicio.html', {'servicios': servicios_autoservicio})
 
 
-@login_required
+@solo_cliente
 def seleccionar_servicio(request):
     return render(request, 'cliente/seleccionar_servicio.html')
 
 
-@login_required
+@solo_cliente
 def servCosto(request):
     tipo_servicio = request.GET.get('tipo', 'por_encargo')
     tipos_nombres = {
@@ -1155,22 +1353,26 @@ def servCosto(request):
                 tipo_servicio=tipos_nombres.get(tipo, tipo_servicio_nombre),
                 total=total,
                 metodo_pago=metodo_pago,
-                cantidad_prendas=sum([p.get('cantidad', 0) for p in prendas_data]),
-                peso=sum([Decimal(str(p.get('peso', 0))) for p in prendas_data]),
+                cantidad_prendas=sum([p.get('cantidad', 0)
+                                     for p in prendas_data]),
+                peso=sum([Decimal(str(p.get('peso', 0)))
+                         for p in prendas_data]),
                 estado='pendiente',
                 estado_pago='pendiente',
                 origen='cliente'
             )
 
             for prenda_data in prendas_data:
-                prenda_obj = Prenda.objects.filter(id=prenda_data.get('prenda_id')).first()
+                prenda_obj = Prenda.objects.filter(
+                    id=prenda_data.get('prenda_id')).first()
                 if prenda_obj:
                     DetallePedido.objects.create(
                         pedido=pedido,
                         prenda=prenda_obj,
                         cantidad=prenda_data.get('cantidad', 1),
                         peso=Decimal(str(prenda_data.get('peso', 0))),
-                        precio_unitario=Decimal(str(prenda_data.get('precio', 0))),
+                        precio_unitario=Decimal(
+                            str(prenda_data.get('precio', 0))),
                         subtotal=Decimal(str(prenda_data.get('subtotal', 0)))
                     )
 
@@ -1190,7 +1392,7 @@ def servCosto(request):
     })
 
 
-@login_required
+@solo_cliente
 def terminado(request):
     return render(request, 'cliente/terminado.html')
 
@@ -1198,9 +1400,613 @@ def terminado(request):
 @login_required
 def tasks(request):
     user = request.user
-    if user.groups.filter(name='Administrador').exists():
+
+    if user.is_superuser or user.rol == 'admin' or user.groups.filter(name='Administrador').exists():
         return redirect('admin_dashboard')
-    elif user.groups.filter(name='Trabajador').exists():
+
+    elif user.rol == 'operador' or user.groups.filter(name='Trabajador').exists():
         return redirect('trabajador_dashboard')
+
     else:
         return redirect('cliente_dashboard')
+
+
+@solo_admin
+def exportar_finanzas_excel(request):
+    from datetime import datetime, timedelta
+    from django.db.models import Sum, Count
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from openpyxl.utils import get_column_letter
+
+    hoy = timezone.now().date()
+
+    filtro = request.GET.get('filtro', 'hoy')
+    fecha_desde = request.GET.get('fecha_desde')
+    fecha_hasta = request.GET.get('fecha_hasta')
+
+    if filtro == 'hoy':
+        fecha_inicio = hoy
+        fecha_fin = hoy
+        periodo_nombre = f"Hoy - {hoy.strftime('%d/%m/%Y')}"
+    elif filtro == 'semana':
+        fecha_inicio = hoy - timedelta(days=7)
+        fecha_fin = hoy
+        periodo_nombre = "Última Semana"
+    elif filtro == 'mes':
+        fecha_inicio = hoy.replace(day=1)
+        fecha_fin = hoy
+        periodo_nombre = f"Este Mes - {hoy.strftime('%B %Y')}"
+    elif filtro == 'personalizado' and fecha_desde and fecha_hasta:
+        fecha_inicio = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
+        fecha_fin = datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
+        periodo_nombre = f"Del {fecha_inicio.strftime('%d/%m/%Y')} al {fecha_fin.strftime('%d/%m/%Y')}"
+    else:
+        fecha_inicio = hoy
+        fecha_fin = hoy
+        periodo_nombre = f"Hoy - {hoy.strftime('%d/%m/%Y')}"
+
+    pedidos_periodo = Pedido.objects.filter(
+        fecha_recepcion__date__gte=fecha_inicio,
+        fecha_recepcion__date__lte=fecha_fin,
+        estado_pago='pagado'
+    )
+
+    ingresos_totales = pedidos_periodo.aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+    utilidad_neta = ingresos_totales
+
+    pago_efectivo = pedidos_periodo.filter(metodo_pago='efectivo').aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+    pago_tarjeta = pedidos_periodo.filter(metodo_pago='tarjeta').aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+    pago_transferencia = pedidos_periodo.filter(metodo_pago='transferencia').aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+
+    detalles_periodo = DetallePedido.objects.filter(
+        pedido__fecha_recepcion__date__gte=fecha_inicio,
+        pedido__fecha_recepcion__date__lte=fecha_fin,
+        pedido__estado_pago='pagado'
+    )
+    prendas_stats = detalles_periodo.values(
+        'prenda__nombre'
+    ).annotate(
+        cantidad_total=Sum('cantidad'),
+        ganancia_total=Sum('subtotal')
+    ).order_by('-cantidad_total')
+
+    servicios_stats = pedidos_periodo.values(
+        'tipo_servicio'
+    ).annotate(
+        cantidad=Count('id'),
+        ganancia_total=Sum('total')
+    ).order_by('-cantidad')
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Reporte Financiero"
+
+    header_fill = PatternFill(start_color="2d3748",
+                              end_color="2d3748", fill_type="solid")
+    header_font = Font(color="FFFFFF", bold=True, size=12)
+    title_font = Font(bold=True, size=14)
+    subtotal_fill = PatternFill(
+        start_color="e2e8f0", end_color="e2e8f0", fill_type="solid")
+
+    ws.merge_cells('A1:D1')
+    cell = ws['A1']
+    cell.value = "REPORTE FINANCIERO - PUNTO LIMPIO"
+    cell.font = title_font
+    cell.alignment = Alignment(horizontal='center', vertical='center')
+
+    ws.merge_cells('A2:D2')
+    cell = ws['A2']
+    cell.value = periodo_nombre
+    cell.alignment = Alignment(horizontal='center', vertical='center')
+
+    row = 4
+    ws.merge_cells(f'A{row}:D{row}')
+    cell = ws[f'A{row}']
+    cell.value = "RESUMEN FINANCIERO"
+    cell.fill = header_fill
+    cell.font = header_font
+    cell.alignment = Alignment(horizontal='center')
+
+    row += 1
+    ws[f'A{row}'] = "Concepto"
+    ws[f'B{row}'] = "Monto"
+    ws[f'A{row}'].font = Font(bold=True)
+    ws[f'B{row}'].font = Font(bold=True)
+
+    row += 1
+    ws[f'A{row}'] = "Ingresos totales"
+    ws[f'B{row}'] = float(ingresos_totales)
+    ws[f'B{row}'].number_format = '$#,##0.00'
+
+    row += 1
+    ws[f'A{row}'] = "UTILIDAD NETA"
+    ws[f'B{row}'] = float(utilidad_neta)
+    ws[f'A{row}'].font = Font(bold=True)
+    ws[f'B{row}'].font = Font(bold=True)
+    ws[f'B{row}'].number_format = '$#,##0.00'
+    ws[f'A{row}'].fill = subtotal_fill
+    ws[f'B{row}'].fill = subtotal_fill
+
+    row += 3
+    ws.merge_cells(f'A{row}:D{row}')
+    cell = ws[f'A{row}']
+    cell.value = "DESGLOSE POR MÉTODO DE PAGO"
+    cell.fill = header_fill
+    cell.font = header_font
+    cell.alignment = Alignment(horizontal='center')
+
+    row += 1
+    ws[f'A{row}'] = "Método"
+    ws[f'B{row}'] = "Monto"
+    ws[f'A{row}'].font = Font(bold=True)
+    ws[f'B{row}'].font = Font(bold=True)
+
+    row += 1
+    ws[f'A{row}'] = "Efectivo"
+    ws[f'B{row}'] = float(pago_efectivo)
+    ws[f'B{row}'].number_format = '$#,##0.00'
+
+    row += 1
+    ws[f'A{row}'] = "Tarjeta"
+    ws[f'B{row}'] = float(pago_tarjeta)
+    ws[f'B{row}'].number_format = '$#,##0.00'
+
+    row += 1
+    ws[f'A{row}'] = "Transferencia"
+    ws[f'B{row}'] = float(pago_transferencia)
+    ws[f'B{row}'].number_format = '$#,##0.00'
+
+    row += 3
+    ws.merge_cells(f'A{row}:D{row}')
+    cell = ws[f'A{row}']
+    cell.value = "ESTADÍSTICAS POR PRENDA"
+    cell.fill = header_fill
+    cell.font = header_font
+    cell.alignment = Alignment(horizontal='center')
+
+    row += 1
+    ws[f'A{row}'] = "Prenda"
+    ws[f'B{row}'] = "Cantidad"
+    ws[f'C{row}'] = "Ganancia"
+    for col in ['A', 'B', 'C']:
+        ws[f'{col}{row}'].font = Font(bold=True)
+
+    for prenda in prendas_stats:
+        if prenda['prenda__nombre']:
+            row += 1
+            ws[f'A{row}'] = prenda['prenda__nombre']
+            ws[f'B{row}'] = prenda['cantidad_total']
+            ws[f'C{row}'] = float(prenda['ganancia_total'] or 0)
+            ws[f'C{row}'].number_format = '$#,##0.00'
+
+    row += 3
+    ws.merge_cells(f'A{row}:D{row}')
+    cell = ws[f'A{row}']
+    cell.value = "ESTADÍSTICAS POR SERVICIO"
+    cell.fill = header_fill
+    cell.font = header_font
+    cell.alignment = Alignment(horizontal='center')
+
+    row += 1
+    ws[f'A{row}'] = "Servicio"
+    ws[f'B{row}'] = "Cantidad"
+    ws[f'C{row}'] = "Ganancia"
+    for col in ['A', 'B', 'C']:
+        ws[f'{col}{row}'].font = Font(bold=True)
+
+    for servicio in servicios_stats:
+        row += 1
+        ws[f'A{row}'] = servicio['tipo_servicio'] or 'Sin especificar'
+        ws[f'B{row}'] = servicio['cantidad']
+        ws[f'C{row}'] = float(servicio['ganancia_total'] or 0)
+        ws[f'C{row}'].number_format = '$#,##0.00'
+
+    ws.column_dimensions['A'].width = 30
+    ws.column_dimensions['B'].width = 15
+    ws.column_dimensions['C'].width = 15
+    ws.column_dimensions['D'].width = 15
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    filename = f"reporte_financiero_{fecha_inicio.strftime('%Y%m%d')}_{fecha_fin.strftime('%Y%m%d')}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    wb.save(response)
+    return response
+
+
+@solo_admin
+def imprimir_reporte_finanzas(request):
+    from datetime import datetime, timedelta
+    from django.db.models import Sum, Count
+    from django.template.loader import get_template
+    from xhtml2pdf import pisa
+    from io import BytesIO
+
+    hoy = timezone.now().date()
+
+    filtro = request.GET.get('filtro', 'hoy')
+    fecha_desde = request.GET.get('fecha_desde')
+    fecha_hasta = request.GET.get('fecha_hasta')
+
+    if filtro == 'hoy':
+        fecha_inicio = hoy
+        fecha_fin = hoy
+    elif filtro == 'semana':
+        fecha_inicio = hoy - timedelta(days=7)
+        fecha_fin = hoy
+    elif filtro == 'mes':
+        fecha_inicio = hoy.replace(day=1)
+        fecha_fin = hoy
+    elif filtro == 'personalizado' and fecha_desde and fecha_hasta:
+        fecha_inicio = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
+        fecha_fin = datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
+    else:
+        fecha_inicio = hoy
+        fecha_fin = hoy
+
+    pedidos_periodo = Pedido.objects.filter(
+        fecha_recepcion__date__gte=fecha_inicio,
+        fecha_recepcion__date__lte=fecha_fin,
+        estado_pago='pagado'
+    )
+
+    ingresos_totales = pedidos_periodo.aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+    utilidad_neta = ingresos_totales
+
+    pago_efectivo = pedidos_periodo.filter(metodo_pago='efectivo').aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+    pago_tarjeta = pedidos_periodo.filter(metodo_pago='tarjeta').aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+    pago_transferencia = pedidos_periodo.filter(metodo_pago='transferencia').aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+
+    total_pagos = pago_efectivo + pago_tarjeta + pago_transferencia
+    pct_efectivo = round((pago_efectivo / total_pagos * 100),
+                         1) if total_pagos > 0 else 0
+    pct_tarjeta = round((pago_tarjeta / total_pagos * 100),
+                        1) if total_pagos > 0 else 0
+    pct_transferencia = round(
+        (pago_transferencia / total_pagos * 100), 1) if total_pagos > 0 else 0
+
+    detalles_periodo = DetallePedido.objects.filter(
+        pedido__fecha_recepcion__date__gte=fecha_inicio,
+        pedido__fecha_recepcion__date__lte=fecha_fin,
+        pedido__estado_pago='pagado'
+    )
+    prendas_stats = detalles_periodo.values(
+        'prenda__nombre'
+    ).annotate(
+        cantidad_total=Sum('cantidad'),
+        ganancia_total=Sum('subtotal')
+    ).order_by('-cantidad_total')[:10]
+
+    servicios_stats = pedidos_periodo.values(
+        'tipo_servicio'
+    ).annotate(
+        cantidad=Count('id'),
+        ganancia_total=Sum('total')
+    ).order_by('-cantidad')
+
+    context = {
+        'fecha_inicio': fecha_inicio,
+        'fecha_fin': fecha_fin,
+        'ingresos_totales': ingresos_totales,
+        'utilidad_neta': utilidad_neta,
+        'pago_efectivo': pago_efectivo,
+        'pago_tarjeta': pago_tarjeta,
+        'pago_transferencia': pago_transferencia,
+        'pct_efectivo': pct_efectivo,
+        'pct_tarjeta': pct_tarjeta,
+        'pct_transferencia': pct_transferencia,
+        'prendas_stats': prendas_stats,
+        'servicios_stats': servicios_stats,
+        'prendas_json': json.dumps([{
+            'nombre': p['prenda__nombre'],
+            'cantidad': p['cantidad_total'],
+            'ganancia': float(p['ganancia_total'] or 0)
+        } for p in prendas_stats if p['prenda__nombre']]),
+        'servicios_json': json.dumps([{
+            'nombre': s['tipo_servicio'] or 'Sin especificar',
+            'cantidad': s['cantidad'],
+            'ganancia': float(s['ganancia_total'] or 0)
+        } for s in servicios_stats]),
+        'metodos_pago_json': json.dumps([
+            {'nombre': 'Efectivo', 'total': float(
+                pago_efectivo), 'porcentaje': float(pct_efectivo)},
+            {'nombre': 'Tarjeta', 'total': float(
+                pago_tarjeta), 'porcentaje': float(pct_tarjeta)},
+            {'nombre': 'Transferencia', 'total': float(
+                pago_transferencia), 'porcentaje': float(pct_transferencia)},
+        ]),
+    }
+
+    template = get_template('admin/finanzas/reporte_finanzas_pdf.html')
+    html = template.render(context)
+
+    result = BytesIO()
+    pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
+
+    if pdf.err:
+        return HttpResponse("Error al generar el PDF", status=500)
+
+    response = HttpResponse(result.getvalue(), content_type='application/pdf')
+    filename = f"reporte_financiero_{fecha_inicio.strftime('%Y%m%d')}_{fecha_fin.strftime('%Y%m%d')}.pdf"
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
+    return response
+
+
+@solo_admin
+@require_POST
+def enviar_reporte_email(request):
+    """Vista para enviar el reporte financiero por correo electrónico"""
+    if not request.user.groups.filter(name='Administrador').exists():
+        return JsonResponse({'success': False, 'message': 'No autorizado'}, status=403)
+
+    try:
+        # Obtener los datos del request
+        data = json.loads(request.body)
+        email_destino = data.get('email')
+        filtro = data.get('filtro', 'hoy')
+        fecha_desde = data.get('fecha_desde')
+        fecha_hasta = data.get('fecha_hasta')
+
+        if not email_destino:
+            return JsonResponse({'success': False, 'message': 'Email requerido'}, status=400)
+
+        # Validar formato de email
+        from django.core.validators import validate_email
+        from django.core.exceptions import ValidationError
+        try:
+            validate_email(email_destino)
+        except ValidationError:
+            return JsonResponse({'success': False, 'message': 'Email inválido'}, status=400)
+        # Calcular fechas según el filtro
+        hoy = timezone.now().date()
+        if filtro == 'hoy':
+            fecha_inicio = hoy
+            fecha_fin = hoy
+        elif filtro == 'semana':
+            fecha_inicio = hoy - timedelta(days=7)
+            fecha_fin = hoy
+        elif filtro == 'mes':
+            fecha_inicio = hoy.replace(day=1)
+            fecha_fin = hoy
+        elif filtro == 'personalizado' and fecha_desde and fecha_hasta:
+            fecha_inicio = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
+            fecha_fin = datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
+        else:
+            fecha_inicio = hoy
+            fecha_fin = hoy
+
+        # Obtener datos financieros
+        pedidos_periodo = Pedido.objects.filter(
+            fecha_recepcion__date__gte=fecha_inicio,
+            fecha_recepcion__date__lte=fecha_fin,
+            estado_pago='pagado'
+        )
+
+        ingresos_totales = pedidos_periodo.aggregate(
+            total=Sum('total'))['total'] or Decimal('0')
+        utilidad_neta = ingresos_totales
+
+        # Métodos de pago
+        pago_efectivo = pedidos_periodo.filter(metodo_pago='efectivo').aggregate(
+            total=Sum('total'))['total'] or Decimal('0')
+        pago_tarjeta = pedidos_periodo.filter(metodo_pago='tarjeta').aggregate(
+            total=Sum('total'))['total'] or Decimal('0')
+        pago_transferencia = pedidos_periodo.filter(metodo_pago='transferencia').aggregate(
+            total=Sum('total'))['total'] or Decimal('0')
+
+        total_pagos = pago_efectivo + pago_tarjeta + pago_transferencia
+        pct_efectivo = round(
+            (pago_efectivo / total_pagos * 100), 1) if total_pagos > 0 else 0
+        pct_tarjeta = round((pago_tarjeta / total_pagos * 100),
+                            1) if total_pagos > 0 else 0
+        pct_transferencia = round(
+            (pago_transferencia / total_pagos * 100), 1) if total_pagos > 0 else 0
+
+        # Datos de prendas
+        detalles_periodo = DetallePedido.objects.filter(
+            pedido__fecha_recepcion__date__gte=fecha_inicio,
+            pedido__fecha_recepcion__date__lte=fecha_fin,
+            pedido__estado_pago='pagado'
+        )
+        prendas_stats = detalles_periodo.values(
+            'prenda__nombre'
+        ).annotate(
+            cantidad_total=Sum('cantidad'),
+            ganancia_total=Sum('subtotal')
+        ).order_by('-cantidad_total')[:10]
+
+        # Datos de servicios
+        servicios_stats = pedidos_periodo.values(
+            'tipo_servicio'
+        ).annotate(
+            cantidad=Count('id'),
+            ganancia_total=Sum('total')
+        ).order_by('-cantidad')
+
+        # Preparar contexto para el PDF
+        context = {
+            'fecha_inicio': fecha_inicio,
+            'fecha_fin': fecha_fin,
+            'ingresos_totales': ingresos_totales,
+            'utilidad_neta': utilidad_neta,
+            'pago_efectivo': pago_efectivo,
+            'pago_tarjeta': pago_tarjeta,
+            'pago_transferencia': pago_transferencia,
+            'pct_efectivo': pct_efectivo,
+            'pct_tarjeta': pct_tarjeta,
+            'pct_transferencia': pct_transferencia,
+            'prendas_stats': prendas_stats,
+            'servicios_stats': servicios_stats,
+        }
+
+        # Generar PDF
+        from django.template.loader import get_template
+        from io import BytesIO
+        from xhtml2pdf import pisa
+
+        template = get_template('admin/finanzas/reporte_finanzas_pdf.html')
+        html = template.render(context)
+
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
+
+        if pdf.err:
+            return JsonResponse({'success': False, 'message': 'Error al generar el PDF'}, status=500)
+
+        pdf_bytes = result.getvalue()
+
+        # Enviar email
+        from django.core.mail import EmailMessage
+        from django.conf import settings
+
+        # Determinar el nombre del periodo
+        if filtro == 'hoy':
+            periodo_nombre = f"del día {fecha_inicio.strftime('%d/%m/%Y')}"
+        elif filtro == 'semana':
+            periodo_nombre = "de la última semana"
+        elif filtro == 'mes':
+            periodo_nombre = "del mes actual"
+        else:
+            periodo_nombre = f"del {fecha_inicio.strftime('%d/%m/%Y')} al {fecha_fin.strftime('%d/%m/%Y')}"
+
+        subject = f'Reporte Financiero Punto Limpio - {periodo_nombre}'
+        body = f'''Hola,
+
+        Adjunto encontrarás el reporte financiero de Punto Limpio {periodo_nombre}.
+
+        Resumen del periodo:
+        - Ingresos totales: ${ingresos_totales:,.2f}
+        - Utilidad neta: ${utilidad_neta:,.2f}
+
+        Métodos de pago:
+        - Efectivo: ${pago_efectivo:,.2f} ({pct_efectivo}%)
+        - Tarjeta: ${pago_tarjeta:,.2f} ({pct_tarjeta}%)
+        - Transferencia: ${pago_transferencia:,.2f} ({pct_transferencia}%)
+
+        Este reporte fue generado automáticamente por {request.user.username} el {timezone.now().strftime('%d/%m/%Y a las %H:%M')}.
+
+        Saludos,
+        Sistema Punto Limpio
+        '''
+
+        email = EmailMessage(
+            subject=subject,
+            body=body,
+            from_email=settings.EMAIL_HOST_USER,
+            to=[email_destino],
+        )
+
+        # Adjuntar el PDF
+        filename = f"reporte_financiero_{fecha_inicio.strftime('%Y%m%d')}_{fecha_fin.strftime('%Y%m%d')}.pdf"
+        email.attach(filename, pdf_bytes, 'application/pdf')
+
+        # Enviar el email
+        email.send()
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Reporte enviado exitosamente a {email_destino}'
+        })
+
+    except Exception as e:
+        print(f"Error enviando reporte por email: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'message': f'Error al enviar el reporte: {str(e)}'
+        }, status=500)
+
+
+@solo_admin
+def imprimir_corte_caja(request):
+    """
+    Genera un PDF del corte de caja del día
+    """
+    if not request.user.groups.filter(name='Administrador').exists():
+        return HttpResponse("No autorizado", status=403)
+
+    from django.template.loader import get_template
+    from xhtml2pdf import pisa
+    from io import BytesIO
+
+    # Obtener fecha de hoy
+    hoy = timezone.now().date()
+
+    # Pedidos pagados del día de hoy
+    pedidos_hoy = Pedido.objects.filter(
+        fecha_recepcion__date=hoy,
+        estado_pago='pagado'
+    )
+
+    # Calcular ventas por método de pago
+    ventas_efectivo = pedidos_hoy.filter(metodo_pago='efectivo').aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+    ventas_tarjeta = pedidos_hoy.filter(metodo_pago='tarjeta').aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+    ventas_transferencia = pedidos_hoy.filter(metodo_pago='transferencia').aggregate(
+        total=Sum('total'))['total'] or Decimal('0')
+
+    total_ventas = ventas_efectivo + ventas_tarjeta + ventas_transferencia
+
+    # Obtener corte guardado si existe
+    corte_existente = CorteCaja.objects.filter(
+        fecha=hoy, responsable=request.user).first()
+
+    if corte_existente:
+        efectivo_contado = corte_existente.efectivo_contado
+        tarjeta_terminal = corte_existente.tarjeta_terminal
+        transferencia_banco = corte_existente.transferencia_banco
+        total_fisico = corte_existente.total_fisico
+        diferencia = corte_existente.diferencia
+        justificacion = corte_existente.justificacion or ''
+    else:
+        efectivo_contado = Decimal('0')
+        tarjeta_terminal = Decimal('0')
+        transferencia_banco = Decimal('0')
+        total_fisico = Decimal('0')
+        diferencia = Decimal('0')
+        justificacion = ''
+
+    context = {
+        'fecha': hoy.strftime('%d/%m/%Y'),
+        'fecha_hora': timezone.now().strftime('%d/%m/%Y %H:%M'),
+        'ventas_efectivo': ventas_efectivo,
+        'ventas_tarjeta': ventas_tarjeta,
+        'ventas_transferencia': ventas_transferencia,
+        'total_ventas': total_ventas,
+        'efectivo_contado': efectivo_contado,
+        'tarjeta_terminal': tarjeta_terminal,
+        'transferencia_banco': transferencia_banco,
+        'total_fisico': total_fisico,
+        'diferencia': diferencia,
+        'justificacion': justificacion,
+        'responsable': request.user.username,
+    }
+
+    # Renderizar template
+    template_path = 'admin/finanzas/corte_caja_pdf.html'
+    template = get_template(template_path)
+    html = template.render(context)
+
+    # Crear PDF
+    result = BytesIO()
+    pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
+
+    if pdf.err:
+        return HttpResponse('Error al generar el PDF', status=500)
+
+    # Retornar PDF
+    response = HttpResponse(result.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="corte_caja_{hoy.strftime("%Y%m%d")}.pdf"'
+
+    return response

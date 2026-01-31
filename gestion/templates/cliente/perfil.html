@@ -1,55 +1,158 @@
-{% extends 'base_cliente.html' %}
-
-{% block title_page %}
-Mi Perfil
-{% endblock %}
-
-{% block cliente_content %}
-<div class="cliente-container">
-
-    <div class="perfil-card">
-
-        <!-- Avatar -->
-        <div class="perfil-avatar">
-            <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-            </svg>
-        </div>
-
-        <!-- Nombre y Rol -->
-        <h2 class="perfil-nombre">NOMBRE APELLIDO1 APELLIDO2</h2>
-        <span class="perfil-rol">CLIENTE</span>
-
-        <!-- Información del perfil -->
-        <div class="perfil-info">
-
-            <div class="perfil-campo">
-                <label class="perfil-label">Teléfono:</label>
-                <div class="campo-con-icono">
-                    <input type="text" class="perfil-input" value="+52 123 456 7890" readonly>
-                    <button class="icon-editar" title="Editar teléfono">
-                        ✏️
-                    </button>
-                </div>
-            </div>
-
-            <div class="perfil-campo">
-                <label class="perfil-label">E-mail:</label>
-                <div class="perfil-valor">cliente@email.com</div>
-            </div>
-
-            <div class="perfil-campo">
-                <label class="perfil-label">Último servicio:</label>
-                <div class="perfil-valor">15/01/2026 - Lavado por encargo</div>
-            </div>
-
-            <div class="perfil-campo">
-                <label class="perfil-label">Miembro desde:</label>
-                <div class="perfil-valor">Enero 2025</div>
-            </div>
-        </div>
+{% extends 'base_cliente.html' %} {% load static %} {% block title_page %} Mi
+Perfil {% endblock %} {% block cliente_content %}
+<div
+  class="cliente-container"
+  style="background: transparent; box-shadow: none; padding: 0"
+>
+  <div class="perfil-card">
+    <div class="perfil-avatar">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="60"
+        height="60"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+      </svg>
     </div>
+
+    <h2 class="perfil-nombre">
+      {% if user.first_name %} {{ user.first_name }} {{ user.last_name }} {%
+      else %} @{{ user.username }} {% endif %}
+    </h2>
+    <span class="perfil-rol">Cliente Distinguido</span>
+    {% if messages %}
+    <div style="width: 100%; margin-bottom: 20px">
+      {% for message in messages %}
+      <div
+        style="padding: 15px; border-radius: 10px; margin-bottom: 10px; font-size: 14px; font-weight: 500; text-align: center;
+                {% if message.tags == 'error' %}
+                  background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2;
+                {% else %}
+                  background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9;
+                {% endif %}"
+      >
+        {{ message }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <form method="POST" class="perfil-info">
+      {% csrf_token %}
+
+      <div class="perfil-campo">
+        <label class="perfil-label">Teléfono Móvil</label>
+        <div class="campo-visual" id="cajaTelefono">
+          <input
+            type="tel"
+            name="telefono"
+            id="inputTelefono"
+            class="perfil-input"
+            value="{{ user.telefono|default:'' }}"
+            placeholder="Ingresa 10 dígitos"
+            maxlength="10"
+            oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+            readonly
+          />
+
+          <button
+            type="button"
+            class="btn-icon-editar"
+            onclick="activarEdicion('inputTelefono', 'cajaTelefono')"
+            title="Editar Teléfono"
+          >
+            ✏️
+          </button>
+        </div>
+      </div>
+
+      <div class="perfil-campo">
+        <label class="perfil-label">Correo Electrónico</label>
+        <div class="campo-visual" id="cajaEmail">
+          <input
+            type="email"
+            name="email"
+            id="inputEmail"
+            class="perfil-input"
+            value="{{ user.email }}"
+            placeholder="nombre@ejemplo.com"
+            readonly
+          />
+
+          <button
+            type="button"
+            class="btn-icon-editar"
+            onclick="activarEdicion('inputEmail', 'cajaEmail')"
+            title="Editar Email"
+          >
+            ✏️
+          </button>
+        </div>
+      </div>
+
+      <div class="perfil-campo">
+        <label class="perfil-label">Último Servicio</label>
+        <div
+          class="campo-visual"
+          style="background: #e0f7fa; border-color: transparent"
+        >
+          {% if ultimo_pedido %}
+          <span style="color: #295d64; font-size: 14px">
+            📅 {{ ultimo_pedido.fecha_recepcion|date:"d/m/Y" }}
+            <small style="color: #1182c6; font-weight: 700"
+              >({{ ultimo_pedido.tipo_servicio }})</small
+            >
+          </span>
+          {% else %}
+          <span style="color: #999; font-style: italic; font-size: 14px"
+            >Sin servicios registrados.</span
+          >
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="perfil-campo">
+        <label class="perfil-label">Miembro Desde</label>
+        <div
+          class="campo-visual"
+          style="background: #e0f2f1; border-color: transparent"
+        >
+          <span style="color: #26a69a; font-weight: 700; font-size: 14px">
+            {{ fecha_registro|date:"F Y"|capfirst|default:"Enero 2026" }}
+          </span>
+        </div>
+      </div>
+
+      <button type="submit" id="btnGuardar" class="btn-guardar-perfil">
+        💾 Guardar Cambios
+      </button>
+    </form>
+  </div>
 </div>
+
+<script>
+  function activarEdicion(inputId, cajaId) {
+    const input = document.getElementById(inputId);
+    const caja = document.getElementById(cajaId);
+    const btn = document.getElementById("btnGuardar");
+
+    // 1. Quitar modo solo lectura
+    input.readOnly = false;
+
+    // 2. Agregar estilo visual de "Editando" (definido en CSS)
+    caja.classList.add("editable-activo");
+
+    // 3. Poner el cursor dentro del input
+    input.focus();
+
+    // 4. Mostrar el botón de guardar
+    btn.style.display = "block";
+  }
+</script>
 {% endblock %}

@@ -4,29 +4,82 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Punto Limpio - Gestión</title>
+    
     <link rel="stylesheet" href="{% static 'gestion/css/dashboard.css' %}">
     <link rel="stylesheet" href="{% static 'gestion/css/trabajador.css' %}">
     <link rel="stylesheet" href="{% static 'gestion/css/cliente.css' %}">
     <link rel="stylesheet" href="{% static 'gestion/css/administrador.css' %}">
+
+    <style>
+        /* Contenedor de la alerta */
+        .msg-toast {
+            background-color: #333;
+            color: white;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            animation: slideIn 0.5s ease-out;
+            border-left: 5px solid #29b6f6; /* Color azul por defecto */
+        }
+
+        /* Colores según el tipo de mensaje */
+        .msg-error { border-left-color: #ef5350 !important; }   /* Rojo */
+        .msg-success { border-left-color: #26A69A !important; } /* Verde */
+        .msg-warning { border-left-color: #ffa726 !important; } /* Naranja */
+        .msg-info { border-left-color: #29b6f6 !important; }    /* Azul */
+
+        /* Animación de entrada */
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
 </head>
 
 <body>
 
-    <nav class="top-bar">
+    {% if messages %}
+        <div id="msg-container" style="position: fixed; top: 90px; right: 20px; z-index: 99999; width: 320px;">
+            {% for message in messages %}
+                <div class="msg-toast msg-{{ message.tags }}">
+                    <span>{{ message }}</span>
+                    <span onclick="this.parentElement.style.display='none'" style="cursor: pointer; margin-left: 15px; opacity: 0.7;">✕</span>
+                </div>
+            {% endfor %}
 
-        <div class="bar-left">
-            <span class="menu-icon" onclick="toggleMenu()">☰</span> <span class="user-tag">@{{ user.username }}</span>
+            <script>
+                // Desaparecer automáticamente a los 5 segundos
+                setTimeout(function() {
+                    const container = document.getElementById('msg-container');
+                    if(container) {
+                        container.style.opacity = '0';
+                        container.style.transition = 'opacity 0.5s ease';
+                        setTimeout(() => container.style.display = 'none', 500);
+                    }
+                }, 5000);
+            </script>
         </div>
-
+    {% endif %}
+    <nav class="top-bar">
+        <div class="bar-left">
+            <span class="menu-icon" onclick="toggleMenu()" style="cursor: pointer;">☰</span> 
+            <span class="user-tag">@{{ user.username }}</span>
+        </div>
         <div class="bar-center">
             {% block title_page %}Panel General{% endblock %}
         </div>
-
         <div class="bar-right">
             Punto Limpio
         </div>
-
     </nav>
 
     <div class="main-content">
@@ -35,5 +88,4 @@
     </div>
 
 </body>
-
 </html>

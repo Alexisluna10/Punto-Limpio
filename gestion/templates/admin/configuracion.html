@@ -27,7 +27,7 @@ Configuración del Sistema
                 
                 <div class="config-form-group">
                     <label class="config-label">Nombre del Negocio</label>
-                    <input type="text" name="nombre" value="Punto Limpio" class="config-input">
+                    <input type="text" name="nombre" value="{{ config.nombre }}" class="config-input">
                 </div>
 
                 <div class="config-form-group">
@@ -38,17 +38,17 @@ Configuración del Sistema
                 <div class="config-form-row">
                     <div class="config-form-group">
                         <label class="config-label">Teléfono</label>
-                        <input type="tel" name="telefono" value="" placeholder="123 456 7890" class="config-input">
+                        <input type="tel" name="telefono" value="{{ config.telefono }}" class="config-input">
                     </div>
                     <div class="config-form-group">
                         <label class="config-label">Email</label>
-                        <input type="email" name="email" value="" placeholder="contacto@puntolimpio.com" class="config-input">
+                        <input type="email" name="email" value="{{ config.email }}" class="config-input">
                     </div>
                 </div>
 
                 <div class="config-form-group">
                     <label class="config-label">Horario de Atención</label>
-                    <input type="text" name="horario" value="Lun-Vie: 8:00-20:00, Sáb: 9:00-18:00" class="config-input">
+                    <input type="text" name="horario" value="{{ config.horario }}" class="config-input">
                 </div>
 
                 <button type="submit" class="config-btn config-btn-primary">
@@ -86,16 +86,30 @@ Configuración del Sistema
     </div>
 </div>
 <script>
+
 function guardarNegocio(event) {
     event.preventDefault();
-    alert('Información del negocio guardada correctamente');
-    // Aquí implementarías el guardado real con AJAX
-}
+    
+    const form = document.getElementById('formNegocio');
+    const formData = new FormData(form);
 
-function guardarNotificaciones(event) {
-    event.preventDefault();
-    alert('Preferencias de notificaciones guardadas');
-    // Implementar guardado con AJAX
+    fetch('', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('✅ ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error al guardar');
+        console.error(error);
+    });
 }
 
 </script>

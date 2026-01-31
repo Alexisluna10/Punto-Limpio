@@ -1,6 +1,17 @@
 {% extends 'base_trabajador.html' %} {% block title_page %} Dashboard Operador
 {% endblock %} {% block trabajador_content %}
 
+
+<style>
+    button[onclick="toggleMenu()"] {
+        display: none !important;
+    }
+    
+    .sidebar-toggle, .menu-icon, .btn-menu {
+        display: none !important;
+    }
+</style>
+
 <div class="trab-dash-container">
   <div class="trab-dash-header">
     <h1 class="trab-dash-title">Hola, @{{ user.username }}</h1>

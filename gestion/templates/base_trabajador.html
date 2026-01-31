@@ -2,33 +2,42 @@
 
 {% block content %}
 
-<div id="mySidebar" class="sidebar-menu">
-    <a href="{% url 'trabajador_dashboard' %}">Inicio</a>
-    <a href="{% url 'nuevo_servicio' %}">Nuevo Servicio</a>
-    <a href="{% url 'estatus_maquina' %}">Estatus Maquinas</a>
-    <a href="{% url 'incidencias' %}">Incidencias</a>
-    <a href="{% url 'inventario' %}">Inventario</a>
-    <a href="{% url 'validar_ticket' %}">Validar tickets</a>
-    <a href="{% url 'servicios_proceso' %}">Servicios en proceso</a>
-    <div class="sidebar-footer">
-        <a href="{% url 'logout' %}" class="sidebar-btn-logout">Cerrar Sesión</a>
-    </div>
-</div>
+    {% if request.resolver_match.url_name != 'trabajador_dashboard' %}
 
-<script>
-    var isOpen = false;
-    function toggleMenu() {
-        if (isOpen) {
-            document.getElementById("mySidebar").style.width = "0";
-            isOpen = false;
-        } else {
-            document.getElementById("mySidebar").style.width = "250px";
-            isOpen = true;
+        <div id="mySidebar" class="sidebar-menu">
+            <a href="{% url 'trabajador_dashboard' %}">Inicio</a>
+            <a href="{% url 'nuevo_servicio' %}">Nuevo Servicio</a>
+            <a href="{% url 'estatus_maquina' %}">Estatus Maquinas</a>
+            <a href="{% url 'incidencias' %}">Incidencias</a>
+            <a href="{% url 'inventario' %}">Inventario</a>
+            <a href="{% url 'validar_ticket' %}">Validar tickets</a>
+            <a href="{% url 'servicios_proceso' %}">Servicios en proceso</a>
+            <div class="sidebar-footer">
+                <a href="{% url 'logout' %}" class="sidebar-btn-logout">Cerrar Sesión</a>
+            </div>
+        </div>
+
+    {% endif %}
+
+    <script>
+        var isOpen = false;
+        function toggleMenu() {
+            const sidebar = document.getElementById("mySidebar");
+            
+            // Protección: Si no existe el sidebar (estamos en dashboard), la función se detiene aquí y no rompe nada.
+            if (!sidebar) return; 
+
+            if (isOpen) {
+                sidebar.style.width = "0";
+                isOpen = false;
+            } else {
+                sidebar.style.width = "250px";
+                isOpen = true;
+            }
         }
-    }
-</script>
+    </script>
 
-{% block trabajador_content %}
-{% endblock %}
+    {% block trabajador_content %}
+    {% endblock %}
 
 {% endblock %}

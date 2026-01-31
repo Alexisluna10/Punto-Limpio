@@ -351,65 +351,64 @@ class Incidencia(models.Model):
         return f"{self.asunto} - {self.trabajador.username} - {self.get_prioridad_display()}"
 
 
-class MovimientoInsumo(models.Model):
-    """Registro de movimientos de insumos (entradas/compras y salidas/uso)"""
-    TIPOS = (
-        ('entrada', 'Entrada/Compra'),
-        ('salida', 'Salida/Uso'),
-    )
-
-    insumo = models.ForeignKey(
-        Insumo, on_delete=models.CASCADE, related_name='movimientos')
-    tipo = models.CharField(max_length=10, choices=TIPOS)
-    cantidad = models.DecimalField(max_digits=10, decimal_places=2)
-    costo_unitario = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0)
-    costo_total = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0)
-    observaciones = models.TextField(blank=True, null=True)
-    usuario = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
-    fecha = models.DateTimeField(default=timezone.now)
+class ConfiguracionNegocio(models.Model):
+    nombre = models.CharField(max_length=200, default='Punto Limpio')
+    direccion = models.CharField(max_length=300, blank=True)
+    telefono = models.CharField(max_length=20, blank=True)
+    email = models.EmailField(blank=True)
+    horario = models.CharField(
+        max_length=200, default='Lun-Vie: 8:00-20:00, Sáb: 9:00-18:00')
 
     class Meta:
-        ordering = ['-fecha']
-        verbose_name = 'Movimiento de Insumo'
-        verbose_name_plural = 'Movimientos de Insumos'
-
-    def save(self, *args, **kwargs):
-        self.costo_total = self.cantidad * self.costo_unitario
-        super().save(*args, **kwargs)
+        verbose_name = 'Configuración del Negocio'
 
     def _str_(self):
-        return f"{self.get_tipo_display()} - {self.insumo.nombre} - {self.cantidad}"
+        return self.nombre
 
 
-class GastoOperativo(models.Model):
-    """Registro de gastos operativos del negocio"""
-    CATEGORIA_CHOICES = (
-        ('luz', 'Luz'),
-        ('agua', 'Agua'),
-        ('gas', 'Gas'),
-        ('renta', 'Renta'),
-        ('nomina', 'Nomina'),
-        ('mantenimiento', 'Mantenimiento'),
-        ('publicidad', 'Publicidad'),
-        ('otros', 'Otros'),
-    )
-
-    categoria = models.CharField(max_length=20, choices=CATEGORIA_CHOICES)
-    descripcion = models.CharField(max_length=255)
-    monto = models.DecimalField(max_digits=10, decimal_places=2)
+class CorteCaja(models.Model):
+    """Modelo para registrar los cortes de caja diarios"""
     fecha = models.DateField(default=timezone.now)
-    comprobante = models.FileField(upload_to='gastos/', blank=True, null=True)
-    usuario = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
-    fecha_registro = models.DateTimeField(auto_now_add=True)
+    responsable = models.ForeignKey(
+        Usuario, on_delete=models.CASCADE, related_name='cortes_realizados')
+
+    # Ventas registradas en sistema
+    ventas_efectivo = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0)
+    ventas_tarjeta = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0)
+    ventas_transferencia = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0)
+    total_ventas = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0)
+
+    # Dinero físico reportado
+    efectivo_contado = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0)
+    tarjeta_terminal = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0)
+    transferencia_banco = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0)
+    total_fisico = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0)
+
+    # Diferencia y justificación
+    diferencia = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0)
+    justificacion = models.TextField(blank=True, null=True)
+
+    fecha_hora_registro = models.DateTimeField(default=timezone.now)
 
     class Meta:
         ordering = ['-fecha']
-        verbose_name = 'Gasto Operativo'
-        verbose_name_plural = 'Gastos Operativos'
+        verbose_name = 'Corte de Caja'
+        verbose_name_plural = 'Cortes de Caja'
+        unique_together = ['fecha', 'responsable']
 
-    def _str_(self):
-        return f"{self.get_categoria_display()} - ${self.monto} - {self.fecha}"
+    def __str__(self):
+        return f"Corte {self.fecha.strftime('%d/%m/%Y')} - {self.responsable.username}"
+
+    def calcular_diferencia(self):
+        """Calcula la diferencia entre ventas y efectivo reportado"""
+        self.diferencia = self.total_fisico - self.total_ventas
+        return self.diferencia
