@@ -1,0 +1,54 @@
+body.home-body {
+    background-color: #f0f2f5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+/* Tarjeta Blanca */
+.home-card {
+    background-color: white;
+    padding: 50px 40px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 140, 201, 0.15);
+    text-align: center;
+    width: 100%;
+    max-width: 450px;
+    animation: entrada 0.5s ease-out;
+}
+
+/* Textos y Logos del Home */
+.brand-icon {
+    font-size: 55px;
+    color: #008CC9;
+    margin-bottom: 15px;
+}
+
+.brand-title {
+    color: #008CC9;
+    font-size: 38px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.brand-subtitle {
+    color: #666;
+    font-size: 15px;
+    margin-bottom: 10px;
+}
+
+/* Animación de entrada */
+@keyframes entrada {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

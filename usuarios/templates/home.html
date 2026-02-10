@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'usuarios/css/home.css' %}">
+{% endblock %}
+
+{% block body_class %}home-body{% endblock %}
+
+{% block content %}
+
+<div class="home-card">
+
+    <div class="brand-icon"><i class="fas fa-soap"></i></div>
+    <h1 class="brand-title">Punto Limpio</h1>
+    <p class="brand-subtitle">Limpieza sana y responsable</p>
+
+
+    <ul class="nav-menu">
+
+        {% if user.is_authenticated %}
+        <li>
+            <p class="welcome-msg">Hola, <strong>{{ user.username|title }}</strong></p>
+        </li>
+
+        {% if user.is_superuser or user.groups.first.name == 'Administrador' %}
+        <li><a href="{% url 'admin_dashboard' %}" class="nav-btn btn-primary">Panel Administrador</a></li>
+        {% elif user.groups.first.name == 'Trabajador' %}
+        <li><a href="{% url 'trabajador_dashboard' %}" class="nav-btn btn-primary">Panel Trabajador</a></li>
+        {% else %}
+        <li><a href="{% url 'cliente_dashboard' %}" class="nav-btn btn-primary">Mi Cuenta</a></li>
+        {% endif %}
+
+        <li>
+            <form action="{% url 'logout' %}" method="post" style="width: 100%;">
+                {% csrf_token %}
+                <button type="submit" class="nav-btn btn-logout">Cerrar Sesión</button>
+            </form>
+        </li>
+
+        {% else %}
+        <li><a href="{% url 'signin' %}" class="nav-btn btn-primary">Iniciar Sesión</a></li>
+        <li><a href="{% url 'signup' %}" class="nav-btn btn-outline">Registrarse</a></li>
+        {% endif %}
+    </ul>
+
+</div>
+{% endblock %}

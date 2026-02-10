@@ -1,0 +1,140 @@
+{% extends 'base_cliente.html' %} 
+{% load static %} 
+
+{% block title_page %} Mi Perfil {% endblock %} 
+
+{% block cliente_content %}
+<div class="cliente-container" style="background: transparent; box-shadow: none; padding: 0;">
+  
+  <div class="perfil-card">
+    <div class="perfil-avatar">
+      <div style="background: #e1f5fe; color: #0288d1; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 35px; margin: 0 auto;">
+        {{ user.first_name|slice:":1"|default:user.username|slice:":1"|upper }}
+      </div>
+    </div>
+
+    <h2 class="perfil-nombre" style="margin-top: 15px;">
+      {% if user.first_name %}
+        {{ user.first_name }} {{ user.last_name }}
+      {% else %}
+        @{{ user.username }}
+      {% endif %}
+    </h2>
+    
+    <span class="perfil-rol">Cliente Distinguido</span>
+
+    {% if messages %}
+    <div style="width: 100%; margin: 20px 0;">
+      {% for message in messages %}
+      <div style="padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 500; text-align: center;
+          {% if message.tags == 'error' %}
+            background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2;
+          {% else %}
+            background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9;
+          {% endif %}">
+        {{ message }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="POST" class="perfil-info" style="margin-top: 20px;">
+      {% csrf_token %}
+
+      <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+        <div style="flex: 1;">
+          <label class="perfil-label">Nombre</label>
+          <input type="text" name="first_name" class="perfil-input input-moderno" value="{{ user.first_name }}" placeholder="Tu Nombre">
+        </div>
+        <div style="flex: 1;">
+          <label class="perfil-label">Apellido</label>
+          <input type="text" name="last_name" class="perfil-input input-moderno" value="{{ user.last_name }}" placeholder="Tus Apellidos">
+        </div>
+      </div>
+
+      <div class="perfil-campo">
+        <label class="perfil-label">Teléfono (Usuario de Acceso)</label>
+        <div class="campo-visual" style="background-color: #f5f5f5; border: 1px solid #ddd;">
+          <input type="text" value="{{ user.telefono|default:user.username }}" class="perfil-input" disabled style="background: transparent; color: #777; cursor: not-allowed;">
+          <span title="No se puede editar" style="opacity: 0.5;">🔒</span>
+        </div>
+        <small style="color: #999; font-size: 11px; margin-top: 3px; display: block;">Para cambiar tu número, contacta a administración.</small>
+      </div>
+
+      <div class="perfil-campo">
+        <label class="perfil-label">Correo Electrónico</label>
+        <div class="campo-visual">
+          <input type="email" name="email" class="perfil-input" value="{{ user.email }}" placeholder="nombre@ejemplo.com">
+          <span>✉️</span>
+        </div>
+      </div>
+
+      <div class="perfil-campo">
+        <label class="perfil-label" style="color: #008CC9; font-weight: bold;">📍 Dirección de Entrega</label>
+        <textarea name="direccion" class="perfil-input input-moderno" rows="3" placeholder="Calle, Número, Colonia, Referencias..." style="height: auto; padding: 10px; line-height: 1.4;">{{ user.direccion|default:'' }}</textarea>
+      </div>
+
+      <div class="perfil-campo">
+        <label class="perfil-label">Último Servicio</label>
+        <div class="campo-visual" style="background: #e0f7fa; border-color: transparent;">
+          {% if ultimo_pedido %}
+          <span style="color: #295d64; font-size: 14px;">
+            📅 {{ ultimo_pedido.fecha_recepcion|date:"d/m/Y" }}
+            <small style="color: #1182c6; font-weight: 700;">({{ ultimo_pedido.tipo_servicio }})</small>
+          </span>
+          {% else %}
+          <span style="color: #999; font-style: italic; font-size: 14px;">Sin servicios registrados.</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <button type="submit" id="btnGuardar" class="btn-guardar-perfil" disabled>
+          💾 Guardar Cambios
+      </button>
+
+    </form>
+  </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('.perfil-info');
+        const btnGuardar = document.getElementById('btnGuardar');
+        
+        // Seleccionamos todos los inputs y textareas que NO estén bloqueados
+        const inputs = form.querySelectorAll('input:not([disabled]), textarea');
+        
+        // Objeto para guardar los valores originales
+        const valoresOriginales = {};
+
+        // 1. Guardar los valores iniciales al cargar la página
+        inputs.forEach(input => {
+            valoresOriginales[input.name] = input.value;
+            
+            // Agregar "oído" a cada campo para detectar cuando escriben
+            input.addEventListener('input', verificarCambios);
+        });
+
+        function verificarCambios() {
+            let hayCambios = false;
+
+            // 2. Revisar campo por campo
+            inputs.forEach(input => {
+                // Si el valor actual es diferente al original
+                if (input.value !== valoresOriginales[input.name]) {
+                    hayCambios = true;
+                }
+            });
+
+            // 3. Activar o desactivar el botón según el resultado
+            if (hayCambios) {
+                btnGuardar.disabled = false; // Activar
+                btnGuardar.style.opacity = "1"; // Visualmente activo
+            } else {
+                btnGuardar.disabled = true;  // Desactivar
+            }
+        }
+    });
+</script>
+
+{% endblock %}

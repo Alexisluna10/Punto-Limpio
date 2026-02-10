@@ -1,0 +1,224 @@
+{% extends 'base_cliente.html' %}
+{% load static %}
+
+{% block title_page %}
+Detalle del Servicio
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'gestion/css/cliente.css' %}">
+{% endblock %}
+
+{% block cliente_content %}
+<div class="detalle-container">
+
+    <!-- Seccion para agregar prendas -->
+    <div class="seccion-agregar-prendas">
+        <h3 class="seccion-titulo">Agregar Prendas</h3>
+        <div class="form-agregar">
+            <div class="form-row">
+                <select id="select-prenda" class="input-prenda">
+                    <option value="">-- Selecciona una prenda --</option>
+                    {% for prenda in prendas %}
+                    <option value="{{ prenda.id }}" data-precio="{{ prenda.precio }}" data-nombre="{{ prenda.nombre }}">
+                        {{ prenda.nombre }} - ${{ prenda.precio }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <input type="number" id="input-cantidad" class="input-cantidad" value="1" min="1" placeholder="Cant.">
+                <input type="number" id="input-peso" class="input-peso" step="0.1" min="0" placeholder="Peso (kg)">
+                <button type="button" class="btn-agregar" onclick="agregarPrenda()">+ Agregar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de prendas agregadas -->
+    <table class="tabla-prendas">
+        <thead>
+            <tr>
+                <th>FOLIO</th>
+                <th>PRENDA</th>
+                <th>NO. PRENDAS</th>
+                <th>PESO</th>
+                <th>PRECIO</th>
+            </tr>
+        </thead>
+        <tbody id="tabla-prendas-body">
+            <tr id="fila-vacia">
+                <td colspan="5" class="texto-vacio">No hay prendas agregadas</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Detalles del costo -->
+    <div class="detalles-costo">
+        <h4>DETALLES DEL COSTO</h4>
+        <div class="info-costo">
+            <p><span>TIPO SERVICIO:</span> <strong id="info-tipo-servicio">{{ tipo_servicio_nombre }}</strong></p>
+            <p><span>PRECIO DEL TIPO DE SERVICIO:</span> <strong id="info-precio-servicio">${{ servicio_precio
+                    }}</strong></p>
+            <p><span>COSTO POR PRENDAS:</span> <strong id="info-costo-prendas">$0.00</strong></p>
+            <p><span>SUBTOTAL:</span> <strong id="info-total">$0.00</strong></p>
+        </div>
+    </div>
+
+    <div class="total-final">
+        <p>TOTAL A PAGAR: <strong>$<span id="gran-total">0.00</span></strong></p>
+    </div>
+
+    <button type="button" class="btn-continuar" onclick="continuarPago()">CONTINUAR</button>
+
+</div>
+
+<script>
+    let prendasAgregadas = [];
+    let servicioSeleccionado = {
+        tipo: '{{ tipo_servicio }}',
+        nombre: '{{ tipo_servicio_nombre }}',
+        precio: parseFloat('{{ servicio_precio }}') || 0
+    };
+    let contadorFilas = 0;
+
+    function agregarPrenda() {
+        const select = document.getElementById('select-prenda');
+        const option = select.options[select.selectedIndex];
+        const cantidad = parseInt(document.getElementById('input-cantidad').value) || 1;
+        const peso = parseFloat(document.getElementById('input-peso').value) || 0;
+
+        if (!option.value) {
+            alert('Por favor selecciona una prenda');
+            return;
+        }
+
+        const prenda = {
+            id: contadorFilas++,
+            prendaId: option.value,
+            nombre: option.dataset.nombre,
+            precio: parseFloat(option.dataset.precio),
+            cantidad: cantidad,
+            peso: peso,
+            subtotal: parseFloat(option.dataset.precio) * cantidad
+        };
+
+        prendasAgregadas.push(prenda);
+        renderizarTabla();
+        calcularTotales();
+
+        // Limpiar formulario
+        select.selectedIndex = 0;
+        document.getElementById('input-cantidad').value = 1;
+        document.getElementById('input-peso').value = '';
+    }
+
+    function quitarPrenda(id) {
+        prendasAgregadas = prendasAgregadas.filter(p => p.id !== id);
+        renderizarTabla();
+        calcularTotales();
+    }
+
+    function renderizarTabla() {
+        const tbody = document.getElementById('tabla-prendas-body');
+        tbody.innerHTML = '';
+
+        if (prendasAgregadas.length === 0) {
+            tbody.innerHTML = '<tr id="fila-vacia"><td colspan="5" class="texto-vacio">No hay prendas agregadas</td></tr>';
+            return;
+        }
+
+        let totalCantidad = 0;
+        let totalPeso = 0;
+
+        prendasAgregadas.forEach((prenda, index) => {
+            const tr = document.createElement('tr');
+            totalCantidad += prenda.cantidad;
+            totalPeso += prenda.peso;
+            tr.innerHTML = `
+                <td>${index === 0 ? Math.floor(Math.random() * 9000) + 1000 : ''}</td>
+                <td>${prenda.nombre}</td>
+                <td>${prenda.cantidad}</td>
+                <td>${prenda.peso.toFixed(2)} KG</td>
+                <td>$${prenda.subtotal.toFixed(2)}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // Fila de totales
+        const trTotal = document.createElement('tr');
+        trTotal.innerHTML = `
+            <td></td>
+            <td></td>
+            <td><strong>${totalCantidad}</strong></td>
+            <td><strong>${totalPeso.toFixed(2)} KG</strong></td>
+            <td><strong>$${prendasAgregadas.reduce((sum, p) => sum + p.subtotal, 0).toFixed(2)}</strong></td>
+        `;
+        tbody.appendChild(trTotal);
+    }
+
+    function calcularTotales() {
+        let totalPrendas = 0;
+
+        prendasAgregadas.forEach(prenda => {
+            totalPrendas += prenda.subtotal;
+        });
+
+        const precioServicio = servicioSeleccionado ? servicioSeleccionado.precio : 0;
+        const granTotal = totalPrendas + precioServicio;
+
+        document.getElementById('info-costo-prendas').textContent = '$' + totalPrendas.toFixed(2);
+        document.getElementById('info-total').textContent = '$' + granTotal.toFixed(2);
+        document.getElementById('gran-total').textContent = granTotal.toFixed(2);
+    }
+
+    function continuarPago() {
+        if (prendasAgregadas.length === 0) {
+            alert('Por favor agrega al menos una prenda');
+            return;
+        }
+
+        const total = parseFloat(document.getElementById('gran-total').textContent);
+        
+        // Preparar datos de prendas
+        const prendasData = prendasAgregadas.map(p => ({
+            prenda_id: p.prendaId,
+            nombre: p.nombre,
+            cantidad: p.cantidad,
+            peso: p.peso,
+            precio: p.precio,
+            subtotal: p.subtotal
+        }));
+        
+        // Enviar datos al servidor
+        fetch('{% url "servCosto" %}?tipo={{ tipo_servicio }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                prendas: prendasData,
+                total: total,
+                tipo_servicio: '{{ tipo_servicio }}',
+                metodo_pago: 'efectivo'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Servicio registrado exitosamente. Folio: ' + data.folio);
+                window.location.href = '{% url "terminado" %}';
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al procesar el servicio');
+        });
+    }
+
+    // Inicializar totales al cargar
+    document.addEventListener('DOMContentLoaded', function () {
+        calcularTotales();
+    });
+</script>
+{% endblock %}

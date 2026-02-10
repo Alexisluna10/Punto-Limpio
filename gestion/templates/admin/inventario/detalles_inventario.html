@@ -1,0 +1,60 @@
+{% extends 'base_admin.html' %}
+
+{% block title_page %}
+Detalle de Productos
+{% endblock %}
+
+{% block content %}
+<div class="inventario-container">
+
+    <div class="detalles-header">
+        <a href="{% url 'admin_inventarios' %}" class="btn-cancel link-volver">
+            ⬅ Volver al Inventario
+        </a>
+    </div>
+
+    <table class="tabla-inventario">
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Producto</th>
+                <th>Categoría</th>
+                <th>Stock Actual</th>
+                <th>Capacidad Máx</th>
+                <th>% Llenado</th>
+                <th>Precio Unitario</th>
+                <th>Última Act.</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for insumo in insumos %}
+            <tr>
+                <td class="col-codigo">{{ insumo.codigo }}</td>
+                <td>{{ insumo.nombre }}</td>
+                <td>{{ insumo.get_categoria_display }}</td>
+                <td class="col-stock">{{ insumo.stock_actual }} {{ insumo.unidad_medida }}</td>
+                <td>{{ insumo.capacidad_maxima }} {{ insumo.unidad_medida }}</td>
+                <td>
+                    <div class="barra-mini-wrapper">
+                        <span class="barra-mini-texto">{{ insumo.porcentaje }}%</span>
+                        <div class="barra-mini-fondo">
+                            <div class="barra-mini-relleno 
+                                        {% if insumo.estado_alerta %}bg-critico
+                                        {% elif insumo.porcentaje < 40 %}bg-bajo
+                                        {% else %}bg-optimo{% endif %}" style="--ancho: {{ insumo.porcentaje }}%;">
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td>${{ insumo.precio }}</td>
+                <td class="col-fecha">{{ insumo.fecha_actualizacion|date:"d M Y H:i" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" style="text-align: center; padding: 20px;">No hay productos registrados.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

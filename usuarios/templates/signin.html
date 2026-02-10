@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'usuarios/css/auth_card.css' %}">
+
+<div class="auth-card">
+
+    <div class="auth-icon"><i class="fas fa-user-circle"></i></div>
+    <h2 class="auth-title">Bienvenido</h2>
+    <p class="auth-subtitle">Inicia sesión en tu cuenta</p>
+
+    {% if error %}
+    <div class="alert-error">
+        <i class="fas fa-exclamation-circle"></i> {{ error }}
+    </div>
+    {% endif %}
+
+    <form action="/signin/" method="post" class="auth-form">
+        {% csrf_token %}
+
+        <div class="input-group">
+            <label>Nombre de usuario</label>
+            <input type="text" name="username" class="auth-input" placeholder="Ej. usuario123" required>
+        </div>
+
+        <div class="input-group">
+            <label>Contraseña</label>
+            <input type="password" name="password" class="auth-input" placeholder="••••••••" required>
+        </div>
+
+        <div class="forgot-password">
+            <a href="{% url 'password_reset' %}">¿Olvidaste tu contraseña?</a>
+        </div>
+
+        <button type="submit" class="btn-auth-primary">
+            INICIAR SESIÓN
+        </button>
+
+    </form>
+
+    <div class="auth-footer">
+        ¿No tienes cuenta? <a href="{% url 'signup' %}">Regístrate aquí</a>
+    </div>
+
+</div>
+{% endblock %}

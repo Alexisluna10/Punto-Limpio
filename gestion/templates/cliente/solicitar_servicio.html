@@ -1,0 +1,126 @@
+{% extends 'base_cliente.html' %}
+
+{% block title_page %}
+Solicitar Servicio
+{% endblock %}
+
+{% block cliente_content %}
+<div class="cliente-container">
+
+    <div class="cliente-header">
+        <h2>Selecciona el tipo de servicio</h2>
+    </div>
+
+    <div class="servicios-grid">
+
+        <label class="servicio-card">
+            <input type="radio" name="tipo_servicio" value="autoservicio">
+            <div class="servicio-card-content">
+                <div class="servicio-icon">&#129530;</div>
+                <div class="servicio-info">
+                    <h3>Autoservicio</h3>
+                    <p>Usa nuestras lavadoras y secadoras tu mismo.</p>
+                </div>
+                <div class="servicio-check">&#10004;</div>
+            </div>
+        </label>
+
+        <label class="servicio-card">
+            <input type="radio" name="tipo_servicio" value="por_encargo">
+            <div class="servicio-card-content">
+                <div class="servicio-icon">&#128085;</div>
+                <div class="servicio-info">
+                    <h3>Por encargo</h3>
+                    <p>Nos encargamos del lavado y secado por ti.</p>
+                </div>
+                <div class="servicio-check">&#10004;</div>
+            </div>
+        </label>
+
+        <label class="servicio-card">
+            <input type="radio" name="tipo_servicio" value="a_domicilio">
+            <div class="servicio-card-content">
+                <div class="servicio-icon">&#128663;</div>
+                <div class="servicio-info">
+                    <h3>A domicilio</h3>
+                    <p>Recogemos y entregamos la ropa hasta tu hogar.</p>
+                </div>
+                <div class="servicio-check">&#10004;</div>
+            </div>
+        </label>
+
+        <label class="servicio-card">
+            <input type="radio" name="tipo_servicio" value="tintoreria">
+            <div class="servicio-card-content">
+                <div class="servicio-icon">&#128087;</div>
+                <div class="servicio-info">
+                    <h3>Tintoreria</h3>
+                    <p>Prendas delicadas y lavado especial.</p>
+                </div>
+                <div class="servicio-check">&#10004;</div>
+            </div>
+        </label>
+
+    </div>
+
+    <div id="direccion-container" class="direccion-container" style="display: none;">
+
+        <h3>Datos para el servicio</h3>
+
+        <div class="campo-direccion">
+            <label>Direccion</label>
+            <input type="text" id="direccion" placeholder="Calle, numero, colonia">
+        </div>
+
+        <div class="campo-direccion">
+            <label>Referencias</label>
+            <textarea id="referencias" placeholder="Ej. cerca de un Oxxo, casa azul, porton negro"></textarea>
+        </div>
+
+    </div>
+
+    <div class="servicios-actions">
+        <button class="btn-continuar" onclick="continuar()">Continuar</button>
+    </div>
+
+</div>
+
+
+
+<script>
+    const radios = document.querySelectorAll('input[name="tipo_servicio"]');
+    const direccionContainer = document.getElementById('direccion-container');
+
+    radios.forEach(radio => {
+        radio.addEventListener('change', () => {
+            if (radio.value === 'por_encargo' || radio.value === 'a_domicilio') {
+                direccionContainer.style.display = 'block';
+            } else {
+                direccionContainer.style.display = 'none';
+            }
+        });
+    });
+
+    function continuar() {
+        const seleccionado = document.querySelector('input[name="tipo_servicio"]:checked');
+        if (!seleccionado) {
+            alert('Por favor selecciona un tipo de servicio');
+            return;
+        }
+
+        if (seleccionado.value === 'por_encargo' || seleccionado.value === 'a_domicilio') {
+            const direccion = document.getElementById('direccion').value.trim();
+            if (!direccion) {
+                alert('Por favor ingresa la direccion');
+                return;
+            }
+        }
+
+        if (seleccionado.value === 'autoservicio') {
+            window.location.href = '{% url "autoservicio" %}';
+        } else {
+            window.location.href = '{% url "servCosto" %}?tipo=' + seleccionado.value;
+        }
+    }
+</script>
+{% endblock %}

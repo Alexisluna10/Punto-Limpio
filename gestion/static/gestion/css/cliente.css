@@ -1,0 +1,965 @@
+/* ==========================================================================
+   3. MÓDULO CLIENTE (Estilos Completos - Diseño Clean OK)
+   ========================================================================== */
+
+/* --- CONTENEDORES GENERALES --- */
+.cliente-container {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* --- HEADER DEL MÓDULO --- */
+.cliente-header {
+    margin-bottom: 25px;
+}
+
+.cliente-header h2 {
+    color: #333;
+    font-size: 24px;
+    margin: 0 0 8px 0;
+    font-weight: 700;
+}
+
+.cliente-header p {
+    color: #666;
+    font-size: 16px;
+    margin: 0;
+}
+
+/* --- TABLAS (Servicios y Prendas) --- */
+.tabla-servicios, .tabla-prendas {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 30px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.tabla-servicios thead, .tabla-prendas thead {
+    background: linear-gradient(135deg, #26A69A, #00897B);
+}
+
+.tabla-servicios th, .tabla-prendas th {
+    color: white;
+    padding: 14px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tabla-servicios td, .tabla-prendas td {
+    padding: 14px 12px;
+    border-bottom: 1px solid #e0e0e0;
+    color: #444;
+    font-size: 14px;
+}
+
+.tabla-servicios tbody tr:hover, .tabla-prendas tbody tr:hover {
+    background-color: #f5f5f5;
+}
+
+.tabla-servicios tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.seccion-prendas h3 {
+    color: #333;
+    font-size: 18px;
+    margin-bottom: 15px;
+    font-weight: 500;
+}
+
+/* --- BADGES (Etiquetas de Estado) --- */
+.badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: inline-block;
+    letter-spacing: 0.5px;
+}
+
+.badge-pendiente {
+    background-color: #FFF3E0;
+    color: #E65100;
+}
+
+.badge-proceso {
+    background-color: #E3F2FD;
+    color: #1565C0;
+}
+
+.badge-entregado {
+    background-color: #E8F5E9;
+    color: #2E7D32;
+}
+
+.badge-pagado {
+    background-color: #E8F5E9;
+    color: #2E7D32;
+}
+
+/* --- BOTÓN CERRAR SESIÓN --- */
+.btn-logout {
+    display: inline-block;
+    margin-top: 30px;
+    padding: 10px 20px;
+    background-color: #ef5350;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.btn-logout:hover {
+    background-color: #d32f2f;
+}
+
+/* ==========================================================================
+   PERFIL DE CLIENTE (Diseño Clean OK - ACTUALIZADO)
+   ========================================================================== */
+
+.perfil-card {
+    background-color: white;
+    padding: 40px 15px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(17, 130, 198, 0.1); /* Sombra azulada suave */
+    max-width: 600px;
+    margin: 20px auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    border-top: 6px solid #6BC0B1; /* Borde Turquesa superior */
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Avatar con gradiente */
+.perfil-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e0f7fa 0%, #ffffff 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #1182C6; /* Azul Fuerte */
+    margin-bottom: 20px;
+    box-shadow: 0 8px 20px rgba(17, 130, 198, 0.15);
+    border: 4px solid white;
+}
+
+/* Tipografía y Textos */
+.perfil-nombre {
+    font-family: 'Poppins', sans-serif;
+    color: #295D64; /* Azul Oscuro */
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 5px 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
+}
+
+.perfil-rol {
+    background-color: #e0f7fa;
+    color: #1182C6;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 15px;
+    border-radius: 50px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 40px;
+}
+
+/* Layout de Información */
+.perfil-info {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.perfil-campo {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.perfil-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #6BC0B1; /* Turquesa para etiquetas */
+    text-transform: uppercase;
+    margin-left: 10px;
+}
+
+/* Inputs y Valores con diseño moderno */
+.campo-visual {
+    background-color: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 12px 15px;
+    font-size: 15px;
+    color: #333;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.3s ease;
+}
+
+/* Estado Focus (Cuando se edita) */
+.campo-visual.editable-activo {
+    background-color: white;
+    border-color: #1182C6;
+    box-shadow: 0 0 0 4px rgba(17, 130, 198, 0.1);
+}
+
+.perfil-input {
+    border: none;
+    background: transparent;
+    flex: 1;
+    min-width: 0;
+    font-family: 'Poppins', sans-serif;
+    font-size: 15px;
+    color: #333;
+    font-weight: 500;
+    outline: none;
+    text-overflow: ellipsis;
+}
+
+/* Icono de editar */
+.btn-icon-editar {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: #aaa;
+    transition: color 0.2s;
+    padding: 5px;
+}
+
+.btn-icon-editar:hover {
+    color: #1182C6;
+    transform: scale(1.1);
+}
+
+/* Botón Guardar (Principal) */
+.btn-guardar-perfil {
+    margin-top: 10px;
+    width: 100%;
+    padding: 15px;
+    background-color: #1182C6; /* Azul Fuerte */
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(17, 130, 198, 0.3);
+    transition: all 0.3s ease;
+    display: none; /* Oculto por defecto */
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn-guardar-perfil:hover {
+    background-color: #0d6ba1;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(17, 130, 198, 0.4);
+}
+
+/* --- SELECCIÓN DE SERVICIOS --- */
+.servicios-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.servicio-card {
+    cursor: pointer;
+    display: block;
+}
+
+.servicio-card input[type="radio"] {
+    display: none;
+}
+
+.servicio-card-content {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px 24px;
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    transition: all 0.25s ease;
+}
+
+.servicio-card:hover .servicio-card-content {
+    border-color: #26A69A;
+    background: #f0fdf9;
+    transform: translateX(4px);
+}
+
+.servicio-card input:checked+.servicio-card-content {
+    border-color: #26A69A;
+    background: linear-gradient(135deg, #e0f7f4 0%, #f0fdf9 100%);
+    box-shadow: 0 4px 12px rgba(38, 166, 154, 0.15);
+}
+
+.servicio-icon {
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, #26A69A, #00897B);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+}
+
+.servicio-info h3 {
+    margin: 0 0 6px 0;
+    font-size: 17px;
+    font-weight: 600;
+    color: #1a2a3a;
+}
+
+.servicio-info p {
+    margin: 0;
+    font-size: 14px;
+    color: #666;
+    line-height: 1.4;
+}
+
+.servicio-check {
+    width: 32px;
+    height: 32px;
+    border: 2px solid #ddd;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+    transition: all 0.25s ease;
+}
+
+.servicio-card input:checked+.servicio-card-content .servicio-check {
+    background: #26A69A;
+    border-color: #26A69A;
+}
+
+.servicios-actions {
+    margin-top: 30px;
+    display: flex;
+    justify-content: center;
+}
+
+.btn-continuar {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 32px;
+    background: linear-gradient(135deg, #26A69A, #00897B);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 12px rgba(38, 166, 154, 0.3);
+}
+
+.btn-continuar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(38, 166, 154, 0.4);
+}
+
+/* --- DUDAS Y QUEJAS --- */
+.dudas-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    padding: 20px;
+}
+
+.dudas-form-container, .dudas-historial-container {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.dudas-historial-container {
+    max-height: 700px;
+    overflow-y: auto;
+}
+
+.dudas-textarea {
+    width: 100%;
+    padding: 18px;
+    background: #f9f9f9;
+    border: 2px solid #ccc;
+    border-radius: 10px;
+    font-size: 15px;
+    font-family: inherit;
+    resize: none;
+    min-height: 220px;
+    margin-bottom: 20px;
+    transition: all 0.25s ease;
+}
+
+.dudas-textarea:focus {
+    outline: none;
+    border-color: #26A69A;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(38, 166, 154, 0.15);
+}
+
+.btn-enviar-dudas {
+    padding: 12px 50px;
+    background: #e0e0e0;
+    color: #333;
+    border: 2px solid #bbb;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.btn-enviar-dudas:hover {
+    background: #26A69A;
+    color: white;
+    border-color: #26A69A;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(38, 166, 154, 0.3);
+}
+
+/* Tarjetas de dudas */
+.duda-card {
+    background: #f8f9fa;
+    border-left: 4px solid #3498db;
+    padding: 15px;
+    border-radius: 8px;
+    transition: transform 0.2s;
+    margin-bottom: 15px;
+}
+
+.duda-card:hover {
+    transform: translateX(5px);
+}
+
+.duda-resuelta {
+    border-left-color: #27ae60;
+    opacity: 0.9;
+}
+
+.duda-header-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.duda-estado {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.estado-pendiente { background: #f39c12; color: white; }
+.estado-en_proceso { background: #3498db; color: white; }
+.estado-resuelto { background: #27ae60; color: white; }
+
+/* --- RASTREO Y AUTOSERVICIO (Otros elementos) --- */
+.rastreo-busqueda {
+    max-width: 500px;
+    margin: 0 auto 30px;
+}
+
+.rastreo-form {
+    display: flex;
+    gap: 15px;
+    align-items: flex-end;
+}
+
+.rastreo-input-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.rastreo-input-group label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 8px;
+}
+
+.btn-buscar-folio {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, #26A69A, #00897B);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .dudas-layout {
+        grid-template-columns: 1fr;
+    }
+    .dudas-historial-container {
+        max-height: 500px;
+    }
+}
+
+#inputEmail {
+    font-size: 13px; /* Letra un poco más pequeña para que quepa todo */
+}
+
+.sidebar-nombre-limitado {
+    white-space: nowrap;     
+    overflow: hidden;          
+    text-overflow: ellipsis;   
+    max-width: 180px;          
+    display: block;           
+    margin: 0 auto 5px auto;   
+    font-size: 16px;          
+    color: white;             
+}
+
+/* --- PERFIL --- */
+.input-moderno {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    width: 100%;
+    transition: border 0.3s;
+  }
+  .input-moderno:focus {
+    border-color: #008CC9;
+    outline: none;
+    box-shadow: 0 0 5px rgba(0, 140, 201, 0.2);
+  }
+  .perfil-card {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+/* --- ESTILO BASE DEL BOTÓN (AGREGAR ESTO) --- */
+.btn-guardar-perfil {
+    background-color: #26A69A; /* Color Verde/Teal principal */
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;           /* Ocupa todo el ancho disponible */
+    margin-top: 20px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    opacity: 1;            /* Asegura que sea visible */
+    display: block;        /* Asegura que ocupe su propia línea */
+}
+
+.btn-guardar-perfil:hover:not(:disabled) {
+    background-color: #00897b; /* Un poco más oscuro al pasar el mouse */
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+}
+
+/* (Mantén el estilo de :disabled que ya tenías abajo de este) */
+.btn-guardar-perfil:disabled {
+    background-color: #bdc3c7;
+    color: #fff;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+    opacity: 0.7;
+}
+
+/* =========================================
+   ESTILOS ESPECÍFICOS RASTREO DE SERVICIO
+   ========================================= */
+
+.container-rastreo {
+    max-width: 600px; 
+    margin: 0 auto;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.titulo-rastreo {
+    color: #008CC9; 
+    font-weight: 700;
+}
+
+/* --- MENSAJES DE ERROR --- */
+.mensaje-error {
+    background-color: #ffebee; 
+    color: #c62828; 
+    padding: 15px; 
+    border-radius: 8px; 
+    margin-bottom: 20px; 
+    text-align: center; 
+    border: 1px solid #ef9a9a; 
+    animation: fadeIn 0.5s;
+}
+
+/* --- TARJETA DE BÚSQUEDA (SIN PEDIDO) --- */
+.rastreo-busqueda-card {
+    background: white; 
+    padding: 40px 30px; 
+    border-radius: 15px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+    max-width: 450px; 
+    margin: 0 auto;
+}
+
+.icono-lupa-container {
+    background: #e3f2fd; 
+    width: 70px; 
+    height: 70px; 
+    border-radius: 50%; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    margin: 0 auto 25px auto;
+}
+
+.icono-lupa {
+    font-size: 30px;
+}
+
+/* Formulario Vertical */
+.rastreo-form-vertical {
+    display: flex; 
+    flex-direction: column; 
+    gap: 20px;
+}
+
+.rastreo-input-group label {
+    display: block; 
+    margin-bottom: 8px; 
+    color: #444; 
+    font-weight: 700; 
+    font-size: 14px; 
+    text-transform: uppercase; 
+    letter-spacing: 0.5px;
+}
+
+.input-center {
+    text-align: center; 
+    font-size: 18px; 
+    padding: 15px;
+}
+
+.input-modern:focus {
+    outline: none;
+    border-color: #008CC9 !important;
+    box-shadow: 0 0 0 3px rgba(0, 140, 201, 0.1);
+}
+
+.btn-buscar-folio-solid {
+    width: 100%; 
+    padding: 15px; 
+    background: #008CC9; 
+    color: white; 
+    border: none; 
+    border-radius: 10px; 
+    font-size: 16px; 
+    cursor: pointer; 
+    font-weight: 700; 
+    letter-spacing: 1px; 
+    transition: transform 0.2s, background 0.2s;
+}
+
+.btn-buscar-folio-solid:hover {
+    background: #0077aa;
+    transform: translateY(-2px);
+}
+
+.qr-hint {
+    text-align: center; 
+    margin-top: 30px; 
+    padding-top: 20px; 
+    border-top: 1px solid #f0f0f0;
+}
+
+.qr-hint p {
+    font-size: 0.9em; 
+    color: #888; 
+    margin-bottom: 15px;
+}
+
+.qr-badge {
+    background: #f9f9f9; 
+    padding: 10px; 
+    border-radius: 8px; 
+    display: inline-block;
+    color: #555;
+    font-size: 14px;
+}
+
+/* --- TARJETA DE RESULTADO (CON PEDIDO) --- */
+.rastreo-resultado {
+    display: block; 
+    animation: fadeIn 0.5s;
+}
+
+.tarjeta-resultado {
+    background: white; 
+    border-radius: 15px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+    padding: 25px; 
+    border: 1px solid #e0e0e0;
+}
+
+.encabezado-folio {
+    text-align: center; 
+    margin-bottom: 25px; 
+    border-bottom: 2px dashed #eee; 
+    padding-bottom: 20px;
+}
+
+.label-folio {
+    display: block; 
+    color: #888; 
+    font-size: 14px; 
+    text-transform: uppercase; 
+    letter-spacing: 1px;
+}
+
+.numero-folio {
+    color: #333; 
+    margin: 5px 0; 
+    font-size: 2.5em; 
+    letter-spacing: 1px;
+}
+
+.badge-servicio {
+    background: #e3f2fd; 
+    color: #0277bd; 
+    padding: 5px 15px; 
+    border-radius: 20px; 
+    font-size: 14px; 
+    font-weight: 600;
+}
+
+/* Semáforo de Estado */
+.estado-actual-container {
+    text-align: center; 
+    margin-bottom: 30px;
+}
+
+.titulo-estado {
+    margin-bottom: 15px; 
+    color: #555; 
+    font-size: 1.1em;
+}
+
+.status-icon {
+    width: 80px; 
+    height: 80px; 
+    border-radius: 50%; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-size: 35px; 
+    margin: 0 auto 15px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.desc-estado {
+    color: #777;
+}
+
+/* Colores de Estado */
+.icon-pendiente { background: #FFF3E0; color: #FF9800; }
+.color-pendiente { color: #FF9800; }
+
+.icon-proceso { background: #E1F5FE; color: #039BE5; }
+.color-proceso { color: #039BE5; }
+
+.icon-listo { background: #E8F5E9; color: #43A047; }
+.color-listo { color: #43A047; }
+
+.icon-entregado { background: #EEEEEE; color: #616161; }
+.color-entregado { color: #616161; }
+
+/* Timeline */
+.timeline-container {
+    display: flex; 
+    justify-content: space-between; 
+    margin-top: 30px; 
+    position: relative; 
+    padding: 0 10px;
+}
+
+.timeline-container::before {
+    content: ''; 
+    position: absolute; 
+    top: 10px; 
+    left: 20px; 
+    right: 20px; 
+    height: 3px; 
+    background: #e0e0e0; 
+    z-index: 0;
+}
+
+.timeline-item {
+    position: relative; 
+    z-index: 1; 
+    text-align: center; 
+    width: 25%;
+}
+
+.dot {
+    width: 22px; 
+    height: 22px; 
+    background: #e0e0e0; 
+    border-radius: 50%; 
+    margin: 0 auto 8px; 
+    border: 4px solid white; 
+    transition: all 0.3s; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.label {
+    font-size: 11px; 
+    color: #999; 
+    font-weight: 600; 
+    text-transform: uppercase;
+}
+
+.timeline-item.completed .dot {
+    background: #008CC9; 
+    transform: scale(1.1);
+}
+
+.timeline-item.completed .label {
+    color: #008CC9;
+}
+
+/* Info Pago */
+.info-pago-container {
+    margin-top: 30px; 
+    background: #f9f9f9; 
+    padding: 15px; 
+    border-radius: 10px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+}
+
+.label-pago {
+    display: block; 
+    font-size: 12px; 
+    color: #888; 
+    margin-bottom: 2px;
+}
+
+.monto-pago {
+    font-size: 20px; 
+    font-weight: bold; 
+    color: #333;
+}
+
+.badge-pagado {
+    background: #d4edda; 
+    color: #155724; 
+    padding: 8px 15px; 
+    border-radius: 5px; 
+    font-weight: bold; 
+    border: 1px solid #c3e6cb; 
+    font-size: 0.9em;
+}
+
+.badge-pendiente {
+    background: #f8d7da; 
+    color: #721c24; 
+    padding: 8px 15px; 
+    border-radius: 5px; 
+    font-weight: bold; 
+    border: 1px solid #f5c6cb; 
+    font-size: 0.9em;
+}
+
+/* Fechas */
+.fechas-container {
+    margin-top: 20px; 
+    font-size: 13px; 
+    color: #666; 
+    border-top: 1px solid #eee; 
+    padding-top: 15px;
+}
+
+.fecha-row {
+    display: flex; 
+    justify-content: space-between; 
+    margin-bottom: 8px;
+}
+
+/* Botonera */
+.botonera-inferior {
+    text-align: center; 
+    margin-top: 25px;
+}
+
+.btn-consultar-otro {
+    background: #607D8B; 
+    color: white; 
+    padding: 12px 25px; 
+    border-radius: 25px; 
+    text-decoration: none; 
+    font-weight: 600; 
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    display: inline-block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

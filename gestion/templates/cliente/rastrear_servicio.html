@@ -1,0 +1,151 @@
+{% extends 'base_cliente.html' %}
+{% load static %}
+
+{% block title_page %}
+    {% if pedido %}
+        Estado del Folio {{ pedido.folio }}
+    {% else %}
+        Rastrear Servicio
+    {% endif %}
+{% endblock %}
+
+{% block cliente_content %}
+<div class="cliente-container container-rastreo">
+
+    <div class="cliente-header text-center">
+        <h2 class="titulo-rastreo">Rastrear Servicio</h2>
+        {% if not pedido %}
+            <p>Consulta el estado de tu servicio ingresando el número de folio.</p>
+        {% endif %}
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+        <div class="mensaje-error">
+            <i class="fas fa-exclamation-circle"></i> {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if not pedido %}
+    <div class="rastreo-busqueda-card">
+        
+        <div class="icono-lupa-container">
+            <span class="icono-lupa">🔍</span>
+        </div>
+
+        <form class="rastreo-form-vertical" method="GET" action="{% url 'buscar_pedido_rastreo' %}">
+            <div class="rastreo-input-group">
+                <label for="folio">Número de Folio</label>
+                <input type="text" id="folio" name="folio" class="input-modern input-center" 
+                       placeholder="Ej: CK-2026-ABCD" required>
+            </div>
+            
+            <button type="submit" class="btn-buscar-folio-solid">
+                BUSCAR SERVICIO
+            </button>
+        </form>
+        
+        <div class="qr-hint">
+            <p>¿Tienes tu ticket a la mano?</p>
+            <div class="qr-badge">
+                <span>📸 Usa tu cámara para escanear el QR</span>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <div class="rastreo-resultado active">
+
+        <div class="tarjeta-resultado">
+            
+            <div class="encabezado-folio">
+                <span class="label-folio">Folio</span>
+                <h1 class="numero-folio">{{ pedido.folio }}</h1>
+                <span class="badge-servicio">{{ pedido.tipo_servicio }}</span>
+            </div>
+
+            <div class="estado-actual-container">
+                <h3 class="titulo-estado">Estado Actual</h3>
+                
+                {% if pedido.estado == 'pendiente' %}
+                    <div class="status-icon icon-pendiente">📥</div>
+                    <h2 class="color-pendiente">Recibido / Pendiente</h2>
+                    <p class="desc-estado">Estamos esperando iniciar el proceso.</p>
+
+                {% elif pedido.estado == 'en_proceso' %}
+                    <div class="status-icon icon-proceso">🫧</div>
+                    <h2 class="color-proceso">En Proceso</h2>
+                    <p class="desc-estado">Tus prendas se están lavando y secando.</p>
+
+                {% elif pedido.estado == 'listo' %}
+                    <div class="status-icon icon-listo">✨</div>
+                    <h2 class="color-listo">¡Listo para Entrega!</h2>
+                    <p class="desc-estado">Ya puedes pasar a recogerlo.</p>
+
+                {% elif pedido.estado == 'entregado' %}
+                    <div class="status-icon icon-entregado">🏠</div>
+                    <h2 class="color-entregado">Entregado</h2>
+                    <p class="desc-estado">Servicio finalizado el {{ pedido.fecha_entrega_real|date:"d/m/Y" }}</p>
+                {% endif %}
+            </div>
+
+            <div class="timeline-container">
+                <div class="timeline-item {% if pedido.estado != 'cancelado' %}completed{% endif %}">
+                    <div class="dot"></div>
+                    <div class="label">Recibido</div>
+                </div>
+                <div class="timeline-item {% if pedido.estado == 'en_proceso' or pedido.estado == 'listo' or pedido.estado == 'entregado' %}completed{% endif %}">
+                    <div class="dot"></div>
+                    <div class="label">Proceso</div>
+                </div>
+                <div class="timeline-item {% if pedido.estado == 'listo' or pedido.estado == 'entregado' %}completed{% endif %}">
+                    <div class="dot"></div>
+                    <div class="label">Listo</div>
+                </div>
+                <div class="timeline-item {% if pedido.estado == 'entregado' %}completed{% endif %}">
+                    <div class="dot"></div>
+                    <div class="label">Entregado</div>
+                </div>
+            </div>
+
+            <div class="info-pago-container">
+                <div>
+                    <span class="label-pago">TOTAL A PAGAR</span>
+                    <span class="monto-pago">${{ pedido.total }}</span>
+                </div>
+                <div>
+                    {% if pedido.estado_pago == 'pagado' %}
+                        <span class="badge-pagado">PAGADO ✅</span>
+                    {% else %}
+                        <span class="badge-pendiente">PENDIENTE ❌</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="fechas-container">
+                <div class="fecha-row">
+                    <span>📅 Fecha Recepción:</span>
+                    <strong>{{ pedido.fecha_recepcion|date:"d M Y, H:i" }}</strong>
+                </div>
+                {% if pedido.fecha_entrega_estimada %}
+                <div class="fecha-row">
+                    <span>🚀 Entrega Estimada:</span>
+                    <strong>{{ pedido.fecha_entrega_estimada|date:"d M Y" }}</strong>
+                </div>
+                {% endif %}
+            </div>
+
+        </div>
+
+        <div class="botonera-inferior">
+            <a href="{% url 'buscar_pedido_rastreo' %}" class="btn-consultar-otro">
+                🔄 Consultar otro folio
+            </a>
+        </div>
+
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

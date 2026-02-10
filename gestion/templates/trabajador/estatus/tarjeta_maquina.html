@@ -1,0 +1,61 @@
+<div
+    class="trab-estatus-card {% if maquina.estado == 'ocupado' %}maquina-ocupada{% elif maquina.estado == 'mantenimiento' %}maquina-mantenimiento{% else %}maquina-disponible{% endif %}">
+
+    <div class="trab-estatus-top">
+        <div class="trab-estatus-icono">
+            {% if maquina.tipo == 'lavadora' %}💧{% else %}🔥{% endif %}
+        </div>
+        <div class="trab-estatus-config" onclick="abrirOpciones('{{ maquina.id }}', '{{ maquina.nombre }}')">⚙️</div>
+    </div>
+
+    <h3 class="trab-estatus-nombre">{{ maquina.nombre }}</h3>
+
+    <span class="trab-estatus-badge">{{ maquina.get_estado_display|upper }}</span>
+
+    {% if maquina.estado == 'mantenimiento' %}
+    <p style="font-size: 12px; color: #666; margin-top: 10px;">
+        Fuera de servicio
+    </p>
+    <form method="POST" style="width: 100%; margin-top: 5px;">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="reactivar">
+        <input type="hidden" name="maquina_id" value="{{ maquina.id }}">
+        <button type="submit" class="btn-small"
+            style="width: 100%; background:#4CAF50; color:white; border:none; padding:5px; border-radius:4px; cursor:pointer;">
+            REACTIVAR
+        </button>
+    </form>
+
+    {% elif maquina.estado == 'disponible' %}
+    <p style="font-size: 12px; color: #888; margin-top: 10px;">Lista para usar</p>
+
+    <form method="POST" style="width: 100%; margin-top: 10px;">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="toggle_uso">
+        <input type="hidden" name="maquina_id" value="{{ maquina.id }}">
+        <button type="submit"
+            style="width: 100%; background: #008CC9; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            OCUPAR / INICIAR
+        </button>
+    </form>
+
+    {% elif maquina.estado == 'ocupado' %}
+    <div class="trab-estatus-timer" style="width: 100%;">
+        <div class="trab-timer-texto">En funcionamiento</div>
+        <div class="trab-timer-barra">
+            <div class="trab-timer-progreso" style="width: 60%;"></div>
+        </div>
+    </div>
+
+    <form method="POST" style="width: 100%; margin-top: 10px;">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="toggle_uso">
+        <input type="hidden" name="maquina_id" value="{{ maquina.id }}">
+        <button type="submit"
+            style="width: 100%; background: white; color: #D32F2F; border: 1px solid #D32F2F; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            TERMINAR
+        </button>
+    </form>
+    {% endif %}
+
+</div>

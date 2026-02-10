@@ -1,0 +1,159 @@
+{% extends 'base_cliente.html' %}
+
+{% block title_page %}
+Autoservicio
+{% endblock %}
+
+{% block cliente_content %}
+<div class="cliente-container">
+
+    <div class="autoservicio-container">
+        <p class="autoservicio-titulo">Selecciona lo que deseas usar:</p>
+
+        <div class="autoservicio-opciones">
+            {% for servicio in servicios %}
+            <button type="button" class="btn-opcion-auto"
+                onclick="seleccionarOpcion(this, {{ servicio.id }}, '{{ servicio.nombre }}', {{ servicio.precio }})">
+                {{ servicio.nombre }}: ${{ servicio.precio }}
+            </button>
+            {% empty %}
+            <p style="text-align: center; color: #666;">No hay servicios de autoservicio disponibles</p>
+            {% endfor %}
+        </div>
+
+        <table class="tabla-autoservicio-nueva">
+            <thead>
+                <tr>
+                    <th>FOLIO</th>
+                    <th>SERVICIO</th>
+                    <th>COSTO</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td id="folio-valor">-</td>
+                    <td id="servicio-valor">Selecciona un servicio</td>
+                    <td id="costo-valor">$0.00</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="autoservicio-info-nueva">
+            <p class="info-linea">Tipo de prenda a lavar: <span id="tipo-prenda">-</span></p>
+            <p class="info-linea">Num. lavadora a usar: <span id="num-lavadora">-</span></p>
+            <p class="info-linea">Tiempo estimado de uso: <span id="tiempo-uso">-</span></p>
+            <p class="info-linea">Forma de pago: <span id="forma-pago">Efectivo</span></p>
+        </div>
+
+        <div class="total-autoservicio">
+            <h3>Total a pagar: $<span id="total-pagar">0.00</span></h3>
+        </div>
+
+        <div class="autoservicio-boton-container">
+            <button type="button" class="btn-pagar-nuevo" onclick="pagar()">
+                PAGAR
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .btn-opcion-auto.selected {
+        background-color: #17a2b8;
+        color: white;
+        border-color: #17a2b8;
+    }
+
+    .total-autoservicio {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #e0f7fa;
+        border-radius: 8px;
+        text-align: center;
+    }
+
+    .total-autoservicio h3 {
+        margin: 0;
+        color: #00838f;
+    }
+</style>
+
+<script>
+    let servicioSeleccionado = null;
+
+    function seleccionarOpcion(btn, id, nombre, precio) {
+        // Remover seleccion anterior
+        document.querySelectorAll('.btn-opcion-auto').forEach(b => b.classList.remove('selected'));
+
+        // Agregar seleccion actual
+        btn.classList.add('selected');
+
+        servicioSeleccionado = { id, nombre, precio };
+
+        // Generar folio aleatorio
+        const folio = Math.floor(1000 + Math.random() * 9000);
+
+        // Actualizar tabla
+        document.getElementById('folio-valor').textContent = folio;
+        document.getElementById('servicio-valor').textContent = nombre;
+        document.getElementById('costo-valor').textContent = '$' + precio.toFixed(2);
+        document.getElementById('total-pagar').textContent = precio.toFixed(2);
+
+        // Actualizar info segun tipo de servicio
+        const nombreLower = nombre.toLowerCase();
+        if (nombreLower.includes('lavadora') || nombreLower.includes('lavado')) {
+            document.getElementById('num-lavadora').textContent = 'Lavadora 0' + Math.floor(1 + Math.random() * 9);
+            document.getElementById('tiempo-uso').textContent = '30 min.';
+            document.getElementById('tipo-prenda').textContent = 'Ropa general';
+        } else if (nombreLower.includes('secadora') || nombreLower.includes('secado')) {
+            document.getElementById('num-lavadora').textContent = 'Secadora 0' + Math.floor(1 + Math.random() * 9);
+            document.getElementById('tiempo-uso').textContent = '25 min.';
+            document.getElementById('tipo-prenda').textContent = 'Ropa general';
+        } else if (nombreLower.includes('combo')) {
+            document.getElementById('num-lavadora').textContent = 'Lavadora 0' + Math.floor(1 + Math.random() * 9) + ' + Secadora 0' + Math.floor(1 + Math.random() * 9);
+            document.getElementById('tiempo-uso').textContent = '55 min.';
+            document.getElementById('tipo-prenda').textContent = 'Ropa general';
+        } else {
+            document.getElementById('num-lavadora').textContent = 'Por asignar';
+            document.getElementById('tiempo-uso').textContent = '30 min. aprox.';
+            document.getElementById('tipo-prenda').textContent = 'Ropa general';
+        }
+    }
+
+    function pagar() {
+        if (!servicioSeleccionado) {
+            alert('Por favor selecciona un servicio primero');
+            return;
+        }
+        
+        // Enviar datos al servidor
+        fetch('{% url "autoservicio" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                servicio_id: servicioSeleccionado.id || null,
+                servicio_nombre: servicioSeleccionado.nombre,
+                total: servicioSeleccionado.precio,
+                metodo_pago: 'efectivo'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Servicio registrado exitosamente. Folio: ' + data.folio);
+                window.location.href = '/terminado/';
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al procesar el pago');
+        });
+    }
+</script>
+{% endblock %}
