@@ -1,0 +1,74 @@
+<div
+  class="trab-estatus-card {% if maquina.estado == 'ocupado' %}maquina-ocupada{% elif maquina.estado == 'mantenimiento' %}maquina-mantenimiento{% else %}maquina-disponible{% endif %}"
+>
+  <div class="trab-estatus-top">
+    <div class="trab-estatus-icono">
+      {% if maquina.tipo == 'lavadora' %}
+      <i class="fas fa-water"></i>
+      <span style="font-family: sans-serif">LAV</span> {% else %}
+      <i class="fas fa-fire"></i>
+      <span style="font-family: sans-serif">SEC</span>
+      {% endif %}
+    </div>
+    <div
+      class="trab-estatus-config"
+      onclick="abrirOpciones('{{ maquina.id }}', '{{ maquina.nombre }}')"
+    >
+      ⋮
+    </div>
+  </div>
+
+  <h3 class="trab-estatus-nombre">{{ maquina.nombre }}</h3>
+  <span class="trab-estatus-badge">{{ maquina.get_estado_display }}</span>
+
+  <div style="margin-top: auto">
+    {% if maquina.estado == 'mantenimiento' %}
+    <p style="font-size: 13px; color: #295d64; margin-bottom: 15px">
+      Equipo en revisión técnica.
+    </p>
+    <form method="POST">
+      {% csrf_token %}
+      <input type="hidden" name="accion" value="reactivar" />
+      <input type="hidden" name="maquina_id" value="{{ maquina.id }}" />
+      <button type="submit" class="btn-card-action btn-reactivar">
+        HABILITAR EQUIPO
+      </button>
+    </form>
+
+    {% elif maquina.estado == 'disponible' %}
+    <p style="font-size: 13px; color: #666; margin-bottom: 15px">
+      Listo para nuevo ciclo.
+    </p>
+    <form method="POST">
+      {% csrf_token %}
+      <input type="hidden" name="accion" value="toggle_uso" />
+      <input type="hidden" name="maquina_id" value="{{ maquina.id }}" />
+      <button type="submit" class="btn-card-action btn-iniciar">
+        INICIAR CICLO
+      </button>
+    </form>
+
+    {% elif maquina.estado == 'ocupado' %}
+    <div class="trab-estatus-timer" style="margin-bottom: 15px">
+      <div style="display: flex; justify-content: space-between">
+        <span class="trab-timer-texto">En proceso...</span>
+        <span class="trab-timer-texto" style="color: #1182c6; font-weight: bold"
+          >ON</span
+        >
+      </div>
+      <div class="trab-timer-barra">
+        <div class="trab-timer-progreso" style="width: 60%"></div>
+      </div>
+    </div>
+
+    <form method="POST">
+      {% csrf_token %}
+      <input type="hidden" name="accion" value="toggle_uso" />
+      <input type="hidden" name="maquina_id" value="{{ maquina.id }}" />
+      <button type="submit" class="btn-card-action btn-terminar">
+        FINALIZAR AHORA
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</div>

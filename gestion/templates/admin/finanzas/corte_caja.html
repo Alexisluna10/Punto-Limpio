@@ -1,0 +1,220 @@
+{% extends 'base_admin.html' %}
+
+{% block title_page %}
+Finanzas
+{% endblock %}
+
+{% block content %}
+
+<div class="corte-container">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="corte-header">
+        <h2>CORTE DE CAJA - {{ fecha }}</h2>
+    </div>
+
+    <!-- Resumen de Balance del Dia -->
+    <div class="resumen-balance">
+        <h3>BALANCE DEL DIA</h3>
+        <div class="balance-grid">
+            <div class="balance-item">
+                <div class="label">INGRESOS DEL DIA</div>
+                <div class="valor ingreso">${{ total_ventas|floatformat:2 }}</div>
+            </div>
+            <div class="balance-item">
+                <div class="label">GASTOS DEL DIA</div>
+                <div class="valor gasto">${{ total_gastos_dia|floatformat:2 }}</div>
+            </div>
+            <div class="balance-item">
+                <div class="label">UTILIDAD NETA</div>
+                <div class="valor {% if utilidad_dia >= 0 %}ingreso{% else %}gasto{% endif %}">${{ utilidad_dia|floatformat:2 }}</div>
+            </div>
+        </div>
+    </div>
+
+    <form method="POST" id="corteCajaForm">
+        {% csrf_token %}
+        
+        <div class="corte-grid">
+            <!-- Columna de Ventas -->
+            <div class="corte-box">
+                <h3>VENTAS REGISTRADAS EN SISTEMA:</h3>
+                <div class="corte-row">
+                    <span>Efectivo:</span>
+                    <span class="valor-ingreso">${{ ventas_efectivo|floatformat:2 }}</span>
+                </div>
+                <div class="corte-row">
+                    <span>Tarjeta:</span>
+                    <span class="valor-ingreso">${{ ventas_tarjeta|floatformat:2 }}</span>
+                </div>
+                <div class="corte-row">
+                    <span>Transferencia:</span>
+                    <span class="valor-ingreso">${{ ventas_transferencia|floatformat:2 }}</span>
+                </div>
+                <div class="corte-row total">
+                    <span>TOTAL VENTAS:</span>
+                    <span class="valor-ingreso">${{ total_ventas|floatformat:2 }}</span>
+                </div>
+            </div>
+
+            <!-- Columna de Gastos del Dia -->
+            <div class="corte-box">
+                <h3 class="gastos-header">GASTOS DEL DIA (PROPORCIONAL):</h3>
+                <div class="corte-row">
+                    <span>Renta (diario):</span>
+                    <span class="valor-gasto">${{ gasto_renta_diario|floatformat:2 }}</span>
+                </div>
+                <div class="corte-row">
+                    <span>Agua (diario):</span>
+                    <span class="valor-gasto">${{ gasto_agua_diario|floatformat:2 }}</span>
+                </div>
+                <div class="corte-row">
+                    <span>Luz (diario):</span>
+                    <span class="valor-gasto">${{ gasto_luz_diario|floatformat:2 }}</span>
+                </div>
+                <div class="corte-row">
+                    <span>Gas (diario):</span>
+                    <span class="valor-gasto">${{ gasto_gas_diario|floatformat:2 }}</span>
+                </div>
+                <div class="corte-row">
+                    <span>Internet (diario):</span>
+                    <span class="valor-gasto">${{ gasto_internet_diario|floatformat:2 }}</span>
+                </div>
+                <div class="corte-row">
+                    <span>Sueldos (diario):</span>
+                    <span class="valor-gasto">${{ gasto_sueldos_diario|floatformat:2 }}</span>
+                </div>
+                <div class="corte-row total">
+                    <span>TOTAL GASTOS:</span>
+                    <span class="valor-gasto">${{ total_gastos_dia|floatformat:2 }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="corte-grid">
+            <!-- Dinero Fisico -->
+            <div class="corte-box">
+                <h3>DINERO FISICO REPORTADO:</h3>
+                
+                <div class="input-group">
+                    <label for="efectivo_contado">Efectivo contado:</label>
+                    <input type="number" step="0.01" id="efectivo_contado" name="efectivo_contado" 
+                           value="{{ efectivo_contado|floatformat:2 }}" 
+                           onchange="calcularTotales()" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="tarjeta_terminal">Terminal (Tarjeta):</label>
+                    <input type="number" step="0.01" id="tarjeta_terminal" name="tarjeta_terminal" 
+                           value="{{ tarjeta_terminal|floatformat:2 }}" 
+                           onchange="calcularTotales()" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="transferencia_banco">Banco (Transfer):</label>
+                    <input type="number" step="0.01" id="transferencia_banco" name="transferencia_banco" 
+                           value="{{ transferencia_banco|floatformat:2 }}" 
+                           onchange="calcularTotales()" required>
+                </div>
+                
+                <div class="corte-row total">
+                    <span>TOTAL:</span>
+                    <span id="total_fisico">${{ total_fisico|floatformat:2 }}</span>
+                </div>
+            </div>
+
+            <!-- Desglose de Sueldos -->
+            <div class="corte-box">
+                <h3 class="gastos-header">DESGLOSE SUELDOS (DIARIO):</h3>
+                {% for empleado in empleados_sueldos %}
+                <div class="corte-row">
+                    <span>{{ empleado.nombre }} ({{ empleado.rol }}):</span>
+                    <span class="valor-gasto">${{ empleado.sueldo_diario|floatformat:2 }}</span>
+                </div>
+                {% empty %}
+                <div class="corte-row">
+                    <span style="color: #999; font-style: italic;">No hay sueldos registrados</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="diferencia-section">
+            <div class="diferencia-valor {% if diferencia > 0 %}positiva{% elif diferencia < 0 %}negativa{% else %}cero{% endif %}" 
+                 id="diferencia_display">
+                DIFERENCIA (Fisico vs Ventas): $<span id="diferencia_valor">{{ diferencia|floatformat:2 }}</span>
+            </div>
+        </div>
+
+        <div class="justificacion-section">
+            <label for="justificacion" style="display: block; margin-bottom: 10px; font-weight: bold; color: #555;">
+                Justificacion de diferencia (opcional):
+            </label>
+            <textarea id="justificacion" name="justificacion" 
+                      placeholder="Si existe diferencia, ingrese la justificacion aqui...">{{ justificacion }}</textarea>
+        </div>
+
+        <div class="info-section">
+            <div class="info-row">
+                <span>RESPONSABLE:</span> {{ responsable }}
+            </div>
+            <div class="info-row">
+                <span>FECHA/HORA:</span> {{ fecha_hora }}
+            </div>
+        </div>
+
+        <div class="botones-footer">
+            <a href="{% url 'admin_finanzas' %}" class="btn-regresar">Regresar</a>
+            <a href="{% url 'imprimir_corte_caja' %}" target="_blank" class="btn-accion">Imprimir</a>
+            <button type="submit" class="btn-guardar">Guardar Corte</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    const ventasTotal = {{ total_ventas|floatformat:2 }};
+
+    function calcularTotales() {
+        const efectivo = parseFloat(document.getElementById('efectivo_contado').value) || 0;
+        const tarjeta = parseFloat(document.getElementById('tarjeta_terminal').value) || 0;
+        const transferencia = parseFloat(document.getElementById('transferencia_banco').value) || 0;
+        
+        const totalFisico = efectivo + tarjeta + transferencia;
+        const diferencia = totalFisico - ventasTotal;
+        
+        document.getElementById('total_fisico').textContent = '$' + totalFisico.toFixed(2);
+        document.getElementById('diferencia_valor').textContent = diferencia.toFixed(2);
+        
+        const diferenciaDisplay = document.getElementById('diferencia_display');
+        diferenciaDisplay.classList.remove('positiva', 'negativa', 'cero');
+        
+        if (diferencia > 0) {
+            diferenciaDisplay.classList.add('positiva');
+        } else if (diferencia < 0) {
+            diferenciaDisplay.classList.add('negativa');
+        } else {
+            diferenciaDisplay.classList.add('cero');
+        }
+    }
+
+    document.getElementById('corteCajaForm').addEventListener('submit', function(e) {
+        const efectivo = parseFloat(document.getElementById('efectivo_contado').value) || 0;
+        const tarjeta = parseFloat(document.getElementById('tarjeta_terminal').value) || 0;
+        const transferencia = parseFloat(document.getElementById('transferencia_banco').value) || 0;
+        
+        if (efectivo < 0 || tarjeta < 0 || transferencia < 0) {
+            e.preventDefault();
+            alert('Los valores no pueden ser negativos');
+            return false;
+        }
+        
+        return confirm('Esta seguro de guardar este corte de caja?');
+    });
+</script>
+{% endblock %}

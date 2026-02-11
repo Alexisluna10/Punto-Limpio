@@ -1,0 +1,725 @@
+{% extends 'base_cliente.html' %}
+
+{% block title_page %}
+Autoservicio
+{% endblock %}
+
+{% block cliente_content %}
+<div class="cliente-container">
+    
+    <!-- Header Profesional -->
+    <div class="autoservicio-header">
+        <div class="header-icon-wrapper">
+            <span class="header-icon">🧺</span>
+        </div>
+        <h2 class="autoservicio-titulo-principal">Autoservicio de Lavandería</h2>
+        <p class="autoservicio-subtitulo">Selecciona el servicio que necesitas y realiza tu pago de forma rápida y segura</p>
+    </div>
+
+    <div class="autoservicio-container-nuevo">
+        
+        <!-- Sección de Servicios Disponibles -->
+        <div class="seccion-servicios">
+            <div class="seccion-header">
+                <h3 class="seccion-titulo">
+                    <span class="icono-seccion">⚙️</span>
+                    Servicios Disponibles
+                </h3>
+            </div>
+            
+            <div class="servicios-grid-auto">
+                {% for servicio in servicios %}
+                <div class="servicio-card-auto" 
+                     data-servicio-id="{{ servicio.id }}"
+                     data-servicio-nombre="{{ servicio.nombre }}"
+                     data-servicio-precio="{{ servicio.precio }}"
+                     onclick="seleccionarOpcion(this)">
+                    <div class="servicio-icono-wrapper">
+                        {% if 'lavadora' in servicio.nombre.lower or 'lavado' in servicio.nombre.lower %}
+                            <span class="servicio-icono">🌊</span>
+                        {% elif 'secadora' in servicio.nombre.lower or 'secado' in servicio.nombre.lower %}
+                            <span class="servicio-icono">💨</span>
+                        {% elif 'combo' in servicio.nombre.lower %}
+                            <span class="servicio-icono">⭐</span>
+                        {% else %}
+                            <span class="servicio-icono">✨</span>
+                        {% endif %}
+                    </div>
+                    <div class="servicio-info-wrapper">
+                        <h4 class="servicio-nombre">{{ servicio.nombre }}</h4>
+                        <p class="servicio-precio">${{ servicio.precio }}</p>
+                    </div>
+                    <div class="servicio-check-wrapper">
+                        <span class="check-icon">✓</span>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="empty-servicios">
+                    <span class="empty-icon">📭</span>
+                    <p>No hay servicios de autoservicio disponibles en este momento</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Resumen del Servicio -->
+        <div class="seccion-resumen">
+            <div class="seccion-header">
+                <h3 class="seccion-titulo">
+                    <span class="icono-seccion">📋</span>
+                    Resumen de tu Servicio
+                </h3>
+            </div>
+
+            <div class="resumen-card">
+                <!-- Folio -->
+                <div class="resumen-item destacado">
+                    <div class="resumen-label-wrapper">
+                        <span class="resumen-icono">🎫</span>
+                        <span class="resumen-label">Folio</span>
+                    </div>
+                    <span class="resumen-valor" id="folio-valor">-</span>
+                </div>
+
+                <!-- Servicio Seleccionado -->
+                <div class="resumen-item">
+                    <div class="resumen-label-wrapper">
+                        <span class="resumen-icono">🛎️</span>
+                        <span class="resumen-label">Servicio</span>
+                    </div>
+                    <span class="resumen-valor" id="servicio-valor">Ninguno seleccionado</span>
+                </div>
+
+                <!-- Tipo de Prenda -->
+                <div class="resumen-item">
+                    <div class="resumen-label-wrapper">
+                        <span class="resumen-icono">👕</span>
+                        <span class="resumen-label">Tipo de prenda</span>
+                    </div>
+                    <span class="resumen-valor" id="tipo-prenda">-</span>
+                </div>
+
+                <!-- Máquina Asignada -->
+                <div class="resumen-item">
+                    <div class="resumen-label-wrapper">
+                        <span class="resumen-icono">🔧</span>
+                        <span class="resumen-label">Máquina asignada</span>
+                    </div>
+                    <span class="resumen-valor" id="num-lavadora">-</span>
+                </div>
+
+                <!-- Tiempo Estimado -->
+                <div class="resumen-item">
+                    <div class="resumen-label-wrapper">
+                        <span class="resumen-icono">⏱️</span>
+                        <span class="resumen-label">Tiempo estimado</span>
+                    </div>
+                    <span class="resumen-valor" id="tiempo-uso">-</span>
+                </div>
+
+                <!-- Forma de Pago -->
+                <div class="resumen-item">
+                    <div class="resumen-label-wrapper">
+                        <span class="resumen-icono">💳</span>
+                        <span class="resumen-label">Forma de pago</span>
+                    </div>
+                    <span class="resumen-valor" id="forma-pago">Efectivo</span>
+                </div>
+
+                <!-- Total a Pagar -->
+                <div class="resumen-total">
+                    <div class="total-wrapper">
+                        <span class="total-label">Total a pagar</span>
+                        <span class="total-monto">$<span id="total-pagar">0.00</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botón de Pago -->
+            <div class="boton-pago-container">
+                <button type="button" class="btn-pagar-profesional" onclick="pagar()">
+                    <span class="btn-icono">💰</span>
+                    <span class="btn-texto">Proceder al Pago</span>
+                    <span class="btn-arrow">→</span>
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+/* ==========================================================================
+   DISEÑO PROFESIONAL AUTOSERVICIO - MEJORADO
+   ========================================================================== */
+
+.autoservicio-header {
+    text-align: center;
+    margin-bottom: 40px;
+    animation: fadeInDown 0.6s ease-out;
+}
+
+.header-icon-wrapper {
+    width: 90px;
+    height: 90px;
+    background: linear-gradient(135deg, #26A69A 0%, #00897B 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    box-shadow: 0 8px 25px rgba(38, 166, 154, 0.3);
+}
+
+.header-icon {
+    font-size: 48px;
+}
+
+.autoservicio-titulo-principal {
+    font-size: 32px;
+    font-weight: 700;
+    color: #295D64;
+    margin: 0 0 10px 0;
+    letter-spacing: -0.5px;
+}
+
+.autoservicio-subtitulo {
+    font-size: 16px;
+    color: #666;
+    margin: 0;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.autoservicio-container-nuevo {
+    display: grid;
+    grid-template-columns: 1fr 450px;
+    gap: 30px;
+    animation: fadeInUp 0.6s ease-out;
+}
+
+/* ==========================================================================
+   SECCIÓN DE SERVICIOS
+   ========================================================================== */
+
+.seccion-servicios,
+.seccion-resumen {
+    background: white;
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.seccion-header {
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.seccion-titulo {
+    font-size: 20px;
+    font-weight: 700;
+    color: #295D64;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.icono-seccion {
+    font-size: 24px;
+}
+
+.servicios-grid-auto {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.servicio-card-auto {
+    background: #ffffff;
+    border: 2px solid #e9ecef;
+    border-radius: 16px;
+    padding: 25px 20px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.servicio-card-auto::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #26A69A, #00897B);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.servicio-card-auto:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(38, 166, 154, 0.15);
+    border-color: #26A69A;
+}
+
+.servicio-card-auto:hover::before {
+    transform: scaleX(1);
+}
+
+.servicio-card-auto.selected {
+    background: linear-gradient(135deg, #f0fdf9 0%, #ffffff 100%);
+    border-color: #26A69A;
+    border-width: 3px;
+    box-shadow: 0 8px 25px rgba(38, 166, 154, 0.25);
+    transform: translateY(-5px);
+}
+
+.servicio-card-auto.selected::before {
+    transform: scaleX(1);
+    height: 5px;
+}
+
+.servicio-card-auto.selected .servicio-check-wrapper {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.servicio-icono-wrapper {
+    width: 70px;
+    height: 70px;
+    background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 15px;
+    transition: all 0.3s ease;
+}
+
+.servicio-card-auto:hover .servicio-icono-wrapper {
+    transform: rotate(-8deg) scale(1.1);
+    box-shadow: 0 8px 20px rgba(38, 166, 154, 0.2);
+}
+
+.servicio-card-auto.selected .servicio-icono-wrapper {
+    background: linear-gradient(135deg, #26A69A 0%, #00897B 100%);
+    transform: scale(1.1);
+}
+
+.servicio-icono {
+    font-size: 36px;
+}
+
+.servicio-info-wrapper {
+    margin-bottom: 15px;
+}
+
+.servicio-nombre {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin: 0 0 8px 0;
+    line-height: 1.3;
+}
+
+.servicio-precio {
+    font-size: 24px;
+    font-weight: 700;
+    color: #26A69A;
+    margin: 0;
+}
+
+.servicio-check-wrapper {
+    width: 28px;
+    height: 28px;
+    border: 2px solid #ddd;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    opacity: 0.3;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.servicio-card-auto.selected .servicio-check-wrapper {
+    background: #26A69A;
+    border-color: #26A69A;
+    color: white;
+    opacity: 1;
+}
+
+.check-icon {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.empty-servicios {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 2px dashed #ddd;
+}
+
+.empty-icon {
+    font-size: 64px;
+    display: block;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.empty-servicios p {
+    color: #666;
+    margin: 0;
+    font-size: 16px;
+}
+
+/* ==========================================================================
+   RESUMEN DEL SERVICIO
+   ========================================================================== */
+
+.resumen-card {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 25px;
+}
+
+.resumen-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.resumen-item:last-child {
+    border-bottom: none;
+}
+
+.resumen-item.destacado {
+    background: linear-gradient(135deg, #e0f7fa 0%, #ffffff 100%);
+    padding: 20px;
+    margin: -10px -10px 10px -10px;
+    border-radius: 10px;
+    border: 2px solid #26A69A;
+}
+
+.resumen-label-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.resumen-icono {
+    font-size: 20px;
+}
+
+.resumen-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.resumen-valor {
+    font-size: 15px;
+    font-weight: 600;
+    color: #333;
+    text-align: right;
+}
+
+.resumen-item.destacado .resumen-valor {
+    font-size: 20px;
+    color: #26A69A;
+    font-weight: 700;
+}
+
+.resumen-total {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 3px solid #26A69A;
+}
+
+.total-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #26A69A 0%, #00897B 100%);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(38, 166, 154, 0.3);
+}
+
+.total-label {
+    font-size: 16px;
+    font-weight: 700;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.total-monto {
+    font-size: 32px;
+    font-weight: 700;
+    color: white;
+}
+
+/* ==========================================================================
+   BOTÓN DE PAGO
+   ========================================================================== */
+
+.boton-pago-container {
+    margin-top: 25px;
+}
+
+.btn-pagar-profesional {
+    width: 100%;
+    padding: 18px 30px;
+    background: linear-gradient(135deg, #26A69A 0%, #00897B 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 20px rgba(38, 166, 154, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-pagar-profesional::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn-pagar-profesional:hover::before {
+    width: 400px;
+    height: 400px;
+}
+
+.btn-pagar-profesional:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(38, 166, 154, 0.4);
+}
+
+.btn-pagar-profesional:active {
+    transform: translateY(-1px);
+}
+
+.btn-icono,
+.btn-arrow {
+    font-size: 22px;
+    z-index: 1;
+}
+
+.btn-texto {
+    z-index: 1;
+}
+
+.btn-arrow {
+    transition: transform 0.3s ease;
+}
+
+.btn-pagar-profesional:hover .btn-arrow {
+    transform: translateX(5px);
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN
+   ========================================================================== */
+
+@media (max-width: 1200px) {
+    .autoservicio-container-nuevo {
+        grid-template-columns: 1fr;
+    }
+    
+    .seccion-resumen {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .autoservicio-titulo-principal {
+        font-size: 26px;
+    }
+    
+    .autoservicio-subtitulo {
+        font-size: 14px;
+    }
+    
+    .header-icon-wrapper {
+        width: 70px;
+        height: 70px;
+    }
+    
+    .header-icon {
+        font-size: 36px;
+    }
+    
+    .servicios-grid-auto {
+        grid-template-columns: 1fr;
+    }
+    
+    .seccion-servicios,
+    .seccion-resumen {
+        padding: 20px;
+    }
+    
+    .total-monto {
+        font-size: 28px;
+    }
+}
+
+@media (max-width: 480px) {
+    .autoservicio-titulo-principal {
+        font-size: 22px;
+    }
+    
+    .btn-pagar-profesional {
+        font-size: 16px;
+        padding: 16px 25px;
+    }
+    
+    .resumen-card {
+        padding: 20px;
+    }
+}
+
+/* ==========================================================================
+   ANIMACIONES
+   ========================================================================== */
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+
+<script>
+    let servicioSeleccionado = null;
+
+    function seleccionarOpcion(elemento) {
+        // Obtener datos del elemento
+        const id = elemento.getAttribute('data-servicio-id');
+        const nombre = elemento.getAttribute('data-servicio-nombre');
+        const precio = parseFloat(elemento.getAttribute('data-servicio-precio'));
+
+        // Remover selección anterior
+        document.querySelectorAll('.servicio-card-auto').forEach(card => {
+            card.classList.remove('selected');
+        });
+
+        // Agregar selección actual
+        elemento.classList.add('selected');
+
+        servicioSeleccionado = { id, nombre, precio };
+
+        // Mostrar folio pendiente hasta que se confirme el pago
+        document.getElementById('folio-valor').textContent = 'Pendiente...';
+        document.getElementById('servicio-valor').textContent = nombre;
+        document.getElementById('total-pagar').textContent = precio.toFixed(2);
+
+        // Actualizar info según tipo de servicio
+        const nombreLower = nombre.toLowerCase();
+        if (nombreLower.includes('lavadora') || nombreLower.includes('lavado')) {
+            document.getElementById('num-lavadora').textContent = 'Lavadora 0' + Math.floor(1 + Math.random() * 9);
+            document.getElementById('tiempo-uso').textContent = '30 minutos';
+            document.getElementById('tipo-prenda').textContent = 'Ropa general';
+        } else if (nombreLower.includes('secadora') || nombreLower.includes('secado')) {
+            document.getElementById('num-lavadora').textContent = 'Secadora 0' + Math.floor(1 + Math.random() * 9);
+            document.getElementById('tiempo-uso').textContent = '25 minutos';
+            document.getElementById('tipo-prenda').textContent = 'Ropa general';
+        } else if (nombreLower.includes('combo')) {
+            const numLav = Math.floor(1 + Math.random() * 9);
+            const numSec = Math.floor(1 + Math.random() * 9);
+            document.getElementById('num-lavadora').textContent = `Lavadora 0${numLav} + Secadora 0${numSec}`;
+            document.getElementById('tiempo-uso').textContent = '55 minutos';
+            document.getElementById('tipo-prenda').textContent = 'Ropa general';
+        } else {
+            document.getElementById('num-lavadora').textContent = 'Por asignar';
+            document.getElementById('tiempo-uso').textContent = '30 min. aprox.';
+            document.getElementById('tipo-prenda').textContent = 'Ropa general';
+        }
+    }
+
+    function pagar() {
+        if (!servicioSeleccionado) {
+            alert('⚠️ Por favor selecciona un servicio primero');
+            return;
+        }
+        
+        // Enviar datos al servidor
+        fetch('{% url "autoservicio" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                servicio_id: servicioSeleccionado.id || null,
+                servicio_nombre: servicioSeleccionado.nombre,
+                total: servicioSeleccionado.precio,
+                metodo_pago: 'efectivo'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Actualizar el folio en el resumen con el folio real del servidor
+                document.getElementById('folio-valor').textContent = data.folio;
+                alert('✅ Servicio registrado exitosamente\nFolio: ' + data.folio);
+                window.location.href = '/terminado/';
+            } else {
+                alert('❌ Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ Error al procesar el pago');
+        });
+    }
+</script>
+{% endblock %}

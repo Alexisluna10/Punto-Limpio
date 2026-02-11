@@ -1,0 +1,406 @@
+{% extends 'base_trabajador.html' %}
+{% load static %}
+
+{% block title_page %}
+Registrar Nuevo Servicio
+{% endblock %}
+
+{% block trabajador_content %}
+
+<div class="modern-card" id="formContainer">
+
+    <form id="servicioForm">
+        {% csrf_token %}
+
+        <div class="section-title">1. Datos del Cliente</div>
+
+        <div class="form-row">
+            <div class="form-group" style="flex: 3; position: relative;">
+                <label>Buscar Cliente</label>
+                <div style="display: flex; gap: 10px;">
+                    <div style="position: relative; flex: 1;">
+                        <input type="text" class="input-modern" id="buscarCliente" placeholder="Nombre o Teléfono..." autocomplete="off">
+                        <input type="hidden" id="clienteId" name="cliente_id">
+                        <div id="resultadosClientes" class="autocomplete-results" style="display: none;"></div>
+                    </div>
+                    
+                    <button type="button" class="btn-small" onclick="abrirModalCliente()" style="background: #26A69A; border: none; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; min-width: 140px;">
+                        + Nuevo Cliente
+                    </button>
+                </div>
+                <div class="helper-text">Selecciona de la lista o registra uno nuevo</div>
+            </div>
+        </div>
+
+        <div id="clienteSeleccionado" style="display: none; margin-bottom: 15px; padding: 10px; background: #e8f4fd; border-radius: 8px; border-left: 4px solid #008CC9;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <strong style="color: #008CC9;">Cliente seleccionado:</strong> 
+                    <span id="clienteNombre" style="font-weight: 500; margin-left: 5px;"></span>
+                </div>
+                <button type="button" onclick="limpiarCliente()" style="background: transparent; color: #dc3545; border: 1px solid #dc3545; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center;" title="Quitar cliente">✕</button>
+            </div>
+        </div>
+
+        <div class="section-title">2. Detalles del Servicio</div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Tipo de Servicio</label>
+                <select class="input-modern" id="tipoServicioSelect" name="tipo_servicio" onchange="verificarServicio()">
+                    <option value="por_encargo">Lavado por Encargo</option>
+                    <option value="autoservicio">Autoservicio</option>
+                    <option value="tintoreria">Tintoreria</option>
+                    <option value="a_domicilio">A Domicilio</option>
+                    <option value="planchado">Solo Planchado</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="divLavadoEspecial">
+                <label>¿Lavado Especial?</label>
+                <select class="input-modern" id="lavadoEspecial" name="lavado_especial">
+                    <option value="no">No</option>
+                    <option value="si">Sí (Tenis, Mochilas, etc.)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Cobijas / Edredones</label>
+                <select class="input-modern" id="cobijaTipo" name="cobija_tipo">
+                    <option value="">Ninguna</option>
+                    <option value="individual">Individual</option>
+                    <option value="matrimonial">Matrimonial</option>
+                    <option value="king_size">King Size</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Peso (Kg)</label>
+                <input type="number" class="input-modern" id="peso" name="peso" placeholder="0.0" step="0.1">
+            </div>
+            <div class="form-group">
+                <label>Cantidad de Prendas</label>
+                <input type="number" class="input-modern" id="cantidadPrendas" name="cantidad_prendas" placeholder="0">
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 25px;">
+            <label>Observaciones</label>
+            <textarea class="input-modern" id="observaciones" name="observaciones" rows="3" placeholder="Detalles de manchas, ropa delicada, etc."></textarea>
+        </div>
+
+        <div class="section-title">3. Pago y Entrega</div>
+
+        <div class="form-row">
+            <div class="form-group" id="divFechaEntrega">
+                <label>Fecha de Entrega</label>
+                <input type="date" class="input-modern" id="fechaEntrega" name="fecha_entrega">
+            </div>
+            <div class="form-group">
+                <label>Método de Pago</label>
+                <select class="input-modern" id="metodoPago" name="metodo_pago">
+                    <option value="efectivo">Efectivo</option>
+                    <option value="tarjeta">Tarjeta</option>
+                    <option value="transferencia">Transferencia</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Total Estimado ($)</label>
+                <input type="number" class="input-modern" id="totalEstimado" name="total" placeholder="0.00" step="0.01" min="0" style="background-color: #e8f4fd; color: #008CC9; font-weight: bold; border-color: #b3dbf9;">
+            </div>
+        </div>
+
+        <div class="buttons-container">
+            <a href="{% url 'trabajador_dashboard' %}" class="btn-base btn-cancel">Cancelar</a>
+            <button type="button" onclick="generarOrden()" class="btn-base btn-submit">Generar Orden</button>
+        </div>
+
+    </form>
+</div>
+
+<div id="pantallaExito" class="modal-overlay">
+    <div class="success-icon-circle">
+        <span class="success-checkmark">&#10004;</span>
+    </div>
+    <div class="success-title">
+        Gracias por generar la Orden con éxito!<br>
+        <span id="folioGenerado" style="font-size: 0.8em; color: #008CC9;"></span>
+        <br>
+        <span style="font-size: 0.6em; color: #666; font-weight: normal;">(El ticket se ha abierto en otra pestaña)</span>
+    </div>
+    <a href="{% url 'trabajador_dashboard' %}" class="btn-base btn-submit" style="min-width: 200px;">ACEPTAR</a>
+</div>
+
+<div id="modalNuevoCliente" class="modal-overlay" style="display: none; align-items: center; justify-content: center;">
+    <div class="modern-card" style="width: 100%; max-width: 450px; margin: 20px; animation: slideIn 0.3s ease-out;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+            <h3 style="margin: 0; color: #333;">Registrar Cliente Rápido</h3>
+            <span onclick="cerrarModalCliente()" style="cursor: pointer; font-size: 24px; color: #999;">&times;</span>
+        </div>
+        
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label>Nombre *</label>
+            <input type="text" id="newNombre" class="input-modern" placeholder="Ej. Juan">
+        </div>
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label>Apellido</label>
+            <input type="text" id="newApellido" class="input-modern" placeholder="Ej. Pérez">
+        </div>
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label>Teléfono (Usuario) *</label>
+            <input type="tel" id="newTelefono" class="input-modern" placeholder="10 dígitos" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+            <small style="color: #666; font-size: 11px;">El teléfono será su contraseña inicial.</small>
+        </div>
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label>Correo (Opcional)</label>
+            <input type="email" id="newEmail" class="input-modern" placeholder="correo@ejemplo.com">
+        </div>
+
+        <p id="errorMsgCliente" style="color: #ef5350; font-size: 13px; display: none; background: #ffebee; padding: 10px; border-radius: 5px;"></p>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+            <button type="button" class="btn-base btn-cancel" onclick="cerrarModalCliente()" style="padding: 8px 15px; font-size: 14px;">Cancelar</button>
+            <button type="button" class="btn-base btn-submit" onclick="guardarClienteRapido()" style="padding: 8px 15px; font-size: 14px; background-color: #26A69A;">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let clienteSeleccionadoId = null;
+    let timeoutBusqueda = null;
+
+    // --- 1. LÓGICA DE BÚSQUEDA (AUTOCOMPLETE) ---
+    document.getElementById('buscarCliente').addEventListener('input', function () {
+        const query = this.value.trim();
+
+        if (timeoutBusqueda) {
+            clearTimeout(timeoutBusqueda);
+        }
+
+        if (query.length < 2) {
+            document.getElementById('resultadosClientes').style.display = 'none';
+            return;
+        }
+
+        timeoutBusqueda = setTimeout(() => {
+            fetch('{% url "buscar_clientes" %}?q=' + encodeURIComponent(query))
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('resultadosClientes');
+                    container.innerHTML = '';
+
+                    if (data.clientes.length === 0) {
+                        container.innerHTML = '<div class="autocomplete-item" style="color: #666; font-style: italic;">No se encontraron clientes</div>';
+                    } else {
+                        data.clientes.forEach(cliente => {
+                            const div = document.createElement('div');
+                            div.className = 'autocomplete-item';
+                            div.innerHTML = `
+                                <div class="cliente-nombre">${cliente.nombre_completo}</div>
+                                <div class="cliente-telefono">@${cliente.username} • Tel: ${cliente.telefono}</div>
+                            `;
+                            // Aquí guardamos el objeto completo para usarlo al dar clic
+                            div.onclick = () => seleccionarCliente(cliente);
+                            container.appendChild(div);
+                        });
+                    }
+                    container.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error buscando clientes:', error);
+                });
+        }, 300);
+    });
+
+    function seleccionarCliente(cliente) {
+        clienteSeleccionadoId = cliente.id;
+        document.getElementById('clienteId').value = cliente.id;
+
+        document.getElementById('buscarCliente').value = ''; 
+        document.getElementById('resultadosClientes').style.display = 'none';
+
+        const textoCliente = `${cliente.nombre_completo} (${cliente.telefono})`;
+        document.getElementById('clienteNombre').textContent = textoCliente;
+
+        document.getElementById('clienteSeleccionado').style.display = 'block';
+        document.getElementById('buscarCliente').parentElement.style.display = 'none';
+    }
+
+    function limpiarCliente() {
+        clienteSeleccionadoId = null;
+        document.getElementById('clienteId').value = '';
+        
+        document.getElementById('clienteSeleccionado').style.display = 'none';
+        document.getElementById('buscarCliente').parentElement.style.display = 'block'; // Mostrar input búsqueda de nuevo
+        document.getElementById('buscarCliente').focus();
+    }
+
+    // Ocultar resultados al hacer clic fuera
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.form-group')) {
+            document.getElementById('resultadosClientes').style.display = 'none';
+        }
+    });
+
+    // --- 2. LÓGICA DEL MODAL (NUEVO CLIENTE) ---
+    function abrirModalCliente() {
+        document.getElementById('modalNuevoCliente').style.display = 'flex';
+        document.getElementById('newNombre').focus();
+    }
+
+    function cerrarModalCliente() {
+        document.getElementById('modalNuevoCliente').style.display = 'none';
+        // Limpiar campos
+        document.getElementById('newNombre').value = '';
+        document.getElementById('newApellido').value = '';
+        document.getElementById('newTelefono').value = '';
+        document.getElementById('newEmail').value = '';
+        document.getElementById('errorMsgCliente').style.display = 'none';
+    }
+
+    function guardarClienteRapido() {
+        const nombre = document.getElementById('newNombre').value;
+        const apellido = document.getElementById('newApellido').value;
+        const telefono = document.getElementById('newTelefono').value;
+        const email = document.getElementById('newEmail').value;
+        const errorMsg = document.getElementById('errorMsgCliente');
+
+        if (!nombre || !telefono || telefono.length !== 10) {
+            errorMsg.innerText = "Nombre y Teléfono (10 dígitos) son obligatorios.";
+            errorMsg.style.display = 'block';
+            return;
+        }
+
+        const data = {
+            nombre: nombre,
+            apellido: apellido,
+            telefono: telefono,
+            email: email
+        };
+
+        // LLAMADA A LA API QUE CREAMOS ANTES
+        fetch("{% url 'api_registrar_cliente_rapido' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // ÉXITO: Usamos la función existente para seleccionar al nuevo cliente
+                // La API nos devuelve: data.cliente { id, nombre_completo, ... }
+                // Construimos el objeto que espera seleccionarCliente
+                const nuevoClienteObj = {
+                    id: data.cliente.id,
+                    nombre_completo: data.cliente.nombre_completo, // La API ya lo manda formateado
+                    username: telefono, // Opcional, solo visual
+                    telefono: telefono
+                };
+
+                seleccionarCliente(nuevoClienteObj);
+                
+                cerrarModalCliente();
+                alert("✅ Cliente registrado exitosamente");
+
+            } else {
+                errorMsg.innerText = "❌ " + data.message;
+                errorMsg.style.display = 'block';
+            }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            errorMsg.innerText = "Error de conexión con el servidor.";
+            errorMsg.style.display = 'block';
+        });
+    }
+
+    // --- 3. LÓGICA DE SERVICIO Y GENERACIÓN ORDEN ---
+    function verificarServicio() {
+        var select = document.getElementById("tipoServicioSelect");
+        var divEspecial = document.getElementById("divLavadoEspecial");
+        var divFecha = document.getElementById("divFechaEntrega"); // ID Nuevo
+        var inputFecha = document.getElementById("fechaEntrega"); // Input Fecha
+
+        if (select.value === "autoservicio") {
+            // Ocultar lavado especial
+            divEspecial.style.visibility = "hidden";
+            divEspecial.style.display = "none";
+            
+            // Ocultar fecha de entrega (Lógica Nueva)
+            divFecha.style.display = "none";
+            inputFecha.value = ""; // Limpiar valor
+        } else {
+            // Mostrar ambos
+            divEspecial.style.display = "flex";
+            divEspecial.style.visibility = "visible";
+            divFecha.style.display = "block";
+        }
+    }
+
+    function generarOrden() {
+        if (!clienteSeleccionadoId) {
+            alert('Por favor selecciona un cliente antes de continuar.');
+            return;
+        }
+
+        const totalInput = document.getElementById('totalEstimado').value;
+        const totalValue = parseFloat(totalInput) || 0;
+
+        if (totalValue <= 0) {
+            alert('Por favor ingresa el total estimado del servicio.');
+            return;
+        }
+
+        const datos = {
+            cliente_id: clienteSeleccionadoId,
+            tipo_servicio: document.getElementById('tipoServicioSelect').value,
+            lavado_especial: document.getElementById('lavadoEspecial').value === 'si',
+            cobija_tipo: document.getElementById('cobijaTipo').value,
+            peso: parseFloat(document.getElementById('peso').value) || 0,
+            cantidad_prendas: parseInt(document.getElementById('cantidadPrendas').value) || 0,
+            observaciones: document.getElementById('observaciones').value,
+            fecha_entrega: document.getElementById('fechaEntrega').value,
+            metodo_pago: document.getElementById('metodoPago').value,
+            total: totalValue
+        };
+
+        fetch('{% url "nuevo_servicio" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(datos)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Abrir PDF
+                    if (data.ticket_url) {
+                        window.open(data.ticket_url, '_blank');
+                    }
+                    
+                    document.getElementById("formContainer").style.display = "none";
+                    document.getElementById("folioGenerado").textContent = "Folio: " + data.folio;
+                    document.getElementById("pantallaExito").style.display = "flex";
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al generar la orden');
+            });
+    }
+    
+    // Ejecutar al cargar por si el navegador guardó la selección
+    document.addEventListener('DOMContentLoaded', verificarServicio);
+</script>
+
+{% endblock %}

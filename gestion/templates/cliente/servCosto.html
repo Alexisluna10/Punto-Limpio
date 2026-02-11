@@ -1,0 +1,947 @@
+{% extends 'base_cliente.html' %} {% load static %} {% block title_page %}
+Detalle del Servicio {% endblock %} {% block extra_css %}
+<link rel="stylesheet" href="{% static 'gestion/css/cliente.css' %}" />
+{% endblock %} {% block cliente_content %}
+<div class="cliente-container">
+  <!-- Header Profesional -->
+  <div class="servcosto-header">
+    <div class="header-icon-wrapper-serv">
+      <span class="header-icon-serv">👔</span>
+    </div>
+    <h2 class="servcosto-titulo-principal">Detalle del Servicio</h2>
+    <p class="servcosto-subtitulo">
+      Agrega las prendas que deseas lavar y revisa el costo total de tu servicio
+    </p>
+  </div>
+
+  <div class="servcosto-layout">
+    <!-- COLUMNA IZQUIERDA: Agregar Prendas y Tabla -->
+    <div class="columna-principal">
+      <!-- Sección para agregar prendas -->
+      <div class="seccion-agregar-prendas-nueva">
+        <div class="seccion-header-serv">
+          <h3 class="seccion-titulo-serv">
+            <span class="icono-seccion-serv">➕</span>
+            Agregar Prendas
+          </h3>
+        </div>
+
+        <div class="form-agregar-nuevo">
+          <div class="campo-select-prenda">
+            <label class="label-campo">Selecciona la prenda</label>
+            <select id="select-prenda" class="select-prenda-estilo">
+              <option value="">-- Selecciona una prenda --</option>
+              {% for prenda in prendas %}
+              <option
+                value="{{ prenda.id }}"
+                data-precio="{{ prenda.precio }}"
+                data-nombre="{{ prenda.nombre }}"
+              >
+                {{ prenda.nombre }} - ${{ prenda.precio }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="campos-grupo">
+            <div class="campo-input-numero">
+              <label class="label-campo">Cantidad</label>
+              <input
+                type="number"
+                id="input-cantidad"
+                class="input-numero-estilo"
+                value="1"
+                min="1"
+                placeholder="1"
+              />
+            </div>
+
+            <div class="campo-input-numero">
+              <label class="label-campo">Peso (kg)</label>
+              <input
+                type="number"
+                id="input-peso"
+                class="input-numero-estilo"
+                step="0.1"
+                min="0"
+                placeholder="0.0"
+              />
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="btn-agregar-prenda"
+            onclick="agregarPrenda()"
+          >
+            <span class="btn-icono">➕</span>
+            <span class="btn-texto">Agregar Prenda</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla de prendas agregadas -->
+      <div class="seccion-tabla-prendas">
+        <div class="seccion-header-serv">
+          <h3 class="seccion-titulo-serv">
+            <span class="icono-seccion-serv">📝</span>
+            Prendas Agregadas
+          </h3>
+        </div>
+
+        <div class="tabla-wrapper">
+          <table class="tabla-prendas-nueva">
+            <thead>
+              <tr>
+                <th>FOLIO</th>
+                <th>PRENDA</th>
+                <th>CANTIDAD</th>
+                <th>PESO</th>
+                <th>PRECIO</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-prendas-body">
+              <tr id="fila-vacia">
+                <td colspan="5" class="texto-vacio">
+                  <div class="empty-table-state">
+                    <span class="empty-table-icon">📦</span>
+                    <p>No hay prendas agregadas</p>
+                    <small>Agrega prendas usando el formulario de arriba</small>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUMNA DERECHA: Resumen de Costos -->
+    <div class="columna-resumen">
+      <div class="card-resumen-costos">
+        <div class="resumen-header-card">
+          <span class="resumen-header-icono">💰</span>
+          <h3 class="resumen-header-titulo">Resumen de Costos</h3>
+        </div>
+
+        <div class="resumen-detalles">
+          <!-- Folio -->
+          <div class="detalle-item detalle-folio">
+            <div class="detalle-label-wrapper">
+              <span class="detalle-icono">🎫</span>
+              <span class="detalle-label">Folio</span>
+            </div>
+            <span class="detalle-valor detalle-valor-folio" id="info-folio">Pendiente...</span>
+          </div>
+
+          <!-- Tipo de servicio -->
+          <div class="detalle-item">
+            <div class="detalle-label-wrapper">
+              <span class="detalle-icono">🛎️</span>
+              <span class="detalle-label">Tipo de servicio</span>
+            </div>
+            <span class="detalle-valor" id="info-tipo-servicio"
+              >{{ tipo_servicio_nombre }}</span
+            >
+          </div>
+
+          <!-- Precio del servicio -->
+          <div class="detalle-item">
+            <div class="detalle-label-wrapper">
+              <span class="detalle-icono">💵</span>
+              <span class="detalle-label">Precio del servicio</span>
+            </div>
+            <span class="detalle-valor destacado" id="info-precio-servicio"
+              >${{ servicio_precio }}</span
+            >
+          </div>
+
+          <!-- Costo por prendas -->
+          <div class="detalle-item">
+            <div class="detalle-label-wrapper">
+              <span class="detalle-icono">👕</span>
+              <span class="detalle-label">Costo por prendas</span>
+            </div>
+            <span class="detalle-valor" id="info-costo-prendas">$0.00</span>
+          </div>
+
+          <!-- Separador -->
+          <div class="separador-resumen"></div>
+
+          <!-- Subtotal -->
+          <div class="detalle-item subtotal">
+            <div class="detalle-label-wrapper">
+              <span class="detalle-icono">📊</span>
+              <span class="detalle-label">Subtotal</span>
+            </div>
+            <span class="detalle-valor" id="info-total">$0.00</span>
+          </div>
+        </div>
+
+        <!-- Total Final -->
+        <div class="total-final-card">
+          <div class="total-wrapper-card">
+            <span class="total-label-card">Total a pagar</span>
+            <span class="total-monto-card"
+              >$<span id="gran-total">0.00</span></span
+            >
+          </div>
+        </div>
+
+        <!-- Botón Continuar -->
+        <div class="boton-continuar-container">
+          <button
+            type="button"
+            class="btn-continuar-pago"
+            onclick="continuarPago()"
+          >
+            <span class="btn-icono-continuar">💳</span>
+            <span class="btn-texto-continuar">Continuar al Pago</span>
+            <span class="btn-arrow-continuar">→</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* ==========================================================================
+   DISEÑO PROFESIONAL SERVCOSTO - MEJORADO
+   ========================================================================== */
+
+  .servcosto-header {
+    text-align: center;
+    margin-bottom: 40px;
+    animation: fadeInDown 0.6s ease-out;
+  }
+
+  .header-icon-wrapper-serv {
+    width: 90px;
+    height: 90px;
+    background: linear-gradient(135deg, #26a69a 0%, #00897b 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    box-shadow: 0 8px 25px rgba(38, 166, 154, 0.3);
+  }
+
+  .header-icon-serv {
+    font-size: 48px;
+  }
+
+  .servcosto-titulo-principal {
+    font-size: 32px;
+    font-weight: 700;
+    color: #295d64;
+    margin: 0 0 10px 0;
+    letter-spacing: -0.5px;
+  }
+
+  .servcosto-subtitulo {
+    font-size: 16px;
+    color: #666;
+    margin: 0;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .servcosto-layout {
+    display: grid;
+    grid-template-columns: 1fr 450px;
+    gap: 30px;
+    animation: fadeInUp 0.6s ease-out;
+  }
+
+  /* ==========================================================================
+   COLUMNA PRINCIPAL (Agregar Prendas + Tabla)
+   ========================================================================== */
+
+  .columna-principal {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+  }
+
+  .seccion-agregar-prendas-nueva,
+  .seccion-tabla-prendas {
+    background: white;
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  }
+
+  .seccion-header-serv {
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f0f0;
+  }
+
+  .seccion-titulo-serv {
+    font-size: 20px;
+    font-weight: 700;
+    color: #295d64;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .icono-seccion-serv {
+    font-size: 24px;
+  }
+
+  /* --- FORMULARIO AGREGAR PRENDAS --- */
+
+  .form-agregar-nuevo {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .campo-select-prenda,
+  .campo-input-numero {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .label-campo {
+    font-size: 13px;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .select-prenda-estilo,
+  .input-numero-estilo {
+    padding: 14px 18px;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    font-size: 15px;
+    transition: all 0.3s ease;
+    background: white;
+    color: #333;
+    font-weight: 500;
+  }
+
+  .select-prenda-estilo:focus,
+  .input-numero-estilo:focus {
+    border-color: #26a69a;
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(38, 166, 154, 0.1);
+  }
+
+  .select-prenda-estilo option {
+    padding: 10px;
+  }
+
+  .campos-grupo {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+  }
+
+  .btn-agregar-prenda {
+    padding: 16px 30px;
+    background: linear-gradient(135deg, #26a69a 0%, #00897b 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(38, 166, 154, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .btn-agregar-prenda:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(38, 166, 154, 0.4);
+  }
+
+  .btn-agregar-prenda:active {
+    transform: translateY(0);
+  }
+
+  .btn-icono {
+    font-size: 20px;
+  }
+
+  /* ==========================================================================
+   TABLA DE PRENDAS
+   ========================================================================== */
+
+  .tabla-wrapper {
+    overflow-x: auto;
+    border-radius: 12px;
+  }
+
+  .tabla-prendas-nueva {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .tabla-prendas-nueva thead {
+    background: linear-gradient(135deg, #26a69a 0%, #00897b 100%);
+  }
+
+  .tabla-prendas-nueva th {
+    color: white;
+    padding: 16px 12px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .tabla-prendas-nueva td {
+    padding: 16px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    color: #333;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .tabla-prendas-nueva tbody tr:last-child td {
+    border-bottom: none;
+    font-weight: 700;
+    background: #f8f9fa;
+    color: #26a69a;
+  }
+
+  .tabla-prendas-nueva tbody tr:hover {
+    background: #f8f9fa;
+  }
+
+  .texto-vacio {
+    text-align: center;
+    padding: 0 !important;
+  }
+
+  .empty-table-state {
+    padding: 60px 20px;
+    text-align: center;
+  }
+
+  .empty-table-icon {
+    font-size: 64px;
+    display: block;
+    margin-bottom: 15px;
+    opacity: 0.5;
+  }
+
+  .empty-table-state p {
+    color: #666;
+    margin: 0 0 5px 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .empty-table-state small {
+    color: #999;
+    font-size: 13px;
+  }
+
+  /* ==========================================================================
+   COLUMNA RESUMEN DE COSTOS
+   ========================================================================== */
+
+  .columna-resumen {
+    position: sticky;
+    top: 20px;
+    align-self: flex-start;
+  }
+
+  .card-resumen-costos {
+    background: white;
+    border-radius: 16px;
+    padding: 0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+  }
+
+  .resumen-header-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 25px;
+    border-bottom: 2px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .resumen-header-icono {
+    font-size: 32px;
+  }
+
+  .resumen-header-titulo {
+    font-size: 22px;
+    font-weight: 700;
+    color: #295d64;
+    margin: 0;
+  }
+
+  .resumen-detalles {
+    padding: 25px;
+  }
+
+  .detalle-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .detalle-item:last-child {
+    border-bottom: none;
+  }
+
+  .detalle-item.subtotal {
+    padding-top: 20px;
+    margin-top: 10px;
+  }
+
+  .detalle-label-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .detalle-icono {
+    font-size: 20px;
+  }
+
+  .detalle-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .detalle-valor {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+  }
+
+  .detalle-valor.destacado {
+    color: #26a69a;
+    font-size: 18px;
+  }
+
+  .detalle-folio {
+    background: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 100%);
+    border-radius: 10px;
+    padding: 15px !important;
+    margin-bottom: 5px;
+    border-bottom: none !important;
+  }
+
+  .detalle-valor-folio {
+    font-size: 18px;
+    font-weight: 700;
+    color: #00695c;
+    letter-spacing: 0.5px;
+  }
+
+  .separador-resumen {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #e0e0e0, transparent);
+    margin: 15px 0;
+  }
+
+  /* --- TOTAL FINAL --- */
+
+  .total-final-card {
+    padding: 25px;
+    background: #f8f9fa;
+    border-top: 3px solid #26a69a;
+  }
+
+  .total-wrapper-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #26a69a 0%, #00897b 100%);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(38, 166, 154, 0.3);
+  }
+
+  .total-label-card {
+    font-size: 16px;
+    font-weight: 700;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .total-monto-card {
+    font-size: 32px;
+    font-weight: 700;
+    color: white;
+  }
+
+  /* --- BOTÓN CONTINUAR --- */
+
+  .boton-continuar-container {
+    padding: 25px;
+  }
+
+  .btn-continuar-pago {
+    width: 100%;
+    padding: 18px 30px;
+    background: linear-gradient(135deg, #26a69a 0%, #00897b 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 20px rgba(38, 166, 154, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-continuar-pago::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition:
+      width 0.6s,
+      height 0.6s;
+  }
+
+  .btn-continuar-pago:hover::before {
+    width: 400px;
+    height: 400px;
+  }
+
+  .btn-continuar-pago:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(38, 166, 154, 0.4);
+  }
+
+  .btn-continuar-pago:active {
+    transform: translateY(-1px);
+  }
+
+  .btn-icono-continuar,
+  .btn-arrow-continuar {
+    font-size: 22px;
+    z-index: 1;
+  }
+
+  .btn-texto-continuar {
+    z-index: 1;
+  }
+
+  .btn-arrow-continuar {
+    transition: transform 0.3s ease;
+  }
+
+  .btn-continuar-pago:hover .btn-arrow-continuar {
+    transform: translateX(5px);
+  }
+
+  /* ==========================================================================
+   RESPONSIVE DESIGN
+   ========================================================================== */
+
+  @media (max-width: 1200px) {
+    .servcosto-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .columna-resumen {
+      position: static;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .servcosto-titulo-principal {
+      font-size: 26px;
+    }
+
+    .servcosto-subtitulo {
+      font-size: 14px;
+    }
+
+    .header-icon-wrapper-serv {
+      width: 70px;
+      height: 70px;
+    }
+
+    .header-icon-serv {
+      font-size: 36px;
+    }
+
+    .seccion-agregar-prendas-nueva,
+    .seccion-tabla-prendas {
+      padding: 20px;
+    }
+
+    .campos-grupo {
+      grid-template-columns: 1fr;
+    }
+
+    .tabla-wrapper {
+      overflow-x: auto;
+    }
+
+    .total-monto-card {
+      font-size: 28px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .servcosto-titulo-principal {
+      font-size: 22px;
+    }
+
+    .btn-continuar-pago,
+    .btn-agregar-prenda {
+      font-size: 16px;
+      padding: 16px 25px;
+    }
+
+    .resumen-detalles,
+    .total-final-card,
+    .boton-continuar-container {
+      padding: 20px;
+    }
+
+    .tabla-prendas-nueva th,
+    .tabla-prendas-nueva td {
+      padding: 12px 8px;
+      font-size: 12px;
+    }
+  }
+
+  /* ==========================================================================
+   ANIMACIONES
+   ========================================================================== */
+
+  @keyframes fadeInDown {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>
+
+<script>
+  let prendasAgregadas = [];
+  let servicioSeleccionado = {
+    tipo: "{{ tipo_servicio }}",
+    nombre: "{{ tipo_servicio_nombre }}",
+    precio: parseFloat("{{ servicio_precio }}") || 0,
+  };
+  let contadorFilas = 0;
+
+  function agregarPrenda() {
+    const select = document.getElementById("select-prenda");
+    const option = select.options[select.selectedIndex];
+    const cantidad =
+      parseInt(document.getElementById("input-cantidad").value) || 1;
+    const peso = parseFloat(document.getElementById("input-peso").value) || 0;
+
+    if (!option.value) {
+      alert("⚠️ Por favor selecciona una prenda");
+      return;
+    }
+
+    const prenda = {
+      id: contadorFilas++,
+      prendaId: option.value,
+      nombre: option.dataset.nombre,
+      precio: parseFloat(option.dataset.precio),
+      cantidad: cantidad,
+      peso: peso,
+      subtotal: parseFloat(option.dataset.precio) * cantidad,
+    };
+
+    prendasAgregadas.push(prenda);
+    renderizarTabla();
+    calcularTotales();
+
+    // Limpiar formulario
+    select.selectedIndex = 0;
+    document.getElementById("input-cantidad").value = 1;
+    document.getElementById("input-peso").value = "";
+  }
+
+  function quitarPrenda(id) {
+    prendasAgregadas = prendasAgregadas.filter((p) => p.id !== id);
+    renderizarTabla();
+    calcularTotales();
+  }
+
+  function renderizarTabla() {
+    const tbody = document.getElementById("tabla-prendas-body");
+    tbody.innerHTML = "";
+
+    if (prendasAgregadas.length === 0) {
+      tbody.innerHTML = `
+                <tr id="fila-vacia">
+                    <td colspan="5" class="texto-vacio">
+                        <div class="empty-table-state">
+                            <span class="empty-table-icon">📦</span>
+                            <p>No hay prendas agregadas</p>
+                            <small>Agrega prendas usando el formulario de arriba</small>
+                        </div>
+                    </td>
+                </tr>
+            `;
+      return;
+    }
+
+    let totalCantidad = 0;
+    let totalPeso = 0;
+
+    prendasAgregadas.forEach((prenda, index) => {
+      const tr = document.createElement("tr");
+      totalCantidad += prenda.cantidad;
+      totalPeso += prenda.peso;
+      tr.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${prenda.nombre}</td>
+                <td>${prenda.cantidad}</td>
+                <td>${prenda.peso.toFixed(2)} KG</td>
+                <td>$${prenda.subtotal.toFixed(2)}</td>
+            `;
+      tbody.appendChild(tr);
+    });
+
+    // Fila de totales
+    const trTotal = document.createElement("tr");
+    trTotal.innerHTML = `
+            <td></td>
+            <td><strong>TOTALES</strong></td>
+            <td><strong>${totalCantidad}</strong></td>
+            <td><strong>${totalPeso.toFixed(2)} KG</strong></td>
+            <td><strong>$${prendasAgregadas.reduce((sum, p) => sum + p.subtotal, 0).toFixed(2)}</strong></td>
+        `;
+    tbody.appendChild(trTotal);
+  }
+
+  function calcularTotales() {
+    let totalPrendas = 0;
+
+    prendasAgregadas.forEach((prenda) => {
+      totalPrendas += prenda.subtotal;
+    });
+
+    const precioServicio = servicioSeleccionado
+      ? servicioSeleccionado.precio
+      : 0;
+    const granTotal = totalPrendas + precioServicio;
+
+    document.getElementById("info-costo-prendas").textContent =
+      "$" + totalPrendas.toFixed(2);
+    document.getElementById("info-total").textContent =
+      "$" + granTotal.toFixed(2);
+    document.getElementById("gran-total").textContent = granTotal.toFixed(2);
+  }
+
+  function continuarPago() {
+    if (prendasAgregadas.length === 0) {
+      alert("⚠️ Por favor agrega al menos una prenda");
+      return;
+    }
+
+    const total = parseFloat(document.getElementById("gran-total").textContent);
+
+    // Preparar datos de prendas
+    const prendasData = prendasAgregadas.map((p) => ({
+      prenda_id: p.prendaId,
+      nombre: p.nombre,
+      cantidad: p.cantidad,
+      peso: p.peso,
+      precio: p.precio,
+      subtotal: p.subtotal,
+    }));
+
+    // Enviar datos al servidor
+    fetch('{% url "servCosto" %}?tipo={{ tipo_servicio }}', {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": "{{ csrf_token }}",
+      },
+      body: JSON.stringify({
+        prendas: prendasData,
+        total: total,
+        tipo_servicio: "{{ tipo_servicio }}",
+        metodo_pago: "efectivo",
+      }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          // Actualizar el folio en el resumen con el folio real del servidor
+          document.getElementById("info-folio").textContent = data.folio;
+          alert("✅ Servicio registrado exitosamente\nFolio: " + data.folio);
+          window.location.href = '{% url "terminado" %}';
+        } else {
+          alert("❌ Error: " + data.message);
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        alert("❌ Error al procesar el servicio");
+      });
+  }
+
+  // Inicializar totales al cargar
+  document.addEventListener("DOMContentLoaded", function () {
+    calcularTotales();
+  });
+</script>
+{% endblock %}

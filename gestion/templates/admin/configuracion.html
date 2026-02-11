@@ -1,0 +1,117 @@
+{% extends 'base_admin.html' %}
+
+{% block title_page %}
+Configuración del Sistema
+{% endblock %}
+
+{% block content %}
+<div class="configuracion-container">
+
+    <!-- Header -->
+    <div class="config-header">
+        <h1 class="config-title">Configuración</h1>
+        <p class="config-subtitle">Gestiona la configuración general y estadísticas del sistema</p>
+    </div>
+
+    <!-- Grid de 2 columnas -->
+    <div class="config-grid-2">
+
+        <!-- Información del Negocio -->
+        <div class="config-card">
+            <h2 class="config-card-title">
+                Información del Negocio
+            </h2>
+            
+            <form id="formNegocio" onsubmit="guardarNegocio(event)">
+                {% csrf_token %}
+                
+                <div class="config-form-group">
+                    <label class="config-label">Nombre del Negocio</label>
+                    <input type="text" name="nombre" value="{{ config.nombre }}" class="config-input">
+                </div>
+
+                <div class="config-form-group">
+                    <label class="config-label">Dirección</label>
+                    <input type="text" name="direccion" value="" placeholder="Calle, Número, Colonia" class="config-input">
+                </div>
+
+                <div class="config-form-row">
+                    <div class="config-form-group">
+                        <label class="config-label">Teléfono</label>
+                        <input type="tel" name="telefono" value="{{ config.telefono }}" class="config-input">
+                    </div>
+                    <div class="config-form-group">
+                        <label class="config-label">Email</label>
+                        <input type="email" name="email" value="{{ config.email }}" class="config-input">
+                    </div>
+                </div>
+
+                <div class="config-form-group">
+                    <label class="config-label">Horario de Atención</label>
+                    <input type="text" name="horario" value="{{ config.horario }}" class="config-input">
+                </div>
+
+                <button type="submit" class="config-btn config-btn-primary">
+                    Guardar Información
+                </button>
+            </form>
+        </div>
+
+        <!-- Estado del Sistema -->
+        <div class="config-card">
+            <h2 class="config-card-title">
+                Estado del Sistema
+            </h2>
+
+            <div class="config-stats-grid">
+
+                <!-- Incidencias Pendientes -->
+                <div class="config-stat-card config-stat-yellow">
+                    <div class="config-stat-content">
+                        <span class="config-stat-label">⚠️ Incidencias Pendientes</span>
+                        <span class="config-stat-value">{{ incidencias_pendientes }}</span>
+                    </div>
+                </div>
+
+                <!-- Productos con Stock Bajo -->
+                <div class="config-stat-card config-stat-red">
+                    <div class="config-stat-content">
+                        <span class="config-stat-label">📦 Stock Bajo (≤10%)</span>
+                        <span class="config-stat-value">{{ productos_bajo_stock }}</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+
+function guardarNegocio(event) {
+    event.preventDefault();
+    
+    const form = document.getElementById('formNegocio');
+    const formData = new FormData(form);
+
+    fetch('', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('✅ ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error al guardar');
+        console.error(error);
+    });
+}
+
+</script>
+
+{% endblock %}

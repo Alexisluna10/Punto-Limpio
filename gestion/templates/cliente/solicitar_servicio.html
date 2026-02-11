@@ -1,0 +1,211 @@
+{% extends 'base_cliente.html' %} {% block title_page %} Solicitar Servicio {% endblock %} {% block cliente_content %}
+<div class="cliente-container">
+  <div class="cliente-header">
+    <h2>Selecciona el tipo de servicio</h2>
+    <p>Elige la opción que mejor se adapte a tus necesidades</p>
+  </div>
+
+  <div class="servicios-carousel-container">
+    <button class="carousel-btn prev" onclick="scrollCarousel('prev')">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+      </svg>
+    </button>
+
+    <div class="servicios-wrapper">
+      <div class="servicios-grid" id="serviciosCarousel">
+        <label class="servicio-card">
+          <input type="radio" name="tipo_servicio" value="autoservicio" />
+          <div class="servicio-card-content">
+            <div class="servicio-icon">🧺</div>
+            <div class="servicio-info">
+              <h3>Autoservicio</h3>
+              <p>Usa nuestras lavadoras y secadoras tú mismo.</p>
+            </div>
+            <div class="servicio-check">✓</div>
+          </div>
+        </label>
+
+        <label class="servicio-card">
+          <input type="radio" name="tipo_servicio" value="por_encargo" />
+          <div class="servicio-card-content">
+            <div class="servicio-icon">👕</div>
+            <div class="servicio-info">
+              <h3>Por encargo</h3>
+              <p>Nos encargamos del lavado y secado por ti.</p>
+            </div>
+            <div class="servicio-check">✓</div>
+          </div>
+        </label>
+
+        <label class="servicio-card">
+          <input type="radio" name="tipo_servicio" value="a_domicilio" />
+          <div class="servicio-card-content">
+            <div class="servicio-icon">🚗</div>
+            <div class="servicio-info">
+              <h3>A domicilio</h3>
+              <p>Recogemos y entregamos en tu hogar.</p>
+            </div>
+            <div class="servicio-check">✓</div>
+          </div>
+        </label>
+
+        <label class="servicio-card">
+          <input type="radio" name="tipo_servicio" value="tintoreria" />
+          <div class="servicio-card-content">
+            <div class="servicio-icon">👔</div>
+            <div class="servicio-info">
+              <h3>Tintorería</h3>
+              <p>Cuidado especial para prendas delicadas.</p>
+            </div>
+            <div class="servicio-check">✓</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <button class="carousel-btn next" onclick="scrollCarousel('next')">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+      </svg>
+    </button>
+
+    <div class="carousel-indicators">
+      <span class="indicator-dot active" data-index="0"></span>
+      <span class="indicator-dot" data-index="1"></span>
+      <span class="indicator-dot" data-index="2"></span>
+      <span class="indicator-dot" data-index="3"></span>
+    </div>
+  </div>
+
+  <div id="direccion-container" class="direccion-container hidden-direccion">
+    <h3>Datos para el servicio</h3>
+    <div class="form-grid">
+      <div class="campo-direccion">
+        <label for="direccion">Dirección</label>
+        <input
+          type="text"
+          id="direccion"
+          placeholder="Calle, número, colonia"
+        />
+      </div>
+      <div class="campo-direccion">
+        <label for="referencias">Referencias</label>
+        <textarea
+          id="referencias"
+          rows="3"
+          placeholder="Ej. Casa azul, portón negro..."
+        ></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="servicios-actions">
+    <button class="btn-continuar" onclick="continuar()">Continuar</button>
+  </div>
+</div>
+
+<script>
+  const carousel = document.getElementById("serviciosCarousel");
+  const radios = document.querySelectorAll('input[name="tipo_servicio"]');
+  const direccionContainer = document.getElementById("direccion-container");
+  const indicators = document.querySelectorAll(".indicator-dot");
+
+  function scrollCarousel(direction) {
+    const scrollAmount = 305;
+
+    if (direction === "next") {
+      carousel.scrollBy({ left: scrollAmount, behavior: "smooth" });
+    } else {
+      carousel.scrollBy({ left: -scrollAmount, behavior: "smooth" });
+    }
+  }
+
+  carousel.addEventListener("scroll", () => {
+    const scrollPosition = carousel.scrollLeft;
+    const itemWidth = 305;
+    const currentIndex = Math.round(scrollPosition / itemWidth);
+
+    indicators.forEach((dot, index) => {
+      dot.classList.toggle("active", index === currentIndex);
+    });
+  });
+
+  indicators.forEach((dot, index) => {
+    dot.addEventListener("click", () => {
+      const scrollAmount = index * 305;
+      carousel.scrollTo({ left: scrollAmount, behavior: "smooth" });
+    });
+  });
+
+  radios.forEach((radio) => {
+    radio.addEventListener("change", () => {
+      if (radio.value === "por_encargo" || radio.value === "a_domicilio") {
+        direccionContainer.classList.remove("hidden-direccion");
+        direccionContainer.classList.add("visible-direccion");
+      } else {
+        direccionContainer.classList.remove("visible-direccion");
+        direccionContainer.classList.add("hidden-direccion");
+      }
+    });
+  });
+
+  function continuar() {
+    const seleccionado = document.querySelector(
+      'input[name="tipo_servicio"]:checked',
+    );
+
+    if (!seleccionado) {
+      alert("Por favor, selecciona un tipo de servicio");
+      return;
+    }
+
+    if (
+      seleccionado.value === "por_encargo" ||
+      seleccionado.value === "a_domicilio"
+    ) {
+      const direccion = document.getElementById("direccion").value.trim();
+      if (!direccion) {
+        alert("Por favor, ingresa la dirección para el servicio");
+        document.getElementById("direccion").focus();
+        return;
+      }
+    }
+
+    if (seleccionado.value === "autoservicio") {
+      window.location.href = '{% url "autoservicio" %}';
+    } else {
+      window.location.href = '{% url "servCosto" %}?tipo=' + seleccionado.value;
+    }
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowLeft") {
+      scrollCarousel("prev");
+    } else if (e.key === "ArrowRight") {
+      scrollCarousel("next");
+    }
+  });
+
+  let touchStartX = 0;
+  let touchEndX = 0;
+
+  carousel.addEventListener("touchstart", (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+  });
+
+  carousel.addEventListener("touchend", (e) => {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+  });
+
+  function handleSwipe() {
+    const swipeThreshold = 50;
+    if (touchStartX - touchEndX > swipeThreshold) {
+      scrollCarousel("next");
+    } else if (touchEndX - touchStartX > swipeThreshold) {
+      scrollCarousel("prev");
+    }
+  }
+</script>
+{% endblock %}

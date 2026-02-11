@@ -1,0 +1,190 @@
+{% extends 'base_cliente.html' %}
+{% block title_page %}
+Inicio
+{% endblock %}
+
+{% block cliente_content %}
+<div class="dashboard-cliente">
+
+    <div class="dashboard-header">
+        <div class="welcome-section">
+            <h1 class="welcome-title">¡Hola, @{{ user.username }}! 👋</h1>
+            <p class="welcome-subtitle">Bienvenido a Punto Limpio</p>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card stat-card-primary">
+            <div class="stat-icon">
+                <span>🔄</span>
+            </div>
+            <div class="stat-content">
+                <h3 class="stat-number">{{ pedidos_activos|length }}</h3>
+                <p class="stat-label">Servicios Activos</p>
+            </div>
+        </div>
+
+        <div class="stat-card stat-card-success">
+            <div class="stat-icon">
+                <span>✓</span>
+            </div>
+            <div class="stat-content">
+                <h3 class="stat-number">{{ pedidos_finalizados|length }}</h3>
+                <p class="stat-label">Completados</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-header">
+        <h2 class="section-title">📋 Servicios Activos</h2>
+        <p class="section-description">Estos son los servicios que están en proceso</p>
+    </div>
+
+    <div class="pedidos-grid">
+        {% for pedido in pedidos_activos %}
+        <div class="pedido-card">
+            <div class="pedido-header">
+                <div class="pedido-folio-section">
+                    <span class="pedido-label">Folio</span>
+                    <h3 class="pedido-folio">{{ pedido.folio }}</h3>
+                </div>
+                <div class="pedido-badges">
+                    {% if pedido.estado == 'pendiente' %}
+                    <span class="badge badge-pendiente">⏱️ PENDIENTE</span>
+                    {% elif pedido.estado == 'en_proceso' %}
+                    <span class="badge badge-proceso">🔄 EN PROCESO</span>
+                    {% elif pedido.estado == 'listo' %}
+                    <span class="badge badge-entregado">✓ LISTO</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="pedido-body">
+                <div class="pedido-info-item">
+                    <span class="info-icon">🧺</span>
+                    <div class="info-text">
+                        <span class="info-label">Servicio</span>
+                        <span class="info-value">{{ pedido.tipo_servicio|upper }}</span>
+                    </div>
+                </div>
+
+                <div class="pedido-info-item">
+                    <span class="info-icon">💳</span>
+                    <div class="info-text">
+                        <span class="info-label">Estado de Pago</span>
+                        <span class="info-value">
+                            {% if pedido.estado_pago == 'pendiente' %}
+                            <span class="badge badge-pendiente-small">PENDIENTE</span>
+                            {% else %}
+                            <span class="badge badge-pagado-small">PAGADO</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="pedido-info-item">
+                    <span class="info-icon">📅</span>
+                    <div class="info-text">
+                        <span class="info-label">Fecha de Recepción</span>
+                        <span class="info-value">{{ pedido.fecha_recepcion|date:"d / F / Y" }}</span>
+                    </div>
+                </div>
+
+                <div class="pedido-info-item">
+                    <span class="info-icon">🚀</span>
+                    <div class="info-text">
+                        <span class="info-label">Entrega Estimada</span>
+                        <span class="info-value">
+                            {% if pedido.fecha_entrega_estimada %}
+                                {{ pedido.fecha_entrega_estimada|date:"d / F / Y" }}
+                            {% else %}
+                                <span class="text-muted">Por definir</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <div class="empty-icon">📦</div>
+            <h3 class="empty-title">No tienes servicios activos</h3>
+            <p class="empty-description">Cuando solicites un servicio, aparecerá aquí</p>
+            <a href="{% url 'solicitar_servicio' %}" class="btn-solicitar-servicio">Solicitar Servicio</a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="section-header section-header-secondary">
+        <h2 class="section-title">📚 Historial de Servicios</h2>
+        <p class="section-description">Servicios completados y entregados</p>
+    </div>
+
+    <div class="historial-grid">
+        {% for pedido in pedidos_finalizados %}
+        <div class="historial-card">
+            <div class="historial-header">
+                <div class="historial-folio-section">
+                    <span class="historial-label">Folio</span>
+                    <h4 class="historial-folio">{{ pedido.folio }}</h4>
+                </div>
+                <div class="historial-status">
+                    <span class="badge badge-entregado">✓ ENTREGADO</span>
+                </div>
+            </div>
+
+            <div class="historial-body">
+                <div class="historial-info-row">
+                    <div class="historial-info-item">
+                        <span class="historial-icon">🧺</span>
+                        <div>
+                            <span class="historial-label-small">Servicio</span>
+                            <span class="historial-value">{{ pedido.tipo_servicio|upper }}</span>
+                        </div>
+                    </div>
+
+                    <div class="historial-info-item">
+                        <span class="historial-icon">💳</span>
+                        <div>
+                            <span class="historial-label-small">Pago</span>
+                            <span class="historial-value">
+                                {% if pedido.estado_pago == 'pagado' %}
+                                <span class="badge badge-pagado-small">PAGADO</span>
+                                {% else %}
+                                <span class="badge badge-pendiente-small">PENDIENTE</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="historial-dates">
+                    <div class="date-item">
+                        <span class="date-label">📥 Recepción</span>
+                        <span class="date-value">{{ pedido.fecha_recepcion|date:"d/m/Y" }}</span>
+                    </div>
+                    <div class="date-separator">→</div>
+                    <div class="date-item">
+                        <span class="date-label">📤 Entrega</span>
+                        <span class="date-value">
+                            {% if pedido.fecha_entrega_real %}
+                                {{ pedido.fecha_entrega_real|date:"d/m/Y" }}
+                            {% else %}
+                                ---
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state empty-state-secondary">
+            <div class="empty-icon">📜</div>
+            <h3 class="empty-title">No tienes servicios finalizados</h3>
+            <p class="empty-description">Aquí aparecerá el historial de tus servicios completados</p>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

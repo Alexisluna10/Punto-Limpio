@@ -1,0 +1,141 @@
+{% extends 'base_cliente.html' %}
+
+{% block title_page %}
+Dudas o Quejas
+{% endblock %}
+
+{% block cliente_content %}
+<div class="cliente-container">
+
+    <div class="dudas-layout">
+
+        <!-- COLUMNA IZQUIERDA: Formulario -->
+        <div class="dudas-form-container">
+            <div class="dudas-header">
+                <h2>¿Tienes alguna duda o queja?</h2>
+                <p>
+                    Queremos escucharte. Tu opinión nos ayuda a mejorar nuestro servicio.
+                </p>
+            </div>
+
+            <p class="dudas-intro">
+                Si tienes alguna duda o queja sobre nuestro servicio, por favor envíanos
+                tu comentario en el siguiente apartado:
+            </p>
+
+            <form class="dudas-form" id="formDudas">
+                {% csrf_token %}
+
+                <label class="dudas-label">Cuéntanos qué pasó</label>
+
+                <textarea class="dudas-textarea" name="comentario"
+                    placeholder="Ejemplo: Mi ropa me la devolvieron sucia..." rows="7" required></textarea>
+
+                <p class="dudas-nota">
+                    Una vez enviado, se revisará a la brevedad para que el personal de
+                    <strong>Punto Limpio</strong> pueda dar seguimiento.
+                </p>
+
+                <button type="submit" class="btn-enviar-dudas">
+                    Enviar comentario
+                </button>
+            </form>
+        </div>
+
+        <!-- COLUMNA DERECHA: Historial -->
+        <div class="dudas-historial-container">
+            <div class="historial-header">
+                <h2>Mis Comentarios</h2>
+                <p>Aquí puedes ver tus comentarios y las respuestas del equipo</p>
+            </div>
+
+            <div class="historial-lista">
+                {% if mis_dudas %}
+                {% for duda in mis_dudas %}
+                <div class="duda-card {% if duda.estado == 'resuelto' %}duda-resuelta{% endif %}">
+                    <div class="duda-header-card">
+                        <span class="duda-fecha">{{ duda.fecha_creacion|date:"d/m/Y H:i" }}</span>
+                        <span
+                            class="duda-estado {% if duda.respuesta %}estado-resuelto{% else %}estado-{{ duda.estado }}{% endif %}">
+                            {% if duda.respuesta %}Resuelto{% else %}{{ duda.get_estado_display }}{% endif %}
+                        </span>
+                    </div>
+
+                    <div class="duda-comentario">
+                        <strong>Tu comentario:</strong>
+                        <p>{{ duda.comentario }}</p>
+                    </div>
+
+                    {% if duda.respuesta %}
+                    <div class="duda-respuesta">
+                        <strong>✅ Respuesta de Punto Limpio:</strong>
+                        <p>{{ duda.respuesta }}</p>
+                        {% if duda.fecha_resolucion %}
+                        <small class="fecha-respuesta">
+                            Respondido el {{ duda.fecha_resolucion|date:"d/m/Y H:i" }}
+                        </small>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="duda-sin-respuesta">
+                        <em>⏳ Esperando respuesta...</em>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="sin-dudas">
+                    <p>Aún no has enviado ningún comentario.</p>
+                    <p>Utiliza el formulario de la izquierda para enviar tu primera duda o queja.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+    document.getElementById('formDudas').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const btn = this.querySelector('button[type="submit"]');
+        const btnText = btn.textContent;
+
+        // Deshabilitar botón mientras se envía
+        btn.disabled = true;
+        btn.textContent = 'Enviando...';
+
+        fetch('{% url "dudas_quejas" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    this.reset();
+                    // Recargar la página para ver el nuevo comentario
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Error al enviar el comentario. Por favor intenta de nuevo.');
+                console.error('Error:', error);
+            })
+            .finally(() => {
+                // Rehabilitar botón
+                btn.disabled = false;
+                btn.textContent = btnText;
+            });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,223 @@
+{% extends 'base_gestion.html' %} {% block content %}
+
+<style>
+  /* Overlay de fondo */
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 60px; /* Ajusta esto si tu barra superior mide diferente */
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    backdrop-filter: blur(2px);
+  }
+  .sidebar-overlay.open {
+    display: block;
+  }
+
+  /* CONTENEDOR PRINCIPAL DEL SIDEBAR */
+  .admin-sidebar {
+    width: 250px !important; /* Forzamos el ancho */
+    /* DEGRADADO EXACTO DE LA IMAGEN DE REFERENCIA */
+    background: linear-gradient(180deg, #0e5e78 0%, #158dbd 100%) !important;
+    padding: 20px 15px !important;
+
+    display: flex;
+    flex-direction: column;
+
+    position: fixed;
+    top: 60px !important; /* Debe coincidir con tu navbar */
+    bottom: 0;
+    left: -270px; /* Oculto */
+
+    z-index: 1000;
+    transition: left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.2);
+    font-family: "Segoe UI", system-ui, sans-serif;
+    box-sizing: border-box;
+  }
+
+  .admin-sidebar.open {
+    left: 0;
+  }
+
+  /* TÍTULO "MENÚ TRABAJADOR" */
+  .sidebar-header {
+    font-size: 13px;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 25px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  /* LISTA DEL MENÚ */
+  .admin-menu-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Espacio entre botones */
+
+    flex: 1; /* Empuja el botón de cerrar sesión hacia abajo */
+    overflow-y: auto;
+
+    /* Ocultar barra de scroll */
+    scrollbar-width: none;
+  }
+  .admin-menu-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* ESTILO DE LOS BOTONES (ENLACES) */
+  .admin-menu-list li a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 15px;
+
+    /* Fondo transparente por defecto */
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    text-decoration: none;
+    color: #ffffff !important;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border-left: 0px solid transparent;
+  }
+
+  /* HOVER */
+  .admin-menu-list li a:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+  }
+
+  /* BOTÓN ACTIVO (ESTILO CLARO COMO EN LA IMAGEN) */
+  .admin-menu-list li a.active {
+    background-color: rgba(255, 255, 255, 0.25) !important; /* Más claro */
+    color: #ffffff !important;
+    font-weight: 700;
+    border-left: 4px solid #ffffff !important; /* Borde blanco izquierdo */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  /* CONTENEDOR BOTÓN CERRAR SESIÓN */
+  .sidebar-bottom {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    background: transparent;
+  }
+
+  /* BOTÓN CERRAR SESIÓN */
+  .logout-btn {
+    display: block;
+    width: 100%;
+    padding: 12px 0;
+
+    background-color: rgba(255, 255, 255, 0.15); /* Fondo semitransparente */
+    border: 1px solid rgba(255, 255, 255, 0.3);
+
+    border-radius: 6px;
+    text-decoration: none;
+    color: #ffffff !important;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    transition: all 0.3s ease;
+  }
+
+  .logout-btn:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+  }
+</style>
+
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleMenu()"></div>
+
+{% if request.resolver_match.url_name != 'trabajador_dashboard' %}
+
+<div id="adminSidebar" class="admin-sidebar">
+  <div class="sidebar-header">MENÚ TRABAJADOR</div>
+
+  <ul class="admin-menu-list">
+    <li>
+      <a
+        href="{% url 'trabajador_dashboard' %}"
+        class="{% if request.resolver_match.url_name == 'trabajador_dashboard' %}active{% endif %}"
+      >
+        <span>📍</span> Inicio
+      </a>
+    </li>
+    <li>
+      <a
+        href="{% url 'nuevo_servicio' %}"
+        class="{% if request.resolver_match.url_name == 'nuevo_servicio' %}active{% endif %}"
+      >
+        <span>🧺</span> Nuevo Servicio
+      </a>
+    </li>
+    <li>
+      <a
+        href="{% url 'estatus_maquina' %}"
+        class="{% if request.resolver_match.url_name == 'estatus_maquina' %}active{% endif %}"
+      >
+        <span>⚡</span> Estatus Maquinas
+      </a>
+    </li>
+    <li>
+      <a
+        href="{% url 'incidencias' %}"
+        class="{% if request.resolver_match.url_name == 'incidencias' %}active{% endif %}"
+      >
+        <span>⚠️</span> Incidencias
+      </a>
+    </li>
+    <li>
+      <a
+        href="{% url 'inventario' %}"
+        class="{% if request.resolver_match.url_name == 'inventario' %}active{% endif %}"
+      >
+        <span>📦</span> Inventario
+      </a>
+    </li>
+    <li>
+      <a
+        href="{% url 'validar_ticket' %}"
+        class="{% if request.resolver_match.url_name == 'validar_ticket' %}active{% endif %}"
+      >
+        <span>🎫</span> Validar tickets
+      </a>
+    </li>
+    <li>
+      <a
+        href="{% url 'servicios_proceso' %}"
+        class="{% if request.resolver_match.url_name == 'servicios_proceso' %}active{% endif %}"
+      >
+        <span>🔄</span> Servicios en proceso
+      </a>
+    </li>
+  </ul>
+
+  <div class="sidebar-bottom">
+    <a href="{% url 'logout' %}" class="logout-btn"> Cerrar Sesión </a>
+  </div>
+</div>
+
+{% endif %}
+
+<script>
+  function toggleMenu() {
+    const sidebar = document.getElementById("adminSidebar");
+    const overlay = document.getElementById("sidebarOverlay");
+    if (!sidebar) return;
+    sidebar.classList.toggle("open");
+    if (overlay) overlay.classList.toggle("open");
+  }
+</script>
+
+{% block trabajador_content %} {% endblock %} {% endblock %}
