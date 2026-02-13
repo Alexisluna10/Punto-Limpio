@@ -11,6 +11,8 @@ Detalle del Servicio {% endblock %} {% block extra_css %}
     <h2 class="servcosto-titulo-principal">Detalle del Servicio</h2>
     <p class="servcosto-subtitulo">
       Agrega las prendas que deseas lavar y revisa el costo total de tu servicio
+      <br>
+      <small style="color: #26a69a; font-weight: 600;">💡 Precio: $23.00 por kilogramo</small>
     </p>
   </div>
 
@@ -35,38 +37,25 @@ Detalle del Servicio {% endblock %} {% block extra_css %}
               <option
                 value="{{ prenda.id }}"
                 data-precio="{{ prenda.precio }}"
+                data-peso="{{ prenda.peso_kg }}"
                 data-nombre="{{ prenda.nombre }}"
               >
-                {{ prenda.nombre }} - ${{ prenda.precio }}
+                {{ prenda.nombre }} - {{ prenda.peso_kg }} KG - ${{ prenda.precio }}
               </option>
               {% endfor %}
             </select>
           </div>
 
-          <div class="campos-grupo">
-            <div class="campo-input-numero">
-              <label class="label-campo">Cantidad</label>
-              <input
-                type="number"
-                id="input-cantidad"
-                class="input-numero-estilo"
-                value="1"
-                min="1"
-                placeholder="1"
-              />
-            </div>
-
-            <div class="campo-input-numero">
-              <label class="label-campo">Peso (kg)</label>
-              <input
-                type="number"
-                id="input-peso"
-                class="input-numero-estilo"
-                step="0.1"
-                min="0"
-                placeholder="0.0"
-              />
-            </div>
+          <div class="campo-input-numero">
+            <label class="label-campo">Cantidad</label>
+            <input
+              type="number"
+              id="input-cantidad"
+              class="input-numero-estilo"
+              value="1"
+              min="1"
+              placeholder="1"
+            />
           </div>
 
           <button
@@ -96,13 +85,14 @@ Detalle del Servicio {% endblock %} {% block extra_css %}
                 <th>FOLIO</th>
                 <th>PRENDA</th>
                 <th>CANTIDAD</th>
-                <th>PESO</th>
+                <th>PESO (KG)</th>
                 <th>PRECIO</th>
+                <th>ACCIONES</th>
               </tr>
             </thead>
             <tbody id="tabla-prendas-body">
               <tr id="fila-vacia">
-                <td colspan="5" class="texto-vacio">
+                <td colspan="6" class="texto-vacio">
                   <div class="empty-table-state">
                     <span class="empty-table-icon">📦</span>
                     <p>No hay prendas agregadas</p>
@@ -154,6 +144,15 @@ Detalle del Servicio {% endblock %} {% block extra_css %}
             <span class="detalle-valor destacado" id="info-precio-servicio"
               >${{ servicio_precio }}</span
             >
+          </div>
+
+          <!-- Peso total -->
+          <div class="detalle-item">
+            <div class="detalle-label-wrapper">
+              <span class="detalle-icono">⚖️</span>
+              <span class="detalle-label">Peso total (KG)</span>
+            </div>
+            <span class="detalle-valor" id="info-peso-total">0.000 KG</span>
           </div>
 
           <!-- Costo por prendas -->
@@ -424,7 +423,7 @@ Detalle del Servicio {% endblock %} {% block extra_css %}
     color: #26a69a;
   }
 
-  .tabla-prendas-nueva tbody tr:hover {
+  .tabla-prendas-nueva tbody tr:not(:last-child):hover {
     background: #f8f9fa;
   }
 
@@ -455,6 +454,24 @@ Detalle del Servicio {% endblock %} {% block extra_css %}
   .empty-table-state small {
     color: #999;
     font-size: 13px;
+  }
+
+  .btn-eliminar-prenda {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+
+  .btn-eliminar-prenda:hover {
+    background: #c82333;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3);
   }
 
   /* ==========================================================================
@@ -790,7 +807,6 @@ Detalle del Servicio {% endblock %} {% block extra_css %}
     const option = select.options[select.selectedIndex];
     const cantidad =
       parseInt(document.getElementById("input-cantidad").value) || 1;
-    const peso = parseFloat(document.getElementById("input-peso").value) || 0;
 
     if (!option.value) {
       alert("⚠️ Por favor selecciona una prenda");
@@ -802,8 +818,9 @@ Detalle del Servicio {% endblock %} {% block extra_css %}
       prendaId: option.value,
       nombre: option.dataset.nombre,
       precio: parseFloat(option.dataset.precio),
+      peso: parseFloat(option.dataset.peso),
       cantidad: cantidad,
-      peso: peso,
+      pesoTotal: parseFloat(option.dataset.peso) * cantidad,
       subtotal: parseFloat(option.dataset.precio) * cantidad,
     };
 
@@ -814,7 +831,6 @@ Detalle del Servicio {% endblock %} {% block extra_css %}
     // Limpiar formulario
     select.selectedIndex = 0;
     document.getElementById("input-cantidad").value = 1;
-    document.getElementById("input-peso").value = "";
   }
 
   function quitarPrenda(id) {
@@ -830,7 +846,7 @@ Detalle del Servicio {% endblock %} {% block extra_css %}
     if (prendasAgregadas.length === 0) {
       tbody.innerHTML = `
                 <tr id="fila-vacia">
-                    <td colspan="5" class="texto-vacio">
+                    <td colspan="6" class="texto-vacio">
                         <div class="empty-table-state">
                             <span class="empty-table-icon">📦</span>
                             <p>No hay prendas agregadas</p>
@@ -848,13 +864,19 @@ Detalle del Servicio {% endblock %} {% block extra_css %}
     prendasAgregadas.forEach((prenda, index) => {
       const tr = document.createElement("tr");
       totalCantidad += prenda.cantidad;
-      totalPeso += prenda.peso;
+      totalPeso += prenda.pesoTotal;
+      
       tr.innerHTML = `
                 <td>${index + 1}</td>
                 <td>${prenda.nombre}</td>
                 <td>${prenda.cantidad}</td>
-                <td>${prenda.peso.toFixed(2)} KG</td>
+                <td>${prenda.pesoTotal.toFixed(3)} KG</td>
                 <td>$${prenda.subtotal.toFixed(2)}</td>
+                <td>
+                    <button class="btn-eliminar-prenda" onclick="quitarPrenda(${prenda.id})">
+                        🗑️ Eliminar
+                    </button>
+                </td>
             `;
       tbody.appendChild(tr);
     });
@@ -865,17 +887,20 @@ Detalle del Servicio {% endblock %} {% block extra_css %}
             <td></td>
             <td><strong>TOTALES</strong></td>
             <td><strong>${totalCantidad}</strong></td>
-            <td><strong>${totalPeso.toFixed(2)} KG</strong></td>
+            <td><strong>${totalPeso.toFixed(3)} KG</strong></td>
             <td><strong>$${prendasAgregadas.reduce((sum, p) => sum + p.subtotal, 0).toFixed(2)}</strong></td>
+            <td></td>
         `;
     tbody.appendChild(trTotal);
   }
 
   function calcularTotales() {
     let totalPrendas = 0;
+    let totalPeso = 0;
 
     prendasAgregadas.forEach((prenda) => {
       totalPrendas += prenda.subtotal;
+      totalPeso += prenda.pesoTotal;
     });
 
     const precioServicio = servicioSeleccionado
@@ -883,6 +908,8 @@ Detalle del Servicio {% endblock %} {% block extra_css %}
       : 0;
     const granTotal = totalPrendas + precioServicio;
 
+    document.getElementById("info-peso-total").textContent =
+      totalPeso.toFixed(3) + " KG";
     document.getElementById("info-costo-prendas").textContent =
       "$" + totalPrendas.toFixed(2);
     document.getElementById("info-total").textContent =
@@ -897,6 +924,7 @@ Detalle del Servicio {% endblock %} {% block extra_css %}
     }
 
     const total = parseFloat(document.getElementById("gran-total").textContent);
+    const pesoTotal = prendasAgregadas.reduce((sum, p) => sum + p.pesoTotal, 0);
 
     // Preparar datos de prendas
     const prendasData = prendasAgregadas.map((p) => ({
@@ -904,6 +932,7 @@ Detalle del Servicio {% endblock %} {% block extra_css %}
       nombre: p.nombre,
       cantidad: p.cantidad,
       peso: p.peso,
+      peso_total: p.pesoTotal,
       precio: p.precio,
       subtotal: p.subtotal,
     }));
@@ -917,6 +946,7 @@ Detalle del Servicio {% endblock %} {% block extra_css %}
       },
       body: JSON.stringify({
         prendas: prendasData,
+        peso_total: pesoTotal,
         total: total,
         tipo_servicio: "{{ tipo_servicio }}",
         metodo_pago: "efectivo",
@@ -925,7 +955,6 @@ Detalle del Servicio {% endblock %} {% block extra_css %}
       .then((response) => response.json())
       .then((data) => {
         if (data.success) {
-          // Actualizar el folio en el resumen con el folio real del servidor
           document.getElementById("info-folio").textContent = data.folio;
           alert("✅ Servicio registrado exitosamente\nFolio: " + data.folio);
           window.location.href = '{% url "terminado" %}';

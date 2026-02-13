@@ -81,6 +81,16 @@ class Prenda(models.Model):
 
     nombre = models.CharField(max_length=100, unique=True)
     precio = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    # ⭐ NUEVO CAMPO AGREGADO
+    peso_kg = models.DecimalField(
+        max_digits=6,
+        decimal_places=3,
+        default=0,
+        verbose_name='Peso (KG)',
+        help_text='Peso de la prenda en kilogramos'
+    )
+    
     tipo_limpieza = models.CharField(
         max_length=30,
         choices=TIPOS_LIMPIEZA,
@@ -96,7 +106,7 @@ class Prenda(models.Model):
         verbose_name_plural = 'Prendas'
 
     def __str__(self):
-        return f"{self.nombre} - ${self.precio}"
+        return f"{self.nombre} - {self.peso_kg} KG - ${self.precio}"
 
     def get_insumos_requeridos(self):
         """Retorna una lista de categorías de insumos que requiere esta prenda"""
@@ -113,7 +123,6 @@ class Prenda(models.Model):
             'detergente_especial_otros': ['otros'],
         }
         return mapeo.get(self.tipo_limpieza, ['detergente'])
-
 
 class Servicio(models.Model):
     """Modelo para almacenar los tipos de servicios y sus precios"""
