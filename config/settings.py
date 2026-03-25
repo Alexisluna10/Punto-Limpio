@@ -217,8 +217,9 @@ MESSAGE_TAGS = {
 # Configuración de correo (Usando config para leer del .env)
 EMAIL_BACKEND = 'apps.core.email_backend.CustomEmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
+EMAIL_PORT = 5465
+EMAIL_USE_SSL = True
+EMAIL_USE_TLS = False
 EMAIL_TIMEOUT = 5
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
