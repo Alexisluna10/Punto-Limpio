@@ -9,7 +9,7 @@ from django.conf import settings
 from xhtml2pdf import pisa
 from decimal import Decimal
 from django.urls import reverse
-
+import threading
 
 # Consumo de detergente por kg de ropa (en litros)
 DETERGENTE_POR_KG = Decimal('0.015')  # 15ml por kg
@@ -359,44 +359,47 @@ def render_pdf_ticket(request, pedido):
     return result.getvalue()
 
 
+def tarea_enviar_correo_fondo(folio, email_cliente, nombre_cliente, pdf_bytes):
+    """
+    Esta función corre en un hilo separado. 
+    Si se tarda o falla, no afecta la navegación del usuario.
+    """
+    try:
+        print(f"📧 [Fondo] Intentando enviar correo a {email_cliente}...")
+        email = EmailMessage(
+            subject=f'Tu Ticket de Servicio - {folio}',
+            body=f'Hola {nombre_cliente}, gracias por elegir Punto Limpio. Adjunto encontrarás tu ticket.',
+            from_email=settings.EMAIL_HOST_USER,
+            to=[email_cliente],
+        )
+        email.attach(f'ticket_{folio}.pdf', pdf_bytes, 'application/pdf')
+
+        # Intentamos el envío
+        email.send(fail_silently=False)
+        print(f"✅ [Fondo] Correo enviado exitosamente a {email_cliente}")
+
+    except Exception as e:
+        # Si falla (por el bloqueo de Render o timeout), solo lo anotamos en consola
+        print(f"⚠️ [Fondo] No se pudo enviar el correo: {e}")
+
+
 def enviar_ticket_email(pedido, pdf_bytes):
     """
-    Recibe el objeto pedido y los bytes del PDF ya generado, y lo envía por correo.
+    Recibe el objeto pedido y los bytes del PDF ya generado e inicia el envío en segundo plano.
     """
     if not pedido.cliente.email or not pdf_bytes:
         print("⚠️ No se puede enviar correo: Falta email del cliente o el PDF.")
         return False
 
-    try:
-        print(f"📧 Intentando enviar correo a {pedido.cliente.email}...")
-        email = EmailMessage(
-            subject=f'Tu Ticket de Servicio - {pedido.folio}',
-            body=f'Hola {pedido.cliente.first_name}, gracias por elegir Punto Limpio. Adjunto encontrarás tu ticket con los detalles de tu servicio.',
-            from_email=settings.EMAIL_HOST_USER,
-            to=[pedido.cliente.email],
-        )
-        # Adjuntar el PDF
-        email.attach(f'ticket_{pedido.folio}.pdf',
-                     pdf_bytes, 'application/pdf')
+    # Creamos el hilo con la tarea de fondo
+    hilo = threading.Thread(
+        target=tarea_enviar_correo_fondo,
+        args=(pedido.folio, pedido.cliente.email,
+              pedido.cliente.first_name, pdf_bytes)
+    )
 
-        # Enviar el correo. fail_silently=False lanzará la excepción si falla,
-        # lo que nos permite atraparla en los bloques except de abajo.
-        email.send(fail_silently=False)
+    # Lo arrancamos y el programa sigue de largo sin esperar
+    hilo.start()
 
-        print(f"✅ Correo enviado exitosamente a {pedido.cliente.email}")
-        return True
-
-    except socket.timeout:
-        # Esto atrapa específicamente si Gmail tarda más de los 5 segundos que definimos en settings
-        print(
-            f"⏳ Error de Timeout: El servidor de correo tardó demasiado en responder para {pedido.folio}.")
-        return False
-    except smtplib.SMTPException as e:
-        # Esto atrapa errores de autenticación (contraseña incorrecta, etc.)
-        print(f"❌ Error SMTP al enviar correo ({pedido.folio}): {e}")
-        return False
-    except Exception as e:
-        # Atrapa cualquier otro error imprevisto
-        print(
-            f"💥 Error general enviando correo al cliente {pedido.cliente.email}: {e}")
-        return False
+    # Retornamos True de inmediato para que el usuario vea su PDF rápido
+    return True
