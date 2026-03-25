@@ -116,17 +116,38 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Si estás en local y no has configurado DB en el .env, asegúrate de tener valores default
 # o configura tu .env con estos datos.
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME', default='punto_limpio_db'),
-        'USER': config('DB_USER', default='postgres'),
-        'PASSWORD': config('DB_PASSWORD', default='root'),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5432'),
-    }
-}
+# DATABASES = {
+#    'default': {
+#        'ENGINE': 'django.db.backends.postgresql',
+#        'NAME': config('DB_NAME', default='punto_limpio_db'),
+#        'USER': config('DB_USER', default='postgres'),
+#        'PASSWORD': config('DB_PASSWORD', default='root'),
+#        'HOST': config('DB_HOST', default='localhost'),
+#        'PORT': config('DB_PORT', default='5432'),
+#    }
+# }
 
+if config('DATABASE_URL', default=None):
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=config('DATABASE_URL'),
+            conn_max_age=600,
+            conn_health_checks=True,
+            ssl_require=True  # Obliga el uso de SSL en la nube para evitar cortes
+        )
+    }
+else:
+    # Si no existe DATABASE_URL (Significa que estamos en Local leyendo el .env)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('DB_NAME'),
+            'USER': config('DB_USER'),
+            'PASSWORD': config('DB_PASSWORD'),
+            'HOST': config('DB_HOST'),
+            'PORT': config('DB_PORT'),
+        }
+    }
 
 # sobreescribe la configuración local automáticamente.
 if config('DATABASE_URL', default=False):
