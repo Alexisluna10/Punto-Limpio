@@ -1,5 +1,3 @@
-from apps.usuarios.models import Usuario
-from django.contrib.auth.models import Group
 import os
 import django
 
@@ -9,6 +7,8 @@ django.setup()
 
 
 def crear_cuentas_base():
+    from apps.usuarios.models import Usuario
+    from django.contrib.auth.models import Group
     # --- 1. CREAR LOS GRUPOS DE AUTENTICACIÓN ---
     nombres_grupos = ['Administrador', 'Operador', 'Cliente']
     grupos = {}
