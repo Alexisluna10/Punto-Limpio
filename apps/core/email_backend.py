@@ -15,8 +15,8 @@ class CustomEmailBackend(EmailBackend):
 
         try:
             # Crear la conexión SMTP normalmente
-            self.connection = self.connection_class(self.host, self.port)
-
+            self.connection = self.connection_class(
+                self.host, self.port, timeout=self.timeout)
             if self.use_tls:
                 # Crear contexto SSL que no verifica certificados
                 context = ssl.create_default_context()
