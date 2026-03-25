@@ -1,0 +1,51 @@
+{% extends 'base_trabajador.html' %} {% block title_page %} Dashboard Operador
+{% endblock %} {% block trabajador_content %}
+
+<style>
+    button[onclick="toggleMenu()"] {
+        display: none !important;
+    }
+    
+    .sidebar-toggle, .menu-icon, .btn-menu {
+        display: none !important;
+    }
+</style>
+
+<div class="trab-dash-container">
+  <div class="trab-dash-header">
+    <h1 class="trab-dash-title">Hola, @{{ user.username }}</h1>
+    <h1></h1>
+  </div>
+
+  <div class="trab-dash-grid">
+    <a href="{% url 'servicios:nuevo_servicio' %}" class="trab-dash-card card-primary">
+      <span class="dash-card-text">Nuevo Servicio</span>
+    </a>
+
+    <a href="{% url 'servicios:validar_ticket' %}" class="trab-dash-card card-primary">
+      <span class="dash-card-text">Validar Ticket (Entrega)</span>
+    </a>
+
+    <a href="{% url 'inventario:estatus_maquina' %}" class="trab-dash-card card-action">
+      <span class="dash-card-text">Estatus Máquinas</span>
+    </a>
+
+    <a href="{% url 'servicios:servicios_proceso' %}" class="trab-dash-card card-action">
+      <span class="dash-card-text">Servicios en Proceso</span>
+    </a>
+
+    <a href="{% url 'inventario:inventario' %}" class="trab-dash-card card-info">
+      <span class="dash-card-text">Inventario</span>
+    </a>
+
+    <a href="{% url 'servicios:incidencias' %}" class="trab-dash-card card-info">
+      <span class="dash-card-text">Reportar Incidencia</span>
+    </a>
+  </div>
+
+  <div>
+    <a href="{% url 'usuarios:logout' %}" class="btn-logout-dash"> Cerrar Sesión </a>
+  </div>
+</div>
+
+{% endblock %}

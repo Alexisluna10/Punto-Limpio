@@ -1,0 +1,441 @@
+{% extends 'base_admin.html' %}
+{% load static %}
+
+{% block title %}Finanzas{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="finanzas-container">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Filtros de fecha -->
+    <div class="filtros-fecha">
+        <div class="filtros-rapidos">
+            <a href="?filtro=hoy&tab={{ tab_activa }}" class="{% if filtro == 'hoy' %}active{% endif %}">Hoy</a>
+            <a href="?filtro=semana&tab={{ tab_activa }}" class="{% if filtro == 'semana' %}active{% endif %}">Esta semana</a>
+            <a href="?filtro=mes&tab={{ tab_activa }}" class="{% if filtro == 'mes' %}active{% endif %}">Este mes</a>
+            <a href="#" id="btn-personalizado" class="{% if filtro == 'personalizado' %}active{% endif %}">Personalizado</a>
+        </div>
+        <form class="filtro-personalizado" id="form-personalizado" method="GET">
+            {% csrf_token %}
+            <input type="hidden" name="filtro" value="personalizado">
+            <input type="hidden" name="tab" value="{{ tab_activa }}">
+            <span>[Desde:</span>
+            <input type="date" name="fecha_desde" id="fecha_desde" value="{{ fecha_inicio|date:'Y-m-d' }}">
+            <span>] [Hasta:</span>
+            <input type="date" name="fecha_hasta" id="fecha_hasta" value="{{ fecha_fin|date:'Y-m-d' }}">
+            <span>]</span>
+            <button type="submit" class="btn-filtrar">[Filtrar]</button>
+        </form>
+    </div>
+
+    <div class="periodo-actual">
+        Mostrando datos del <strong>{{ fecha_inicio|date:'d/m/Y' }}</strong> al <strong>{{ fecha_fin|date:'d/m/Y' }}</strong>
+    </div>
+
+    <!-- Tabs de navegacion -->
+    <div class="tabs-navegacion">
+        <button class="tab-btn {% if tab_activa == 'resumen' %}active{% endif %}" onclick="cambiarTab('resumen')">Resumen</button>
+        <button class="tab-btn {% if tab_activa == 'ingresos' %}active{% endif %}" onclick="cambiarTab('ingresos')">Ingresos</button>
+        <button class="tab-btn {% if tab_activa == 'gastos' %}active{% endif %}" onclick="cambiarTab('gastos')">Gastos</button>
+        <button class="tab-btn btn-corte" onclick="window.location.href='{% url 'finanzas:admin_corte_caja' %}'">Corte de Caja</button>
+    </div>
+
+    <!-- ==================== TAB RESUMEN ==================== -->
+    <div id="tab-resumen" class="tab-content {% if tab_activa == 'resumen' %}active{% endif %}">
+        <!-- Tarjetas de resumen financiero -->
+        <div class="resumen-grid">
+            <div class="tarjeta-resumen">
+                <h3>INGRESOS DEL PERIODO</h3>
+                <div class="linea-resumen">
+                    <span>Ingresos por servicios:</span>
+                    <span class="valor-positivo">${{ ingresos_totales|floatformat:2 }}</span>
+                </div>
+                <div class="linea-resumen">
+                    <span>Efectivo:</span>
+                    <span>${{ pago_efectivo|floatformat:2 }} ({{ pct_efectivo }}%)</span>
+                </div>
+                <div class="linea-resumen">
+                    <span>Tarjeta:</span>
+                    <span>${{ pago_tarjeta|floatformat:2 }} ({{ pct_tarjeta }}%)</span>
+                </div>
+                <div class="linea-resumen">
+                    <span>Transferencia:</span>
+                    <span>${{ pago_transferencia|floatformat:2 }} ({{ pct_transferencia }}%)</span>
+                </div>
+            </div>
+
+            <div class="tarjeta-resumen">
+                <h3>GASTOS DEL PERIODO</h3>
+                <div class="linea-resumen">
+                    <span>Renta (proporcional):</span>
+                    <span class="valor-negativo">${{ gastos_renta_periodo|floatformat:2 }}</span>
+                </div>
+                <div class="linea-resumen">
+                    <span>Servicios (proporcional):</span>
+                    <span class="valor-negativo">${{ gastos_servicios_periodo|floatformat:2 }}</span>
+                </div>
+                <div class="linea-resumen">
+                    <span>Sueldos (proporcional):</span>
+                    <span class="valor-negativo">${{ gastos_sueldos_periodo|floatformat:2 }}</span>
+                </div>
+                <div class="linea-resumen total">
+                    <span>TOTAL GASTOS:</span>
+                    <span class="valor-negativo">${{ total_gastos_periodo|floatformat:2 }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta de utilidad neta -->
+        <div class="tarjeta-resumen" style="margin-bottom: 30px;">
+            <h3>BALANCE DEL PERIODO</h3>
+            <div class="linea-resumen">
+                <span>Ingresos totales:</span>
+                <span class="valor-positivo">${{ ingresos_totales|floatformat:2 }}</span>
+            </div>
+            <div class="linea-resumen">
+                <span>Gastos totales:</span>
+                <span class="valor-negativo">-${{ total_gastos_periodo|floatformat:2 }}</span>
+            </div>
+            <div class="linea-resumen total">
+                <span>UTILIDAD NETA:</span>
+                <span class="{% if utilidad_neta >= 0 %}valor-positivo{% else %}valor-negativo{% endif %}">
+                    ${{ utilidad_neta|floatformat:2 }}
+                </span>
+            </div>
+        </div>
+
+        <!-- Graficas de resumen -->
+        <div class="graficas-grid">
+            <div class="grafica-container">
+                <h3>GANANCIAS POR PRENDA</h3>
+                <div class="chart-wrapper-bar">
+                    <canvas id="chartResumenPrendas"></canvas>
+                </div>
+                <p class="grafica-descripcion">Ganancias generadas por cada tipo de prenda</p>
+            </div>
+            <div class="grafica-container">
+                <h3>GANANCIAS POR SERVICIO</h3>
+                <div class="chart-wrapper-bar">
+                    <canvas id="chartResumenServicios"></canvas>
+                </div>
+                <p class="grafica-descripcion">Ganancias generadas por cada servicio</p>
+            </div>
+            <div class="grafica-container">
+                <h3>GASTOS - SUELDOS</h3>
+                <div class="chart-wrapper-bar">
+                    <canvas id="chartGastosSueldos"></canvas>
+                </div>
+                <p class="grafica-descripcion">Distribucion de sueldos por empleado</p>
+            </div>
+            <div class="grafica-container">
+                <h3>GASTOS - SERVICIOS</h3>
+                <div class="chart-wrapper">
+                    <canvas id="chartGastosServicios"></canvas>
+                </div>
+                <p class="grafica-descripcion">Distribucion de gastos por servicios</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== TAB INGRESOS ==================== -->
+    <div id="tab-ingresos" class="tab-content {% if tab_activa == 'ingresos' %}active{% endif %}">
+        <!-- Tarjetas de desglose -->
+        <div class="resumen-grid">
+            <div class="tarjeta-resumen">
+                <h3>RESUMEN DE INGRESOS</h3>
+                <div class="linea-resumen">
+                    <span>Total de pedidos:</span>
+                    <span>{{ total_pedidos }}</span>
+                </div>
+                <div class="linea-resumen">
+                    <span>Ingresos totales:</span>
+                    <span class="valor-positivo">${{ ingresos_totales|floatformat:2 }}</span>
+                </div>
+                <div class="linea-resumen total">
+                    <span>PROMEDIO POR PEDIDO:</span>
+                    <span>${{ promedio_pedido|floatformat:2 }}</span>
+                </div>
+            </div>
+
+            <div class="tarjeta-resumen">
+                <h3>DESGLOSE POR METODO DE PAGO</h3>
+                <div class="linea-resumen">
+                    <span>Efectivo:</span>
+                    <span>${{ pago_efectivo|floatformat:2 }} ({{ pct_efectivo }}%)</span>
+                </div>
+                <div class="linea-resumen">
+                    <span>Tarjeta:</span>
+                    <span>${{ pago_tarjeta|floatformat:2 }} ({{ pct_tarjeta }}%)</span>
+                </div>
+                <div class="linea-resumen">
+                    <span>Transferencia:</span>
+                    <span>${{ pago_transferencia|floatformat:2 }} ({{ pct_transferencia }}%)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Graficas de ingresos -->
+        <div class="graficas-grid">
+            <div class="grafica-container">
+                <h3>TENDENCIAS DE PRENDAS</h3>
+                <div class="grafica-content">
+                    <div class="chart-wrapper">
+                        <canvas id="chartPrendas"></canvas>
+                    </div>
+                </div>
+                <p class="grafica-descripcion">Las prendas que mas se lavan y sus porcentajes</p>
+            </div>
+
+            <div class="grafica-container">
+                <h3>GANANCIAS POR PRENDA</h3>
+                <div class="chart-wrapper-bar">
+                    <canvas id="chartGananciasPrendas"></canvas>
+                </div>
+                <p class="grafica-descripcion">Ganancias generadas por cada tipo de prenda</p>
+            </div>
+
+            <div class="grafica-container">
+                <h3>SERVICIOS MAS USADOS</h3>
+                <div class="grafica-content">
+                    <div class="chart-wrapper">
+                        <canvas id="chartServicios"></canvas>
+                    </div>
+                </div>
+                <p class="grafica-descripcion">Los servicios que mas se solicitan</p>
+            </div>
+
+            <div class="grafica-container">
+                <h3>GANANCIAS POR SERVICIO</h3>
+                <div class="chart-wrapper-bar">
+                    <canvas id="chartGananciasServicios"></canvas>
+                </div>
+                <p class="grafica-descripcion">Ganancias generadas por cada servicio</p>
+            </div>
+
+            <div class="grafica-container">
+                <h3>METODOS DE PAGO</h3>
+                <div class="grafica-content">
+                    <div class="chart-wrapper">
+                        <canvas id="chartMetodosPago"></canvas>
+                    </div>
+                </div>
+                <p class="grafica-descripcion">Distribucion de ganancias por metodo de pago</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== TAB GASTOS ==================== -->
+    <div id="tab-gastos" class="tab-content {% if tab_activa == 'gastos' %}active{% endif %}">
+        
+        <!-- Seccion de Renta -->
+        <div class="gastos-section">
+            <h2>Renta del Local</h2>
+            <div class="gasto-card" style="max-width: 500px;">
+                <h4><span class="icon">R</span> Renta Mensual</h4>
+                <form method="POST" action="{% url 'finanzas:guardar_gasto_renta' %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="monto_renta">Monto mensual de renta:</label>
+                        <input type="number" step="0.01" id="monto_renta" name="monto_renta" 
+                               value="{{ renta_actual.monto_mensual|default:0 }}" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label for="mes_renta">Mes:</label>
+                        <select id="mes_renta" name="mes_renta">
+                            {% for m in meses %}
+                            <option value="{{ m.num }}" {% if m.num == mes_actual %}selected{% endif %}>{{ m.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="anio_renta">Anio:</label>
+                        <input type="number" id="anio_renta" name="anio_renta" value="{{ anio_actual }}">
+                    </div>
+                    <button type="submit" class="btn-guardar-gasto">Guardar Renta</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Seccion de Servicios -->
+        <div class="gastos-section">
+            <h2>Servicios (Agua, Luz, Gas, Internet)</h2>
+            <div class="gastos-grid">
+                {% for servicio in tipos_servicio %}
+                <div class="gasto-card">
+                    <h4><span class="icon">{{ servicio.icon }}</span> {{ servicio.nombre }}</h4>
+                    <form method="POST" action="{% url 'finanzas:guardar_gasto_servicio' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="tipo_servicio" value="{{ servicio.tipo }}">
+                        <div class="form-group">
+                            <label for="monto_{{ servicio.tipo }}">Monto mensual:</label>
+                            <input type="number" step="0.01" id="monto_{{ servicio.tipo }}" 
+                                   name="monto_servicio" value="{{ servicio.monto_actual|default:0 }}" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="mes_{{ servicio.tipo }}">Mes:</label>
+                            <select id="mes_{{ servicio.tipo }}" name="mes_servicio">
+                                {% for m in meses %}
+                                <option value="{{ m.num }}" {% if m.num == mes_actual %}selected{% endif %}>{{ m.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-guardar-gasto">Guardar</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Seccion de Sueldos -->
+        <div class="gastos-section">
+            <h2>Sueldos de Empleados (Pago Semanal)</h2>
+            <div class="gasto-card">
+                <table class="empleados-table">
+                    <thead>
+                        <tr>
+                            <th>Empleado</th>
+                            <th>Rol</th>
+                            <th>Salario Semanal</th>
+                            <th>Salario Diario</th>
+                            <th>Accion</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for empleado in empleados %}
+                        <tr>
+                            <td>{{ empleado.username }} ({{ empleado.first_name }} {{ empleado.last_name }})</td>
+                            <td>
+                                <span class="badge-rol badge-{{ empleado.rol }}">
+                                    {% if empleado.rol == 'admin' %}Administrador{% else %}Encargado{% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <form method="POST" action="{% url 'finanzas:guardar_salario_empleado' %}" style="display: flex; gap: 5px;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="empleado_id" value="{{ empleado.id }}">
+                                    <input type="number" step="0.01" name="salario_semanal" 
+                                           value="{{ empleado.salario_semanal|default:0 }}" style="width: 120px;">
+                                    <button type="submit" class="btn-guardar-gasto" style="width: auto; padding: 8px 15px; margin-top: 0;">Guardar</button>
+                                </form>
+                            </td>
+                            <td>${{ empleado.salario_diario|floatformat:2 }}</td>
+                            <td></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: #999;">No hay empleados registrados</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Resumen de Gastos -->
+        <div class="resumen-gastos">
+            <h3>RESUMEN DE GASTOS MENSUALES ({{ mes_nombre }} {{ anio_actual }})</h3>
+            <div class="resumen-gastos-grid">
+                <div class="resumen-gasto-item">
+                    <div class="label">Renta</div>
+                    <div class="valor">${{ total_renta_mes|floatformat:2 }}</div>
+                </div>
+                <div class="resumen-gasto-item">
+                    <div class="label">Servicios</div>
+                    <div class="valor">${{ total_servicios_mes|floatformat:2 }}</div>
+                </div>
+                <div class="resumen-gasto-item">
+                    <div class="label">Sueldos (4 semanas)</div>
+                    <div class="valor">${{ total_sueldos_mes|floatformat:2 }}</div>
+                </div>
+                <div class="resumen-gasto-item">
+                    <div class="label">TOTAL MENSUAL</div>
+                    <div class="valor">${{ total_gastos_mes|floatformat:2 }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Graficas de gastos -->
+        <div class="graficas-grid" style="margin-top: 30px;">
+            <div class="grafica-container">
+                <h3>DISTRIBUCION DE GASTOS MENSUALES</h3>
+                <div class="grafica-content">
+                    <div class="chart-wrapper">
+                        <canvas id="chartDistribucionGastos"></canvas>
+                    </div>
+                </div>
+                <p class="grafica-descripcion">Proporcion de gastos por categoria</p>
+            </div>
+            <div class="grafica-container">
+                <h3>SUELDOS POR EMPLEADO</h3>
+                <div class="chart-wrapper-bar">
+                    <canvas id="chartSueldosEmpleados"></canvas>
+                </div>
+                <p class="grafica-descripcion">Salarios semanales por empleado</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones rapidas -->
+    <div class="acciones-rapidas">
+        <h4>ACCIONES RAPIDAS</h4>
+        <div class="acciones-buttons">
+            <button onclick="exportarExcel()" style="cursor: pointer; opacity: 1; background: #28a745; color: white;">Exportar a Excel</button>
+            <button onclick="imprimirReporte()" style="cursor: pointer; opacity: 1; background: #007bff; color: white;">Imprimir Reporte</button>
+            <button onclick="abrirModalEmail()" style="cursor: pointer; opacity: 1; background: #ffc107; color: #333;">Enviar por Email</button>
+        </div>
+    </div>
+
+    <!-- Modal para enviar por email -->
+    <div id="modalEmail" class="modal-email" style="display: none;">
+        <div class="modal-email-content">
+            <span class="modal-email-close" onclick="cerrarModalEmail()">&times;</span>
+            <h3>Enviar Reporte por Correo</h3>
+            <p>Ingrese el correo electronico donde desea recibir el reporte financiero.</p>
+            <form id="formEnviarEmail" onsubmit="enviarPorEmail(event)">
+                <div class="form-group-email">
+                    <label for="emailDestino">Correo electronico:</label>
+                    <input type="email" id="emailDestino" name="emailDestino" required 
+                           placeholder="ejemplo@correo.com" class="input-email">
+                </div>
+                <div class="modal-email-buttons">
+                    <button type="button" onclick="cerrarModalEmail()" class="btn-cancelar">Cancelar</button>
+                    <button type="submit" class="btn-enviar">Enviar Reporte</button>
+                </div>
+            </form>
+            <div id="mensajeEmail" class="mensaje-email" style="display: none;"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{# Variables requeridas por finanzas.js (datos de Django) #}
+<script>
+    let tabActiva = '{{ tab_activa }}';
+
+    const prendasData     = {{ prendas_json|safe }};
+    const serviciosData   = {{ servicios_json|safe }};
+    const metodosPagoData = {{ metodos_pago_json|safe }};
+    const gastosData      = {{ gastos_json|safe }};
+    const sueldosData     = {{ sueldos_json|safe }};
+
+    const totalRentaMes     = {{ total_renta_mes|default:0 }};
+    const totalServiciosMes = {{ total_servicios_mes|default:0 }};
+    const totalSueldosMes   = {{ total_sueldos_mes|default:0 }};
+
+    const urlExportarExcel      = "{% url 'finanzas:exportar_finanzas_excel' %}";
+    const urlImprimirReporte    = "{% url 'finanzas:imprimir_reporte_finanzas' %}";
+    const urlEnviarReporteEmail = "{% url 'finanzas:enviar_reporte_email' %}";
+</script>
+<script src="{% static 'js/administrador/finanzas.js' %}"></script>
+{% endblock %}

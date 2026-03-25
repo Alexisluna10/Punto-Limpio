@@ -1,0 +1,86 @@
+{% extends 'base_trabajador.html' %}
+{% load static %}
+
+{% block title_page %}
+Entregar Pedido
+{% endblock %}
+
+{% block trabajador_content %}
+
+<div style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh;">
+
+    <div class="modern-card" style="width: 100%; max-width: 500px; padding: 40px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.08);">
+        
+        <div style="font-size: 50px; margin-bottom: 20px;">📦</div>
+        
+        <h2 style="color: #008CC9; margin-bottom: 10px;">Entrega de Ropa</h2>
+        <p style="color: #666; margin-bottom: 30px;">Escanea el código QR del ticket o ingresa el folio manual.</p>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+            <input type="text" id="inputFolio" class="input-modern" 
+                   placeholder="Ej. CK-2026-X99" 
+                   style="text-align: center; font-size: 1.2em; text-transform: uppercase; letter-spacing: 2px; padding: 15px;">
+        </div>
+
+        <button onclick="buscarFolio()" class="btn-submit" style="width: 100%; height: 50px; font-size: 1.1em; display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <span>🔍</span> BUSCAR FOLIO
+        </button>
+
+        <p id="mensajeError" style="color: #d32f2f; margin-top: 15px; display: none; font-weight: bold;"></p>
+    </div>
+
+</div>
+
+<div id="modalDetalleEntrega" class="modal-overlay">
+    <div class="modern-card" style="width: 90%; max-width: 500px; padding: 0; overflow: hidden; animation: slideIn 0.3s ease-out;">
+        
+        <div style="background: #008CC9; padding: 20px; text-align: center; color: white;">
+            <h3 style="margin: 0; font-size: 1.5em;" id="modalFolio">---</h3>
+            <span style="font-size: 0.9em; opacity: 0.9;" id="modalCliente">---</span>
+        </div>
+
+        <div style="padding: 25px;">
+            
+            <div id="alertaEstado" style="padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: bold; border: 1px solid transparent;">
+                Cargando estado...
+            </div>
+
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <span style="color: #666;">Total del Pedido:</span>
+                <strong style="font-size: 1.4em; color: #333;" id="modalTotal">$0.00</strong>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                <span style="color: #666;">Estado de Pago:</span>
+                <span id="modalPago" class="badge">--</span>
+            </div>
+
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 25px; max-height: 150px; overflow-y: auto;">
+                <strong style="display: block; margin-bottom: 5px; color: #555; font-size: 0.9em;">DETALLE DE PRENDAS:</strong>
+                <ul id="modalItems" style="margin: 0; padding-left: 20px; color: #666; font-size: 0.9em;">
+                </ul>
+            </div>
+
+            <div class="buttons-container">
+                <button class="btn-cancel" onclick="cerrarModal()">CERRAR</button>
+                <button id="btnEntregar" class="btn-submit" onclick="confirmarEntrega()">
+                    ACCIÓN
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.DjangoData = {
+        urls: {
+            buscarFolio: "{% url 'servicios:api_buscar_folio' %}",
+            entregarPedido: "{% url 'servicios:api_entregar_pedido' %}"
+        },
+        csrfToken: "{{ csrf_token }}"
+    };
+</script>
+
+<script src="{% static 'js/trabajador/validar_ticket.js' %}"></script>
+
+{% endblock %}

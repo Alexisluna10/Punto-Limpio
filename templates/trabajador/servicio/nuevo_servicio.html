@@ -1,0 +1,231 @@
+{% extends 'base_trabajador.html' %}
+{% load static %}
+
+{% block title_page %}
+Registrar Nuevo Servicio
+{% endblock %}
+
+{% block trabajador_content %}
+
+<div class="modern-card" id="formContainer">
+
+    <form id="servicioForm">
+        {% csrf_token %}
+
+        <div class="section-title">1. Datos del Cliente</div>
+
+        <div class="form-row">
+            <div class="form-group" style="flex: 3; position: relative;">
+                <label>Buscar Cliente *</label>
+                <div style="display: flex; gap: 10px;">
+                    <div style="position: relative; flex: 1;">
+                        <input type="text" class="input-modern" id="buscarCliente" placeholder="Nombre o Teléfono..." autocomplete="off">
+                        <input type="hidden" id="clienteId" name="cliente_id">
+                        <div id="resultadosClientes" class="autocomplete-results" style="display: none;"></div>
+                    </div>
+                    
+                    <button type="button" class="btn-small" onclick="abrirModalCliente()" style="background: #26A69A; border: none; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; min-width: 140px; font-weight: bold; border-radius: 4px;">
+                        + Nuevo Cliente
+                    </button>
+                </div>
+                <div class="helper-text">Obligatorio: Busca un cliente o registra uno nuevo.</div>
+            </div>
+        </div>
+
+        <div id="clienteSeleccionado" style="display: none; margin-bottom: 20px; padding: 15px; background: #e8f4fd; border-radius: 8px; border-left: 5px solid #008CC9;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <strong style="color: #008CC9; font-size: 1.1em;">Cliente:</strong> 
+                    <span id="clienteNombre" style="font-weight: 600; margin-left: 5px; color: #333;"></span>
+                </div>
+                <button type="button" onclick="limpiarCliente()" style="background: white; color: #dc3545; border: 1px solid #dc3545; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Quitar cliente">✕</button>
+            </div>
+        </div>
+
+        <div class="section-title">2. Servicio y Pesos</div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Tipo de Servicio</label>
+                <select class="input-modern" id="tipoServicioSelect" onchange="verificarServicio()">
+                    <option value="por_encargo">Lavado por Encargo (+$20)</option>
+                    <option value="autoservicio">Autoservicio (Sin cargo)</option>
+                    <option value="a_domicilio">A Domicilio (+$50)</option>
+                    <option value="tintoreria">Tintorería / Planchado (+$80)</option> 
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Kg Ropa Normal ($23.00)</label>
+                <input type="number" class="input-modern" id="pesoNormal" placeholder="0.0" step="0.1" oninput="calcularTotal()">
+            </div>
+
+            <div class="form-group">
+                <label>Kg Ropa Sucia ($30.00)</label>
+                <input type="number" class="input-modern" id="pesoSucio" placeholder="0.0" step="0.1" oninput="calcularTotal()">
+            </div>
+        </div>
+
+        <div class="section-title">3. Prendas Especiales (Opcional)</div>
+        
+        <div style="background: #fafafa; padding: 20px; border-radius: 8px; border: 1px solid #eee; margin-bottom: 25px;">
+            <div class="form-row" style="align-items: flex-end; gap: 10px;">
+                <div class="form-group" style="flex: 2;">
+                    <label>Seleccionar Prenda</label>
+                    <select id="select_prenda_especial" class="input-modern">
+                        <option value="">-- Seleccionar --</option>
+                        </select>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label>Cantidad</label>
+                    <input type="number" id="cantidad_prenda" class="input-modern" value="1" min="1">
+                </div>
+                <div class="form-group" style="flex: 0 0 auto;">
+                    <button type="button" onclick="agregarPrenda()" style="height: 48px; background: #008CC9; color: white; border: none; padding: 0 25px; border-radius: 4px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                        + Agregar
+                    </button>
+                </div>
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; background: white; border-radius: 4px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <thead>
+                    <tr style="background: #f0f0f0; color: #555; border-bottom: 2px solid #ddd;">
+                        <th style="padding: 12px; text-align: left;">Descripción</th>
+                        <th style="padding: 12px; text-align: center;">Cant.</th>
+                        <th style="padding: 12px; text-align: right;">Precio Unit.</th>
+                        <th style="padding: 12px; text-align: right;">Subtotal</th>
+                        <th style="padding: 12px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="lista_prendas_body">
+                    </tbody>
+            </table>
+            
+            <div id="mensajeSinPrendas" style="text-align: center; padding: 20px; color: #999; font-style: italic;">
+                No hay prendas especiales agregadas.
+            </div>
+        </div>
+
+        <div class="section-title">4. Pago y Entrega</div>
+
+        <div class="form-row">
+            <div class="form-group" id="divFechaEntrega">
+                <label>Fecha de Entrega *</label>
+                <input type="date" class="input-modern" id="fechaEntrega" name="fecha_entrega">
+            </div>
+            <div class="form-group">
+                <label>Método de Pago</label>
+                <select class="input-modern" id="metodoPago" name="metodo_pago">
+                    <option value="efectivo">Efectivo</option>
+                    <option value="tarjeta">Tarjeta</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Total a Pagar ($)</label>
+                <input type="number" class="input-modern" id="totalEstimado" name="total" placeholder="0.00" readonly style="background-color: #e8f4fd; color: #008CC9; font-weight: bold; border-color: #b3dbf9; font-size: 1.2em;">
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 25px;">
+            <label>Observaciones</label>
+            <textarea class="input-modern" id="observaciones" name="observaciones" rows="3"></textarea>
+        </div>
+
+        <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 30px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
+            <span id="resumenCostos">Esperando datos...</span>
+        </div>
+
+        <div class="buttons-container">
+            <a href="{% url 'servicios:trabajador_dashboard' %}" class="btn-base btn-cancel">Cancelar</a>
+            <button type="button" onclick="guardarOrden()" class="btn-base btn-submit">Generar Orden</button>
+        </div>
+
+    </form>
+</div>
+
+{{ prendas_json|json_script:"prendas-data" }}
+
+<div id="pantallaExito" class="modal-overlay">
+    <div style="text-align: center; background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+        <div class="success-icon-circle" style="margin: 0 auto 20px auto;">
+            <span class="success-checkmark">&#10004;</span>
+        </div>
+        <div class="success-title" style="margin-bottom: 20px;">
+            <h3 style="color: #333;">¡Orden Generada!</h3>
+            <span id="folioGenerado" style="font-size: 1.2em; color: #008CC9; font-weight: bold; display: block; margin-top: 10px;"></span>
+            <p style="font-size: 0.9em; color: #666; margin-top: 10px;">El ticket se ha abierto en otra pestaña.</p>
+        </div>
+        <a href="{% url 'servicios:trabajador_dashboard' %}" class="btn-base btn-submit" style="display: inline-block; text-decoration: none; min-width: 150px;">ACEPTAR</a>
+    </div>
+</div>
+
+<div id="modalNuevoCliente" class="modal-overlay" style="display: none; align-items: center; justify-content: center;">
+    <div class="modern-card" style="width: 100%; max-width: 450px; margin: 20px; animation: slideIn 0.3s ease-out;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+            <h3 style="margin: 0; color: #333;">Registrar Cliente Rápido</h3>
+            <span onclick="cerrarModalCliente()" style="cursor: pointer; font-size: 24px; color: #999;">&times;</span>
+        </div>
+        
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label>Nombre *</label>
+            <input type="text" id="newNombre" class="input-modern" placeholder="Ej. Juan">
+        </div>
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label>Apellido</label>
+            <input type="text" id="newApellido" class="input-modern" placeholder="Ej. Pérez">
+        </div>
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label>Teléfono *</label>
+            <input type="tel" id="newTelefono" class="input-modern" placeholder="10 dígitos" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+            <small style="color: #888; font-size: 0.85em;">El teléfono será su usuario y contraseña.</small>
+        </div>
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label>Correo (Opcional)</label>
+            <input type="email" id="newEmail" class="input-modern" placeholder="correo@ejemplo.com">
+        </div>
+
+        <p id="errorMsgCliente" style="color: #d32f2f; font-size: 13px; display: none; background: #ffebee; padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #ffcdd2;"></p>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="btn-base btn-cancel" onclick="cerrarModalCliente()">Cancelar</button>
+            <button type="button" class="btn-base btn-submit" onclick="guardarClienteRapido()" style="background-color: #26A69A;">Guardar Cliente</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .autocomplete-results { 
+        position: absolute; top: 100%; left: 0; right: 0; 
+        background: white; border: 1px solid #ddd; border-radius: 4px; 
+        max-height: 200px; overflow-y: auto; z-index: 1000; box-shadow: 0 5px 15px rgba(0,0,0,0.1); 
+    }
+    .autocomplete-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
+    .autocomplete-item:hover { background: #e3f2fd; }
+</style>
+
+<script>
+    // Inyectamos las URLs y Tokens que Django genera para que el JS externo pueda usarlos
+    let preciosServicios = {};
+    try {
+        preciosServicios = JSON.parse(document.getElementById('precios-data').textContent);
+    } catch (e) {
+        console.warn("Usando precios por defecto");
+        preciosServicios = { tintoreria: 80, a_domicilio: 50, por_encargo: 20 };
+    }
+
+    window.DjangoData = {
+        urls: {
+            buscarCliente: "{% url 'usuarios:buscar_clientes' %}",
+            nuevoServicio: "{% url 'servicios:nuevo_servicio' %}",
+            registrarCliente: "{% url 'usuarios:api_registrar_cliente_rapido' %}",
+            dashboard: "{% url 'servicios:trabajador_dashboard' %}"
+        },
+        csrfToken: "{{ csrf_token }}",
+        precios: preciosServicios // <--- Los pasamos al JS externo
+    };
+</script>
+
+<script src="{% static 'js/trabajador/nuevo_servicio.js' %}"></script>
+
+{% endblock %}

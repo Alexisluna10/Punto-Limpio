@@ -1,0 +1,149 @@
+{% extends 'base_trabajador.html' %}
+{% load static %}
+
+{% block title_page %}
+Reportar Incidencia
+{% endblock %}
+
+{% block trabajador_content %}
+
+<div class="trab-incidencias-layout">
+
+    <div class="trab-incidencia-form-container">
+        <div class="trab-incidencia-encabezado">
+            <h2 class="trab-incidencia-titulo">Reporte de Incidencias</h2>
+            <p class="trab-incidencia-subtitulo">Complete el formulario para notificar al administrador</p>
+        </div>
+
+        <form class="trab-incidencia-form" id="formIncidencia" onsubmit="enviarReporte(event)">
+            {% csrf_token %}
+            
+            <div class="form-row">
+                <div class="trab-incidencia-grupo" style="flex: 2;">
+                    <label class="trab-incidencia-label">Asunto del Problema</label>
+                    <input type="text" name="asunto" class="trab-incidencia-input" placeholder="Ej: Falla en lavadora 5" required>
+                </div>
+
+                <div class="trab-incidencia-grupo" style="flex: 1;">
+                    <label class="trab-incidencia-label">Prioridad</label>
+                    <select name="prioridad" class="trab-incidencia-select">
+                        <option value="baja">Baja</option>
+                        <option value="media" selected>Media</option>
+                        <option value="alta">Alta</option>
+                        <option value="urgente">Urgente</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="trab-incidencia-grupo">
+                <label class="trab-incidencia-label">Descripción Detallada</label>
+                <textarea name="descripcion" class="trab-incidencia-textarea"
+                    placeholder="Describa qué sucedió, qué máquina falló o qué insumo falta..." required></textarea>
+            </div>
+
+            <div class="trab-incidencia-grupo">
+                <label class="trab-incidencia-label">Adjuntar Evidencia (Opcional)</label>
+                <input type="file" name="evidencia" class="trab-incidencia-input" accept="image/*,.pdf">
+            </div>
+
+            <button type="submit" class="trab-incidencia-btn-enviar" id="btnEnviar">
+                Enviar Reporte
+            </button>
+        </form>
+    </div>
+
+    <div class="trab-incidencias-historial-container">
+        <div class="historial-header">
+            <h2>Mis Incidencias Reportadas</h2>
+            <p>Aquí puedes ver tus reportes y las respuestas del administrador</p>
+        </div>
+
+        <div class="historial-lista">
+            {% if mis_incidencias %}
+            {% for incidencia in mis_incidencias %}
+            <div class="incidencia-card {% if incidencia.estado == 'resuelto' %}incidencia-resuelta{% endif %}">
+                <div class="incidencia-header-card">
+                    <span class="incidencia-fecha">{{ incidencia.fecha_reporte|date:"d/m/Y H:i" }}</span>
+                    <span class="incidencia-prioridad prioridad-{{ incidencia.prioridad }}">
+                        {{ incidencia.get_prioridad_display }}
+                    </span>
+                    <span class="incidencia-estado estado-{{ incidencia.estado }}">
+                        {{ incidencia.get_estado_display }}
+                    </span>
+                </div>
+
+                <div class="incidencia-asunto">
+                    <strong>📋 Asunto:</strong>
+                    <p>{{ incidencia.asunto }}</p>
+                </div>
+
+                <div class="incidencia-descripcion">
+                    <strong>Tu reporte:</strong>
+                    <p>{{ incidencia.descripcion }}</p>
+                </div>
+
+                {% if incidencia.evidencia %}
+                <div class="incidencia-evidencia">
+                    <strong>📎 Evidencia adjunta:</strong>
+                    <a href="{{ incidencia.evidencia.url }}" target="_blank" class="ver-evidencia">
+                        Ver archivo
+                    </a>
+                </div>
+                {% endif %}
+
+                {% if incidencia.respuesta %}
+                <div class="incidencia-respuesta">
+                    <strong>✅ Respuesta del Administrador:</strong>
+                    <p>{{ incidencia.respuesta }}</p>
+                    {% if incidencia.fecha_resolucion %}
+                    <small class="fecha-respuesta">
+                        Respondido el {{ incidencia.fecha_resolucion|date:"d/m/Y H:i" }}
+                    </small>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="incidencia-sin-respuesta">
+                    <em>⏳ Esperando respuesta del administrador...</em>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="sin-incidencias">
+                <p>Aún no has reportado ninguna incidencia.</p>
+                <p>Utiliza el formulario de la izquierda para enviar tu primer reporte.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+<div id="modalIncidencia" class="modal-overlay">
+    <div class="modern-card" style="text-align: center; max-width: 500px; padding: 50px;">
+
+        <div class="success-icon-circle" style="margin: 0 auto 30px auto; background-color: #008CC9;">
+            <span class="success-checkmark">&#10003;</span>
+        </div>
+
+        <h3 class="success-title">¡REPORTE ENVIADO!</h3>
+
+        <p class="trab-modal-texto">
+            GRACIAS POR ENVIAR LA INCIDENCIA, EL ADMINISTRADOR TOMARÁ CARTAS SOBRE EL ASUNTO.
+        </p>
+
+        <button class="btn-accept" onclick="cerrarModal()">ENTENDIDO</button>
+    </div>
+</div>
+
+<script>
+    window.DjangoData = {
+        urls: {
+            incidencias: "{% url 'servicios:incidencias' %}"
+        }
+    };
+</script>
+
+<script src="{% static 'js/trabajador/incidencias.js' %}"></script>
+
+{% endblock %}

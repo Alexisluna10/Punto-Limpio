@@ -1,0 +1,227 @@
+{% extends 'base_trabajador.html' %}
+{% load static %}
+
+{% block title_page %}
+Gestionar Servicio {{ pedido.folio }}
+{% endblock %}
+
+{% block trabajador_content %}
+
+<div class="main-content">
+
+    {% if pedido %}
+    <div class="trab-edit-container">
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="color: #008CC9; margin: 0;">Folio: {{ pedido.folio }}</h2>
+            <div>
+                {% if pedido.estado == 'pendiente' %}
+                    <span class="badge badge-pendiente">PENDIENTE</span>
+                {% elif pedido.estado == 'en_proceso' %}
+                    <span class="badge badge-proceso">EN PROCESO</span>
+                {% elif pedido.estado == 'listo' %}
+                    <span class="badge badge-entregado">LISTO</span>
+                {% elif pedido.estado == 'entregado' %}
+                    <span class="badge badge-entregado">ENTREGADO</span>
+                {% endif %}
+
+                {% if pedido.estado_pago == 'pendiente' %}
+                    <span class="badge badge-pendiente" style="margin-left: 5px;">PAGO PENDIENTE</span>
+                {% else %}
+                    <span class="badge badge-pagado" style="margin-left: 5px;">PAGADO</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="trab-timeline">
+            <div class="trab-timeline-step completed">
+                <div class="trab-step-circle">1</div>
+                <small>Recibido</small>
+            </div>
+            <div class="trab-timeline-step {% if pedido.estado == 'en_proceso' or pedido.estado == 'listo' or pedido.estado == 'entregado' %}completed{% endif %} {% if pedido.estado == 'en_proceso' %}active{% endif %}">
+                <div class="trab-step-circle">2</div>
+                <small>En Proceso</small>
+            </div>
+            <div class="trab-timeline-step {% if pedido.estado == 'listo' or pedido.estado == 'entregado' %}completed{% endif %} {% if pedido.estado == 'listo' %}active{% endif %}">
+                <div class="trab-step-circle">3</div>
+                <small>Listo</small>
+            </div>
+            <div class="trab-timeline-step {% if pedido.estado == 'entregado' %}completed active{% endif %}">
+                <div class="trab-step-circle">4</div>
+                <small>Entrega</small>
+            </div>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+        <div class="trab-edit-row">
+            <span class="trab-edit-label">Cliente:</span>
+            <span class="trab-edit-value">
+                {% if pedido.cliente.first_name %}
+                    {{ pedido.cliente.first_name }} {{ pedido.cliente.last_name }}
+                {% else %}
+                    {{ pedido.cliente.username }}
+                {% endif %}
+            </span>
+        </div>
+        
+        <div class="trab-edit-row">
+            <span class="trab-edit-label">Tipo de Servicio:</span>
+            <span class="trab-edit-value">{{ pedido.tipo_servicio }}</span>
+        </div>
+
+        {% if pedido.kilos_totales > 0 %}
+        <div class="trab-edit-row">
+            <span class="trab-edit-label">Carga Total (Normal+Sucia):</span>
+            <span class="trab-edit-value" style="font-weight: bold; color: #008CC9;">{{ pedido.kilos_totales }} Kg</span>
+        </div>
+        {% endif %}
+
+        {% if pedido.cantidad_prendas > 0 %}
+        <div class="trab-edit-row">
+            <span class="trab-edit-label">Prendas Especiales:</span>
+            <span class="trab-edit-value">{{ pedido.cantidad_prendas }} pzas</span>
+        </div>
+        {% endif %}
+        
+        <div class="trab-edit-row">
+            <span class="trab-edit-label">Total a Pagar:</span>
+            <span class="trab-edit-value" style="font-size: 1.2em;">${{ pedido.total }}</span>
+        </div>
+        
+        {% if pedido.observaciones %}
+        <div class="trab-edit-row">
+            <span class="trab-edit-label">Observaciones:</span>
+            <span class="trab-edit-value">{{ pedido.observaciones|linebreaksbr }}</span>
+        </div>
+        {% endif %}
+
+        {% if pedido.estado != 'entregado' and pedido.estado != 'cancelado' %}
+        <form id="formActualizar" style="margin-top: 30px;">
+            {% csrf_token %}
+            
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label class="trab-incidencia-label">Actualizar Estatus:</label>
+                <select class="input-modern" id="selectEstado">
+                    <option value="">-- Sin cambio --</option>
+                    <option value="pendiente" {% if pedido.estado == 'pendiente' %}selected{% endif %}>
+                        Pendiente / Recibido
+                    </option>
+                    <option value="en_proceso" {% if pedido.estado == 'en_proceso' %}selected{% endif %}>
+                        En Proceso (Lavando/Secando)
+                    </option>
+                    <option value="listo" {% if pedido.estado == 'listo' %}selected{% endif %}>
+                        Listo para Entrega
+                    </option>
+                </select>
+                <small style="color: #888;">* La entrega final se realiza en "Validar Ticket".</small>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label class="trab-incidencia-label">Actualizar Estado de Pago:</label>
+                <select class="input-modern" id="selectPago">
+                    <option value="">-- Sin cambio --</option>
+                    <option value="pendiente" {% if pedido.estado_pago == 'pendiente' %}selected{% endif %}>
+                        Pago Pendiente
+                    </option>
+                    <option value="pagado" {% if pedido.estado_pago == 'pagado' %}selected{% endif %}>
+                        Pagado
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label class="trab-incidencia-label">Método de Pago:</label>
+                <select class="input-modern" id="selectMetodoPago">
+                    <option value="">-- Sin cambio --</option>
+                    <option value="efectivo" {% if pedido.metodo_pago == 'efectivo' %}selected{% endif %}>
+                        Efectivo
+                    </option>
+                    <option value="tarjeta" {% if pedido.metodo_pago == 'tarjeta' %}selected{% endif %}>
+                        Tarjeta
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label class="trab-incidencia-label">Notas Adicionales:</label>
+                <textarea class="input-modern" rows="3" id="notasAdicionales" placeholder="Comentarios internos o actualizaciones..."></textarea>
+            </div>
+
+            <div class="buttons-container">
+                <a href="{% url 'servicios:servicios_proceso' %}" class="btn-cancel" style="padding: 12px 25px; text-decoration: none;">Cancelar</a>
+                <button type="button" class="btn-submit" onclick="prepararGuardado()">GUARDAR CAMBIOS</button>
+            </div>
+        </form>
+        {% else %}
+        <div style="background: #f9f9f9; padding: 20px; text-align: center; border-radius: 8px; margin-top: 30px;">
+            <p style="color: #666; font-style: italic;">Este servicio ya fue finalizado o entregado.</p>
+            <a href="{% url 'servicios:historial_servicios' %}" class="btn-base" style="color: #008CC9;">Ver Historial</a>
+        </div>
+        {% endif %}
+
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 40px;">
+        <p>No se encontró el servicio solicitado.</p>
+        <a href="{% url 'servicios:servicios_proceso' %}" class="btn-submit">Volver</a>
+    </div>
+    {% endif %}
+
+</div>
+
+<div id="modalSeleccionMaquina" class="modal-overlay">
+    <div class="modern-card" style="max-width: 450px; padding: 25px; width: 90%;">
+        <h3 style="color: #008CC9; text-align: center; margin-bottom: 20px;">Asignar Máquina</h3>
+        <p style="text-align: center; color: #666; font-size: 14px; margin-bottom: 20px;">
+            El servicio pasará a <strong>"En Proceso"</strong>.
+        </p>
+
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label class="trab-incidencia-label">Máquina Disponible:</label>
+            <select class="input-modern" id="maquinaSeleccionada">
+                <option value="">-- Selecciona una --</option>
+                <optgroup label="Lavadoras">
+                    {% for m in lavadoras %}
+                    <option value="{{ m.id }}">{{ m.nombre }} (Lavadora)</option>
+                    {% empty %}
+                    <option disabled>No hay lavadoras disponibles</option>
+                    {% endfor %}
+                </optgroup>
+                <optgroup label="Secadoras">
+                    {% for m in secadoras %}
+                    <option value="{{ m.id }}">{{ m.nombre }} (Secadora)</option>
+                    {% empty %}
+                    <option disabled>No hay secadoras disponibles</option>
+                    {% endfor %}
+                </optgroup>
+            </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label class="trab-incidencia-label">Tiempo (min):</label>
+            <input type="number" id="tiempoCiclo" class="input-modern" value="30" min="10" max="120">
+        </div>
+
+        <div class="buttons-container" style="justify-content: center;">
+            <button type="button" class="btn-cancel" onclick="cerrarModalMaquina()">Cancelar</button>
+            <button type="button" class="btn-submit" onclick="confirmarYGuardar()">INICIAR</button>
+        </div>
+    </div>
+</div>
+
+{% if pedido %}
+<script>
+    window.DjangoData = {
+        urls: {
+            // Generamos la URL exacta para este pedido
+            guardarDetalle: "{% url 'servicios:detalle_servicio' pedido.id %}",
+            serviciosProceso: "{% url 'servicios:servicios_proceso' %}"
+        },
+        csrfToken: "{{ csrf_token }}"
+    };
+</script>
+<script src="{% static 'js/trabajador/detalle_servicio.js' %}"></script>
+{% endif %}
+
+{% endblock %}

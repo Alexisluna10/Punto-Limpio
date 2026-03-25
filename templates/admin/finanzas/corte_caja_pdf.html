@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: letter;
+            margin: 1cm;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #333;
+            padding-bottom: 15px;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 22pt;
+            color: #333;
+        }
+        
+        .header .fecha {
+            font-size: 14pt;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .balance-section {
+            background: #f0f4f8;
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .balance-title {
+            font-weight: bold;
+            font-size: 12pt;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .balance-grid {
+            display: table;
+            width: 100%;
+        }
+        
+        .balance-item {
+            display: table-cell;
+            width: 33.33%;
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border: 1px solid #ddd;
+        }
+        
+        .balance-label {
+            font-size: 9pt;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .balance-value {
+            font-size: 14pt;
+            font-weight: bold;
+        }
+        
+        .balance-value.green { color: #28a745; }
+        .balance-value.red { color: #dc3545; }
+        .balance-value.blue { color: #007bff; }
+        
+        .section {
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #555;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .section-title.gastos {
+            border-bottom-color: #dc3545;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+        
+        .data-table td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .data-table td:first-child {
+            width: 60%;
+            color: #666;
+        }
+        
+        .data-table td:last-child {
+            width: 40%;
+            text-align: right;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .data-table tr.total td {
+            border-top: 2px solid #333;
+            border-bottom: 2px solid #333;
+            padding: 12px 8px;
+            font-size: 12pt;
+            font-weight: bold;
+        }
+        
+        .data-table tr.total td:last-child.green {
+            color: #28a745;
+        }
+        
+        .data-table tr.total td:last-child.red {
+            color: #dc3545;
+        }
+        
+        .grid-container {
+            display: table;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        
+        .grid-item {
+            display: table-cell;
+            width: 50%;
+            padding: 0 10px;
+            vertical-align: top;
+        }
+        
+        .diferencia-box {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 15px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .diferencia-box .label {
+            font-size: 12pt;
+            color: #856404;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        
+        .diferencia-box .valor {
+            font-size: 20pt;
+            font-weight: bold;
+        }
+        
+        .diferencia-positiva {
+            color: #28a745;
+        }
+        
+        .diferencia-negativa {
+            color: #dc3545;
+        }
+        
+        .diferencia-cero {
+            color: #6c757d;
+        }
+        
+        .justificacion-box {
+            border: 1px solid #ddd;
+            padding: 12px;
+            margin: 15px 0;
+            background: #f8f9fa;
+        }
+        
+        .justificacion-box .label {
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 8px;
+        }
+        
+        .justificacion-box .texto {
+            color: #333;
+            line-height: 1.5;
+        }
+        
+        .info-footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 2px solid #ddd;
+        }
+        
+        .info-footer .row {
+            margin: 6px 0;
+            color: #666;
+            font-size: 10pt;
+        }
+        
+        .info-footer .row strong {
+            color: #333;
+        }
+        
+        .firma-section {
+            display: table;
+            width: 100%;
+            margin-top: 40px;
+        }
+        
+        .firma-box {
+            display: table-cell;
+            width: 45%;
+            text-align: center;
+        }
+        
+        .firma-linea {
+            border-top: 1px solid #333;
+            margin: 0 20px;
+            padding-top: 5px;
+            font-size: 10pt;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>PUNTO LIMPIO</h1>
+        <div class="fecha">CORTE DE CAJA - {{ fecha }}</div>
+    </div>
+    
+    <!-- Balance del Dia -->
+    <div class="balance-section">
+        <div class="balance-title">BALANCE DEL DIA</div>
+        <div class="balance-grid">
+            <div class="balance-item">
+                <div class="balance-label">INGRESOS DEL DIA</div>
+                <div class="balance-value green">${{ total_ventas|floatformat:2 }}</div>
+            </div>
+            <div class="balance-item">
+                <div class="balance-label">GASTOS DEL DIA</div>
+                <div class="balance-value red">${{ total_gastos_dia|floatformat:2 }}</div>
+            </div>
+            <div class="balance-item">
+                <div class="balance-label">UTILIDAD NETA</div>
+                <div class="balance-value {% if utilidad_dia >= 0 %}green{% else %}red{% endif %}">${{ utilidad_dia|floatformat:2 }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Ventas y Gastos -->
+    <div class="grid-container">
+        <div class="grid-item">
+            <div class="section">
+                <div class="section-title">VENTAS REGISTRADAS EN SISTEMA</div>
+                <table class="data-table">
+                    <tr>
+                        <td>Efectivo:</td>
+                        <td>${{ ventas_efectivo|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <td>Tarjeta:</td>
+                        <td>${{ ventas_tarjeta|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <td>Transferencia:</td>
+                        <td>${{ ventas_transferencia|floatformat:2 }}</td>
+                    </tr>
+                    <tr class="total">
+                        <td>TOTAL VENTAS:</td>
+                        <td class="green">${{ total_ventas|floatformat:2 }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
+        <div class="grid-item">
+            <div class="section">
+                <div class="section-title gastos">GASTOS DEL DIA (PROPORCIONAL)</div>
+                <table class="data-table">
+                    <tr>
+                        <td>Renta (diario):</td>
+                        <td>${{ gasto_renta_diario|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <td>Agua (diario):</td>
+                        <td>${{ gasto_agua_diario|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <td>Luz (diario):</td>
+                        <td>${{ gasto_luz_diario|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <td>Gas (diario):</td>
+                        <td>${{ gasto_gas_diario|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <td>Internet (diario):</td>
+                        <td>${{ gasto_internet_diario|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <td>Sueldos (diario):</td>
+                        <td>${{ gasto_sueldos_diario|floatformat:2 }}</td>
+                    </tr>
+                    <tr class="total">
+                        <td>TOTAL GASTOS:</td>
+                        <td class="red">${{ total_gastos_dia|floatformat:2 }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Dinero Fisico -->
+    <div class="section">
+        <div class="section-title">DINERO FISICO REPORTADO</div>
+        <table class="data-table">
+            <tr>
+                <td>Efectivo contado en caja:</td>
+                <td>${{ efectivo_contado|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <td>Terminal (Tarjeta):</td>
+                <td>${{ tarjeta_terminal|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <td>Banco (Transferencia):</td>
+                <td>${{ transferencia_banco|floatformat:2 }}</td>
+            </tr>
+            <tr class="total">
+                <td>TOTAL FISICO:</td>
+                <td>${{ total_fisico|floatformat:2 }}</td>
+            </tr>
+        </table>
+    </div>
+    
+    <!-- Verificacion -->
+    <div class="diferencia-box">
+        <div class="label">VERIFICACION DE CAJA - DIFERENCIA</div>
+        <div class="valor {% if diferencia > 0 %}diferencia-positiva{% elif diferencia < 0 %}diferencia-negativa{% else %}diferencia-cero{% endif %}">
+            {% if diferencia >= 0 %}+{% endif %}${{ diferencia|floatformat:2 }}
+        </div>
+    </div>
+    
+    {% if justificacion %}
+    <div class="justificacion-box">
+        <div class="label">JUSTIFICACION DE DIFERENCIA:</div>
+        <div class="texto">{{ justificacion }}</div>
+    </div>
+    {% endif %}
+    
+    <!-- Footer -->
+    <div class="info-footer">
+        <div class="firma-section">
+            <div class="firma-box">
+                <div class="firma-linea">Responsable del corte</div>
+            </div>
+            <div class="firma-box">
+                <div class="firma-linea">Supervisor / Administrador</div>
+            </div>
+        </div>
+        
+        <div class="row" style="margin-top: 30px;">
+            <strong>RESPONSABLE:</strong> {{ responsable }}
+        </div>
+        <div class="row">
+            <strong>FECHA/HORA DE REGISTRO:</strong> {{ fecha_hora }}
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,97 @@
+{% extends 'base_admin.html' %}
+{% load static %}
+
+{% block title %}Historial de Movimientos{% endblock %}
+
+{% block page_title %}Historial{% endblock %}
+
+{% block content %}
+
+<!-- Tabs de navegacion -->
+<div class="nav-tabs-custom">
+    <a href="{% url 'finanzas:historial_movimientos' %}" class="tab-btn active">Movimientos</a>
+    <a href="{% url 'finanzas:historial_ventas' %}" class="tab-btn">Ventas</a>
+</div>
+
+<h2 class="page-subtitle">Historial de Movimientos</h2>
+
+<!-- Seccion de filtros -->
+<div class="filters-section">
+    <h3>Filtros:</h3>
+    <div class="filters-row">
+        <div class="filter-group">
+            <label>Usuarios:</label>
+            <select id="filterUsuario" onchange="filtrarMovimientos()">
+                <option value="">Todos</option>
+                {% for operador in operadores %}
+                <option value="{{ operador.username }}">{{ operador.username }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Accion:</label>
+            <select id="filterAccion" onchange="filtrarMovimientos()">
+                <option value="">Todas</option>
+                <option value="registro_servicio">Registro servicio</option>
+                <option value="entrego">Entrego</option>
+                <option value="cambio_precio">Cambio precio</option>
+                <option value="creo_ticket">Creo ticket</option>
+                <option value="elimino">Elimino</option>
+                <option value="actualizo">Actualizo</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Fecha:</label>
+            <select id="filterFecha" onchange="filtrarMovimientos()">
+                <option value="">Todas</option>
+                <option value="24h">Ultimas 24h</option>
+                <option value="7d">Ultimos 7 dias</option>
+                <option value="30d">Ultimos 30 dias</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de movimientos -->
+<table class="table-movimientos">
+    <thead>
+        <tr>
+            <th>Fecha/Hora</th>
+            <th>Usuario</th>
+            <th>Accion</th>
+            <th>Detalles</th>
+        </tr>
+    </thead>
+    <tbody id="tablaMovimientos">
+        {% for movimiento in movimientos %}
+        <tr data-usuario="{{ movimiento.operador.username }}" data-accion="{{ movimiento.accion }}" data-fecha="{{ movimiento.fecha|date:'Y-m-d' }}">
+            <td>{{ movimiento.fecha|date:"d/m H:i" }}</td>
+            <td>{{ movimiento.operador.username }}</td>
+            <td>{{ movimiento.get_accion_display }}</td>
+            <td>{{ movimiento.detalles }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4" style="text-align: center; color: #666;">No hay movimientos registrados</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="registros-info">
+    Mostrando <span id="registrosMostrados">{{ movimientos|length }}</span> de <span id="registrosTotal">{{ total_movimientos }}</span> registros
+</div>
+
+<button class="btn-exportar" onclick="exportarExcel()">
+    Exportar a Excel
+</button>
+
+{% endblock %}
+
+{% block extra_js %}
+{# Variable requerida por historial_movimientos.js #}
+<script>
+    const urlExportarHistorialMovimientos = "{% url 'finanzas:exportar_historial_movimientos_excel' %}";
+</script>
+<script src="{% static 'js/administrador/historial_movimientos.js' %}"></script>
+{% endblock %}

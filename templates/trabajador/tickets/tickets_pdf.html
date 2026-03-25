@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page { size: 80mm 297mm; margin: 5mm; }
+        body { font-family: sans-serif; font-size: 11px; color: #000; margin: 0; padding: 0; }
+        .center { text-align: center; }
+        .bold { font-weight: bold; }
+        .header { border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
+        .titulo { font-size: 16px; font-weight: 900; margin: 0; }
+        .info { margin-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+        th { text-align: left; border-bottom: 1px solid #000; font-size: 10px; padding-bottom: 2px;}
+        td { padding: 4px 0; vertical-align: top; }
+        .totales { border-top: 1px solid #000; margin-top: 10px; padding-top: 5px; text-align: right; }
+        .total-final { font-size: 14px; font-weight: bold; }
+        .qr-box { text-align: center; margin-top: 20px; }
+        .qr-img { width: 90px; height: 90px; }
+    </style>
+</head>
+<body>
+    <div class="header center">
+        <p class="titulo">PUNTO LIMPIO</p>
+        <p>Lavandería Profesional</p>
+        <p>Av. Principal #123, Tizayuca, Hgo.</p>
+    </div>
+
+    <div class="info">
+        <p><span class="bold">Folio:</span> {{ pedido.folio }}</p>
+        <p><span class="bold">Fecha:</span> {{ pedido.fecha_recepcion|date:"d/m/Y h:i A" }}</p>
+        <p><span class="bold">Cliente:</span> {{ pedido.cliente.first_name }} {{ pedido.cliente.last_name }}</p>
+        <p><span class="bold">Entrega:</span> {{ pedido.fecha_entrega_estimada|date:"d/m/Y"|default:"Express" }}</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th width="15%">Cant.</th>
+                <th width="60%">Descripción</th>
+                <th width="25%" align="right">Importe</th>
+            </tr>
+        </thead>
+        <tbody>
+            {# 1. CARGA BASE (KILOS) #}
+            {% if pedido.peso > 0 %}
+            <tr>
+                <td>{{ pedido.peso|floatformat:-2 }}</td> <td>Carga Ropa (Kg)</td>
+                
+                <td align="right">${{ pedido.subtotal_peso }}</td> 
+            </tr>
+            {% endif %}
+
+            {# 2. DETALLES / PRENDAS ESPECIALES #}
+            {% for detalle in pedido.detalles.all %}
+            <tr>
+                <td>{{ detalle.cantidad }}</td>
+                <td>{{ detalle.prenda.nombre }}</td>
+                <td align="right">${{ detalle.subtotal }}</td>
+            </tr>
+            {% endfor %}
+
+            {# 3. EXTRAS DE SERVICIO #}
+            {% if pedido.costo_servicio > 0 %}
+            <tr>
+                <td>1</td>
+                <td>{{ pedido.tipo_servicio }}</td> 
+                <td align="right">${{ pedido.costo_servicio }}</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+    <div class="totales">
+        <p>Pago: {{ pedido.metodo_pago|upper }}</p>
+        <p class="total-final">TOTAL: ${{ pedido.total }}</p>
+    </div>
+
+    {% if pedido.observaciones %}
+    <div style="margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 5px;">
+        <span class="bold">Nota:</span> {{ pedido.observaciones }}
+    </div>
+    {% endif %}
+
+    <div class="qr-box">
+        {% if qr_path %}
+        <img src="{{ qr_path }}" class="qr-img">
+        {% endif %}
+        <p style="font-size: 9px;">Escanea para ver estatus</p>
+    </div>
+
+    <div class="center" style="margin-top: 15px; font-size: 9px;">
+        <p>¡Gracias por tu confianza!</p>
+    </div>
+</body>
+</html>

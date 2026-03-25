@@ -1,0 +1,79 @@
+{% extends 'base_gestion.html' %}
+{% load static %}
+
+{% block content %}
+
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleMenu()"></div>
+
+<div id="clienteSidebar" class="sidebar">
+
+    <div class="sidebar-header">
+        <div class="sidebar-user">
+            <div class="sidebar-avatar">
+                {{ user.username|slice:":1"|upper }}
+            </div>
+            
+            <div class="sidebar-user-info">
+                <span class="sidebar-nombre-limitado" title="{{ user.username }}">
+                    {% if user.first_name %}
+                        {{ user.first_name }} {{ user.last_name }}
+                    {% else %}
+                        {{ user.username }}
+                    {% endif %}
+                </span>
+                <span class="sidebar-role">Cliente</span>
+            </div>
+        </div>
+        <button class="sidebar-close" onclick="toggleMenu()">&times;</button>
+    </div>
+
+    <div class="sidebar-nav">
+        <a href="{% url 'servicios:cliente_dashboard' %}"
+        class="sidebar-link {% if request.resolver_match.url_name == 'cliente_dashboard' %}active{% endif %}">
+            Inicio
+        </a>
+        <a href="{% url 'servicios:solicitar_servicio' %}"
+        class="sidebar-link {% if request.resolver_match.url_name == 'solicitar_servicio' %}active{% endif %}">
+            Solicitar Servicio
+        </a>
+        <a href="{% url 'servicios:rastrear_servicio' %}"
+        class="sidebar-link {% if request.resolver_match.url_name == 'rastrear_servicio' %}active{% endif %}">
+            Rastrear Servicio
+        </a>
+        <a href="{% url 'usuarios:perfil' %}"
+        class="sidebar-link {% if request.resolver_match.url_name == 'perfil' %}active{% endif %}">
+            Mi Perfil
+        </a>
+        <a href="{% url 'servicios:dudas_quejas' %}"
+        class="sidebar-link {% if request.resolver_match.url_name == 'dudas_quejas' %}active{% endif %}">
+            Dudas y Quejas
+        </a>
+    </div>
+
+    <div class="sidebar-footer-client">
+        <a href="{% url 'usuarios:logout' %}" class="sidebar-logout">
+            Cerrar Sesión
+        </a>
+    </div>
+</div>
+
+<script>
+    // Función para alternar el menú lateral
+    function toggleMenu() {
+        const sidebar = document.getElementById('clienteSidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+
+        if (sidebar.classList.contains('open')) {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('open');
+        } else {
+            sidebar.classList.add('open');
+            overlay.classList.add('open');
+        }
+    }
+</script>
+
+{% block cliente_content %}
+{% endblock %}
+
+{% endblock %}

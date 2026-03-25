@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/usuarios/auth_card.css' %}">
+
+<div class="auth-card wide-card">
+    <div class="auth-icon"><i class="fas fa-user-plus"></i></div>
+    <h2 class="auth-title">Crear Cuenta</h2>
+    <p class="auth-subtitle">Únete a Punto Limpio</p>
+
+    {% if messages %}
+    <div class="alert-container">
+        {% for message in messages %}
+        <div class="alert-message {% if message.tags == 'error' %}alert-error{% else %}alert-success{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form action="{% url 'usuarios:signup' %}" method="POST" class="auth-form">
+        {% csrf_token %}
+
+        <div class="form-grid">
+            <div class="form-col">
+                <div class="input-group">
+                    <label>Nombre *</label>
+                    <input type="text" name="first_name" class="auth-input" placeholder="Ej. Juan" required>
+                </div>
+                
+                <div class="input-group">
+                    <label>Teléfono (Será tu Usuario) *</label>
+                    <input type="tel" name="telefono" class="auth-input" placeholder="10 dígitos" maxlength="10" required>
+                    <small style="color: #666; font-size: 0.8em;">Este número será tu acceso.</small>
+                </div>
+
+                <div class="input-group">
+                    <label>Contraseña *</label>
+                    <input type="password" name="password" class="auth-input" placeholder="Crea una contraseña" required>
+                </div>
+            </div>
+
+            <div class="form-col">
+                <div class="input-group">
+                    <label>Apellido *</label>
+                    <input type="text" name="last_name" class="auth-input" placeholder="Ej. Pérez" required>
+                </div>
+
+                <div class="input-group">
+                    <label>Correo Electrónico *</label>
+                    <input type="email" name="email" class="auth-input" placeholder="correo@ejemplo.com" required>
+                </div>
+
+                <div class="input-group">
+                    <label>Confirmar Contraseña *</label>
+                    <input type="password" name="confirm_password" class="auth-input" placeholder="Repite la contraseña" required>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-auth-primary" style="margin-top: 20px;">
+            REGISTRARSE
+        </button>
+
+    </form>
+
+    <div class="auth-footer">
+        ¿Ya tienes cuenta? <a href="{% url 'usuarios:signin' %}">Inicia sesión</a>
+    </div>
+
+</div>
+
+<style>
+    .alert-container { margin-bottom: 20px; }
+    .alert-message { padding: 10px; border-radius: 5px; font-size: 14px; text-align: center; margin-bottom: 5px; }
+    .alert-error { background-color: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
+    .alert-success { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+</style>
+
+<script>
+    // Validación rápida de solo números para el teléfono
+    document.querySelector('input[name="telefono"]').addEventListener('input', function(e) {
+        this.value = this.value.replace(/[^0-9]/g, '');
+    });
+</script>
+
+{% endblock %}

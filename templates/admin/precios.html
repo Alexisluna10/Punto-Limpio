@@ -1,0 +1,162 @@
+{% extends 'base_admin.html' %}
+{% load static %}
+
+{% block title_page %}
+Precios
+{% endblock %}
+
+{% block content %}
+<div class="precios-container">
+
+    <div class="search-section">
+        <label>Buscar prenda o servicio</label>
+        <div class="search-wrapper">
+            <input type="text" id="searchInput" placeholder="Escribe para filtrar..." onkeyup="buscarItem()">
+        </div>
+    </div>
+
+    <!-- Seccion Prendas -->
+    <div class="precio-section">
+        <div class="section-header">
+            <h3>Prendas</h3>
+            <button type="button" class="btn-agregar-nuevo" onclick="abrirModalPrenda()">+ Agregar Prenda</button>
+        </div>
+        <table class="tabla-precios" id="tablaPrendas">
+            <thead>
+                <tr>
+                    <th>Prenda</th>
+                    <th>Precio</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for prenda in prendas %}
+                <tr data-id="{{ prenda.id }}" data-nombre="{{ prenda.nombre|lower }}">
+                    <td>{{ prenda.nombre }}</td>
+                    <td class="celda-precio">
+                        <span class="signo-peso">$</span>
+                        <input type="number" class="input-precio" value="{{ prenda.precio }}"
+                            data-original="{{ prenda.precio }}" onchange="habilitarGuardar(this)" step="0.01" min="0">
+                    </td>
+                    <td class="celda-acciones">
+                        <button type="button" class="btn-guardar" disabled
+                            onclick="guardarPrecioPrenda(this, {{ prenda.id }})">Guardar</button>
+                        <button type="button" class="btn-eliminar"
+                            onclick="eliminarPrenda({{ prenda.id }}, '{{ prenda.nombre }}')">Eliminar</button>
+                        <span class="mensaje-estado"></span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" style="text-align: center;">No hay prendas registradas</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Seccion Servicios -->
+    <div class="precio-section">
+        <div class="section-header">
+            <h3>Servicios</h3>
+            <button type="button" class="btn-agregar-nuevo" onclick="abrirModalServicio()">+ Agregar Servicio</button>
+        </div>
+        <table class="tabla-precios" id="tablaServicios">
+            <thead>
+                <tr>
+                    <th>Servicio</th>
+                    <th>Tipo</th>
+                    <th>Precio</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for servicio in servicios %}
+                <tr data-id="{{ servicio.id }}" data-nombre="{{ servicio.nombre|lower }}">
+                    <td>{{ servicio.nombre }}</td>
+                    <td>{{ servicio.get_tipo_display }}</td>
+                    <td class="celda-precio">
+                        <span class="signo-peso">$</span>
+                        <input type="number" class="input-precio" value="{{ servicio.precio }}"
+                            data-original="{{ servicio.precio }}" onchange="habilitarGuardar(this)"
+                            step="0.01" min="0">
+                    </td>
+                    <td class="celda-acciones">
+                        <button type="button" class="btn-guardar" disabled
+                            onclick="guardarPrecioServicio(this, {{ servicio.id }})">Guardar</button>
+                        <button type="button" class="btn-eliminar"
+                            onclick="eliminarServicio({{ servicio.id }}, '{{ servicio.nombre }}')">Eliminar</button>
+                        <span class="mensaje-estado"></span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="text-align: center;">No hay servicios registrados</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<!-- Modal: Agregar Prenda -->
+<div class="modal-overlay" id="modal-prenda">
+    <div class="modal-contenido">
+        <h3>Agregar Nueva Prenda</h3>
+        <div class="form-grupo">
+            <label for="nombre-prenda">Nombre de la prenda</label>
+            <input type="text" id="nombre-prenda" placeholder="Ej: Camisa de seda">
+        </div>
+        <div class="form-grupo">
+            <label for="precio-prenda">Precio</label>
+            <input type="number" id="precio-prenda" placeholder="Ej: 150" min="0" step="0.01">
+        </div>
+        <div class="modal-botones">
+            <button type="button" class="btn-cancelar" onclick="cerrarModal('modal-prenda')">Cancelar</button>
+            <button type="button" class="btn-confirmar" onclick="agregarPrenda()">Agregar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Agregar Servicio -->
+<div class="modal-overlay" id="modal-servicio">
+    <div class="modal-contenido">
+        <h3>Agregar Nuevo Servicio</h3>
+        <div class="form-grupo">
+            <label for="nombre-servicio">Nombre del servicio</label>
+            <input type="text" id="nombre-servicio" placeholder="Ej: Planchado express">
+        </div>
+        <div class="form-grupo">
+            <label for="tipo-servicio">Tipo de servicio</label>
+            <select id="tipo-servicio">
+                <option value="autoservicio">Autoservicio</option>
+                <option value="por_encargo">Por encargo</option>
+                <option value="a_domicilio">A domicilio</option>
+                <option value="tintoreria">Tintoreria</option>
+            </select>
+        </div>
+        <div class="form-grupo">
+            <label for="precio-servicio">Precio</label>
+            <input type="number" id="precio-servicio" placeholder="Ej: 50" min="0" step="0.01">
+        </div>
+        <div class="modal-botones">
+            <button type="button" class="btn-cancelar" onclick="cerrarModal('modal-servicio')">Cancelar</button>
+            <button type="button" class="btn-confirmar" onclick="agregarServicio()">Agregar</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{# Variables requeridas por precios.js #}
+<script>
+    const urlActualizarPrecioPrenda   = "{% url 'servicios:actualizar_precio_prenda' %}";
+    const urlActualizarPrecioServicio = "{% url 'servicios:actualizar_precio_servicio' %}";
+    const urlAgregarPrenda            = "{% url 'servicios:agregar_prenda' %}";
+    const urlAgregarServicio          = "{% url 'servicios:agregar_servicio' %}";
+    const urlEliminarPrenda           = "{% url 'servicios:eliminar_prenda' %}";
+    const urlEliminarServicio         = "{% url 'servicios:eliminar_servicio' %}";
+</script>
+<script src="{% static 'js/administrador/precios.js' %}"></script>
+{% endblock %}

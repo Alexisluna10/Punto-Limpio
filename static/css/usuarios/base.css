@@ -1,0 +1,81 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* --- ESTILOS DE BOTONES (Reutilizables) --- */
+.nav-menu {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    margin-top: 25px;
+}
+
+.nav-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-decoration: none;
+    padding: 12px 0;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    width: 100%;
+    border: 2px solid transparent;
+    cursor: pointer;
+}
+
+/* Colores */
+.btn-primary {
+    background-color: #008CC9;
+    color: white;
+    box-shadow: 0 4px 10px rgba(0, 140, 201, 0.2);
+}
+
+.btn-primary:hover {
+    background-color: #0077aa;
+    transform: translateY(-2px);
+}
+
+.btn-outline {
+    background-color: transparent;
+    color: #008CC9;
+    border: 2px solid #008CC9;
+}
+
+.btn-outline:hover {
+    background-color: #e0f7fa;
+}
+
+.btn-logout {
+    background-color: #ffebee;
+    color: #d32f2f;
+    border: 1px solid #ffcdd2;
+}
+
+.btn-logout:hover {
+    background-color: #ffcdd2;
+}
+
+.welcome-msg {
+    color: #333;
+    font-size: 15px;
+    margin-bottom: 5px;
+}
+
+.simple-link {
+    text-decoration: none;
+    color: #999;
+    font-size: 14px;
+    margin-top: 20px;
+    display: inline-block;
+}
+
+.simple-link:hover {
+    color: #555;
+}
