@@ -1,5 +1,5 @@
-from django.contrib.auth.models import Group
 from apps.usuarios.models import Usuario
+from django.contrib.auth.models import Group
 import os
 import django
 
