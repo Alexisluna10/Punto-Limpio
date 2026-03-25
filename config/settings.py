@@ -23,6 +23,10 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = ['*']
 
+# Lista VIP de dominios confiables para formularios (Seguridad CSRF)
+CSRF_TRUSTED_ORIGINS = [
+    'https://punto-limpio.onrender.com',
+]
 # =========================================================
 #  APLICACIONES
 # =========================================================
