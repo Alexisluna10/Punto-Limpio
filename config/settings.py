@@ -49,6 +49,9 @@ INSTALLED_APPS = [
     'apps.servicios',
     'apps.inventario',
     'apps.finanzas',
+
+    # Configuración de correos
+    'anymail'
 ]
 
 # Debug Toolbar solo si estamos en modo DEBUG
