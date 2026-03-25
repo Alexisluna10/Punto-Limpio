@@ -2,6 +2,7 @@ from pathlib import Path
 import os
 from django.contrib.messages import constants as messages
 from decouple import config, Csv
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -121,6 +122,14 @@ DATABASES = {
     }
 }
 
+
+# sobreescribe la configuración local automáticamente.
+if config('DATABASE_URL', default=False):
+    DATABASES['default'] = dj_database_url.config(
+        default=config('DATABASE_URL'),
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 
 # =========================================================
 #  VALIDACIÓN DE PASSWORD
