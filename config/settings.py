@@ -27,6 +27,7 @@ ALLOWED_HOSTS = ['*']
 CSRF_TRUSTED_ORIGINS = [
     'https://punto-limpio.onrender.com',
 ]
+
 # =========================================================
 #  APLICACIONES
 # =========================================================
