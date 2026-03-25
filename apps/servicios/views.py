@@ -19,6 +19,7 @@ from apps.inventario.models import Maquina
 from .models import Servicio, Pedido, DetallePedido
 from apps.inventario.models import Insumo
 from .utils import render_pdf_ticket
+import threading
 
 
 @solo_trabajador
@@ -532,6 +533,13 @@ def autoservicio(request):
                 estado_pago='pendiente',
                 origen='cliente'
             )
+
+            # ✅ Enviar ticket en segundo plano (sin bloquear la respuesta)
+            hilo = threading.Thread(
+                target=enviar_ticket_en_background, args=(request, pedido))
+            hilo.daemon = True
+            hilo.start()
+
             return JsonResponse({
                 'success': True,
                 'message': 'Servicio registrado exitosamente',
@@ -602,6 +610,12 @@ def servCosto(request):
             # Descontar insumos automaticamente del inventario
             resultado_descuento = descontar_insumos_por_pedido(pedido)
 
+            # ✅ Enviar ticket en segundo plano (sin bloquear la respuesta)
+            hilo = threading.Thread(
+                target=enviar_ticket_en_background, args=(request, pedido))
+            hilo.daemon = True
+            hilo.start()
+
             return JsonResponse({
                 'success': True,
                 'message': 'Servicio registrado exitosamente',
@@ -617,6 +631,17 @@ def servCosto(request):
         'tipo_servicio_nombre': tipo_servicio_nombre,
         'servicio_precio': servicio_precio,
     })
+
+
+@solo_cliente
+def enviar_ticket_en_background(request, pedido):
+    try:
+        pdf_bytes = render_pdf_ticket(request, pedido)
+        if pdf_bytes:
+            enviar_ticket_email(pedido, pdf_bytes)
+    except Exception as e:
+        print(
+            f"⚠️ Error enviando ticket al cliente {pedido.cliente.email}: {e}")
 
 
 @solo_cliente
