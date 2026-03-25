@@ -221,7 +221,7 @@ EMAIL_BACKEND = "anymail.backends.sendinblue.EmailBackend"
 
 ANYMAIL = {
     # Esta llave la pondrás en tu .env local y en el Environment de Render
-    "SENDINBLUE_API_KEY": config('BREVO_API_KEY'),
+    "SENDINBLUE_API_KEY": config('BREVO_API_KEY', default=''),
 }
 
 # El correo que registres en el servicio
