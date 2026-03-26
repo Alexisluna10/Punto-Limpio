@@ -228,7 +228,8 @@ ANYMAIL = {
 }
 
 # El correo que registres en el servicio
-DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER')
+DEFAULT_FROM_EMAIL = config(
+    'EMAIL_HOST_USER', default='puntolimpio039@gmail.com')
 
 # EMAIL_HOST = 'smtp.gmail.com'
 # EMAIL_PORT = 587
