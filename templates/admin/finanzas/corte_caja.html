@@ -1,10 +1,12 @@
 {% extends 'base_admin.html' %}
+{% load static %}
 
 {% block title_page %}
 Finanzas
 {% endblock %}
 
 {% block content %}
+
 
 <div class="corte-container">
     {% if messages %}
@@ -184,3 +186,4 @@ Finanzas
     const ventasTotal = {{ total_ventas|floatformat:2 }};
 </script>
 <script src="{% static 'js/administrador/corte_caja.js' %}"></script>
+{% endblock %}
