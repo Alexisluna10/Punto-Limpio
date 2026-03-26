@@ -16,7 +16,7 @@
     </div>
     {% endif %}
 
-    <form action="/signin/" method="post" class="auth-form">
+    <form action="{% url 'usuarios:signin' %}" method="post" class="auth-form">
         {% csrf_token %}
 
         <div class="input-group">
