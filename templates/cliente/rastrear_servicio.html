@@ -1,11 +1,10 @@
-{% extends 'base_cliente.html' %} {% load static %} {% block title_page %} 
-{% if pedido %} Estado del Folio {{ pedido.folio }} {% else %} Rastrear Servicio {% endif %} 
+{% extends 'base_cliente.html' %} {% load static %} {% block title_page %}
+{% if pedido %} Estado del Folio {{ pedido.folio }} {% else %} Rastrear Servicio {% endif %}
 {% endblock %} {% block cliente_content %}
 <div class="cliente-container">
   {% if not pedido %}
   <!-- FORMULARIO DE BÚSQUEDA -->
   <div class="rastreo-search-container">
-    <!-- Header Profesional -->
     <div class="rastreo-header">
       <div class="rastreo-icon-wrapper">
         <span class="rastreo-icon-main">🔍</span>
@@ -23,27 +22,15 @@
     </div>
     {% endfor %} {% endif %}
 
-    <!-- Card de Búsqueda -->
     <div class="rastreo-card-busqueda">
-      <form
-        class="rastreo-form-moderna"
-        method="GET"
-        action="{% url 'servicios:buscar_pedido_rastreo' %}"
-      >
+      <form class="rastreo-form-moderna" method="GET" action="{% url 'servicios:buscar_pedido_rastreo' %}">
         <div class="form-group-rastreo">
           <label for="folio" class="form-label-rastreo">
             <span class="label-icon">🎫</span>
             Número de Folio
           </label>
-          <input
-            type="text"
-            id="folio"
-            name="folio"
-            class="form-input-rastreo"
-            placeholder="Ej: CK-2026-ABCD"
-            required
-            autocomplete="off"
-          />
+          <input type="text" id="folio" name="folio" class="form-input-rastreo" placeholder="Ej: CK-2026-ABCD" required
+            autocomplete="off" />
         </div>
 
         <button type="submit" class="btn-buscar-rastreo">
@@ -57,7 +44,7 @@
         <span class="divider-text">o también</span>
       </div>
 
-      <div class="rastreo-qr-section">
+      <div class="rastreo-qr-section" id="qr-section-btn">
         <div class="qr-content">
           <span class="qr-icon">📱</span>
           <div class="qr-text">
@@ -71,10 +58,20 @@
     </div>
   </div>
 
+  <!-- Modal Escáner QR -->
+  <div id="qr-modal">
+    <div class="qr-modal-box">
+      <h3 class="qr-modal-titulo">Escanear Código QR</h3>
+      <p class="qr-modal-subtitulo">Apunta la cámara al código QR de tu ticket</p>
+      <div id="qr-reader"></div>
+      <p id="qr-error-msg"></p>
+      <button id="qr-cancelar-btn">Cancelar</button>
+    </div>
+  </div>
+
   {% else %}
   <!-- RESULTADO DEL RASTREO -->
   <div class="rastreo-resultado-container">
-    <!-- Header del Resultado -->
     <div class="resultado-header">
       <div class="resultado-icon-wrapper">
         <span class="resultado-icon-main">📦</span>
@@ -85,9 +82,7 @@
       </p>
     </div>
 
-    <!-- Card de Resultado -->
     <div class="resultado-card-principal">
-      <!-- Encabezado con Folio -->
       <div class="resultado-encabezado">
         <div class="folio-badge">
           <span class="folio-label">Folio</span>
@@ -99,80 +94,56 @@
         </span>
       </div>
 
-      <!-- Estado Actual Grande -->
       <div class="resultado-estado-actual">
         <h3 class="estado-titulo-seccion">Estado Actual del Servicio</h3>
-
         <div class="estado-visual-card">
           {% if pedido.estado == 'pendiente' %}
           <div class="estado-icon-grande icon-pendiente-grande">📥</div>
           <h2 class="estado-nombre color-pendiente">Recibido / Pendiente</h2>
-          <p class="estado-descripcion">
-            Tu servicio ha sido recibido y está en espera de iniciar el proceso
-          </p>
-
+          <p class="estado-descripcion">Tu servicio ha sido recibido y está en espera de iniciar el proceso</p>
           {% elif pedido.estado == 'en_proceso' %}
           <div class="estado-icon-grande icon-proceso-grande">🫧</div>
           <h2 class="estado-nombre color-proceso">En Proceso</h2>
-          <p class="estado-descripcion">
-            Tus prendas se están lavando y secando en este momento
-          </p>
-
+          <p class="estado-descripcion">Tus prendas se están lavando y secando en este momento</p>
           {% elif pedido.estado == 'listo' %}
           <div class="estado-icon-grande icon-listo-grande">✨</div>
           <h2 class="estado-nombre color-listo">¡Listo para Entrega!</h2>
-          <p class="estado-descripcion">
-            Tu servicio está completado. Ya puedes pasar a recogerlo
-          </p>
-
+          <p class="estado-descripcion">Tu servicio está completado. Ya puedes pasar a recogerlo</p>
           {% elif pedido.estado == 'entregado' %}
           <div class="estado-icon-grande icon-entregado-grande">🏠</div>
           <h2 class="estado-nombre color-entregado">Entregado</h2>
-          <p class="estado-descripcion">
-            Servicio finalizado el {{ pedido.fecha_entrega_real|date:"d/m/Y" }}
-          </p>
+          <p class="estado-descripcion">Servicio finalizado el {{ pedido.fecha_entrega_real|date:"d/m/Y" }}</p>
           {% endif %}
         </div>
       </div>
 
-      <!-- Timeline de Progreso -->
       <div class="resultado-timeline-section">
         <h3 class="timeline-titulo-seccion">Progreso del Servicio</h3>
-
         <div class="timeline-moderna">
-          <div
-            class="timeline-item-moderna {% if pedido.estado != 'cancelado' %}completado{% endif %}"
-          >
+          <div class="timeline-item-moderna {% if pedido.estado != 'cancelado' %}completado{% endif %}">
             <div class="timeline-punto"></div>
             <div class="timeline-contenido">
               <span class="timeline-label">Recibido</span>
               <span class="timeline-check">✓</span>
             </div>
           </div>
-
           <div
-            class="timeline-item-moderna {% if pedido.estado == 'en_proceso' or pedido.estado == 'listo' or pedido.estado == 'entregado' %}completado{% endif %}"
-          >
+            class="timeline-item-moderna {% if pedido.estado == 'en_proceso' or pedido.estado == 'listo' or pedido.estado == 'entregado' %}completado{% endif %}">
             <div class="timeline-punto"></div>
             <div class="timeline-contenido">
               <span class="timeline-label">En Proceso</span>
               <span class="timeline-check">✓</span>
             </div>
           </div>
-
           <div
-            class="timeline-item-moderna {% if pedido.estado == 'listo' or pedido.estado == 'entregado' %}completado{% endif %}"
-          >
+            class="timeline-item-moderna {% if pedido.estado == 'listo' or pedido.estado == 'entregado' %}completado{% endif %}">
             <div class="timeline-punto"></div>
             <div class="timeline-contenido">
               <span class="timeline-label">Listo</span>
               <span class="timeline-check">✓</span>
             </div>
           </div>
-
-          <div
-            class="timeline-item-moderna {% if pedido.estado == 'entregado' %}completado{% endif %}"
-          >
+          <div class="timeline-item-moderna {% if pedido.estado == 'entregado' %}completado{% endif %}">
             <div class="timeline-punto"></div>
             <div class="timeline-contenido">
               <span class="timeline-label">Entregado</span>
@@ -182,7 +153,6 @@
         </div>
       </div>
 
-      <!-- Información de Pago -->
       <div class="resultado-pago-section">
         <div class="pago-card">
           <div class="pago-info">
@@ -191,56 +161,39 @@
           </div>
           <div class="pago-estado">
             {% if pedido.estado_pago == 'pagado' %}
-            <span class="badge-pago-pagado">
-              <span class="badge-pago-icon">✅</span>
-              Pagado
-            </span>
+            <span class="badge-pago-pagado"><span class="badge-pago-icon">✅</span> Pagado</span>
             {% else %}
-            <span class="badge-pago-pendiente">
-              <span class="badge-pago-icon">⏳</span>
-              Pendiente
-            </span>
+            <span class="badge-pago-pendiente"><span class="badge-pago-icon">⏳</span> Pendiente</span>
             {% endif %}
           </div>
         </div>
       </div>
 
-      <!-- Fechas Importantes -->
       <div class="resultado-fechas-section">
         <h3 class="fechas-titulo-seccion">Fechas Importantes</h3>
-
         <div class="fechas-grid">
           <div class="fecha-item-card">
             <div class="fecha-icon">📅</div>
             <div class="fecha-info">
               <span class="fecha-label">Fecha de Recepción</span>
-              <span class="fecha-valor"
-                >{{ pedido.fecha_recepcion|date:"d M Y, H:i" }}</span
-              >
+              <span class="fecha-valor">{{ pedido.fecha_recepcion|date:"d M Y, H:i" }}</span>
             </div>
           </div>
-
           {% if pedido.fecha_entrega_estimada %}
           <div class="fecha-item-card">
             <div class="fecha-icon">🚀</div>
             <div class="fecha-info">
               <span class="fecha-label">Entrega Estimada</span>
-              <span class="fecha-valor"
-                >{{ pedido.fecha_entrega_estimada|date:"d M Y" }}</span
-              >
+              <span class="fecha-valor">{{ pedido.fecha_entrega_estimada|date:"d M Y" }}</span>
             </div>
           </div>
           {% endif %}
         </div>
       </div>
     </div>
-    
-    <!-- Botón para Consultar Otro -->
+
     <div class="resultado-boton-container">
-      <a
-        href="{% url 'servicios:buscar_pedido_rastreo' %}"
-        class="btn-consultar-otro-rastreo"
-      >
+      <a href="{% url 'servicios:buscar_pedido_rastreo' %}" class="btn-consultar-otro-rastreo">
         <span class="btn-otro-icon">🔄</span>
         <span class="btn-otro-text">Consultar Otro Folio</span>
       </a>
@@ -248,4 +201,9 @@
   </div>
   {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="{% static 'js/cliente/rastrear_servicio.js' %}"></script>
 {% endblock %}
