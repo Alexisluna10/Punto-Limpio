@@ -27,9 +27,3 @@ urlpatterns = [
     path('inventario/', include('apps.inventario.urls')),
     path('finanzas/', include('apps.finanzas.urls')),
 ]
-
-if settings.DEBUG:
-   import debug_toolbar
-   urlpatterns += [
-        path('__debug__/', include(debug_toolbar.urls)),
-    ]
